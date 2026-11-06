@@ -20,9 +20,8 @@ func applyInboxWorkbench(item *InboxItemResponse, issue db.Issue) {
 		item.WorkbenchAction = "delivery"
 	case "blocked":
 		item.WorkbenchAction = "blocked"
-	case "todo", "paused":
-		if err == nil && !issue.ParentIssueID.Valid && len(criteria.Items) > 0 && criteria.Gate.Spec == nil &&
-			(criteria.Change == nil || criteria.Change.Phase == "editing") {
+	case "todo", "backlog", "paused":
+		if err == nil && workbench.RequirementsNeedConfirmation(criteria, issue.Status, issue.ParentIssueID.Valid) {
 			item.WorkbenchAction = "requirements"
 		}
 	}

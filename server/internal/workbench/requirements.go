@@ -52,6 +52,12 @@ type Requirements struct {
 	Gate         Gates                       `json:"gate"`
 }
 
+func RequirementsNeedConfirmation(criteria Requirements, status string, isChild bool) bool {
+	return !isChild && criteria.Team != nil && len(criteria.Items) > 0 && criteria.Gate.Spec == nil &&
+		(status == "todo" || status == "backlog" || status == "paused") &&
+		(criteria.Change == nil || criteria.Change.Phase == "editing")
+}
+
 var itemID = regexp.MustCompile(`^A-([0-9]+)$`)
 var placeholder = regexp.MustCompile(`(?i)\b(TBD|TODO)\b|待明确|待补充|待确认|\{[^{}]*\}`)
 

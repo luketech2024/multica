@@ -55,6 +55,9 @@ vi.mock("../../i18n", () => ({
 }));
 
 it("explains workbench review readiness and conflicting conclusions", () => {
+  const requirements = render(<InboxDetailLabel item={item({ type: "review_requested", details: { source: "workbench_requirements" } })} />);
+  expect(requirements.container.textContent).toBe("Requirements are ready for your confirmation");
+  requirements.unmount();
   const ready = render(<InboxDetailLabel item={item({ type: "review_requested", details: { source: "workbench_delivery", reason: "delivery_ready" } })} />);
   expect(ready.container.textContent).toBe("Delivery evidence is ready for your review");
   ready.unmount();

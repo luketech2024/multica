@@ -795,6 +795,7 @@ describe("handleInboxNew", () => {
     const showNotification = stubDesktopAPI();
     await handleInboxNew(qc, inboxItem({ details: { source: "workbench_delivery" } }));
     await handleInboxNew(qc, inboxItem({ workbench: true }));
+    await handleInboxNew(qc, inboxItem({ type: "mentioned", details: { workbench: "true" } }));
     expect(showNotification).not.toHaveBeenCalled();
     qc.clear();
   });

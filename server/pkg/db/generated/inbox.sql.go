@@ -258,12 +258,24 @@ func (q *Queries) CountUnreadInboxByWorkspace(ctx context.Context, recipientID p
 }
 
 const createInboxItem = `-- name: CreateInboxItem :one
+WITH workbench_issue AS (
+    SELECT EXISTS (
+        SELECT 1 FROM issue
+        WHERE workspace_id = $1 AND id = $6
+          AND (jsonb_typeof(acceptance_criteria->'team') = 'object'
+               OR jsonb_typeof(properties->'workbench_handoff') = 'object')
+    ) AS enabled
+)
 INSERT INTO inbox_item (
     workspace_id, recipient_type, recipient_id,
     type, severity, issue_id, title, body,
-    actor_type, actor_id, details, id
+    actor_type, actor_id, details, id, read
 )
-SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12::uuid, gen_random_uuid())
+SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+       CASE WHEN enabled THEN COALESCE($11::jsonb, '{}'::jsonb) || '{"workbench":"true"}'::jsonb ELSE $11::jsonb END,
+       COALESCE($12::uuid, gen_random_uuid()),
+       enabled AND $4::text = 'status_changed' AND $5::text <> 'action_required'
+FROM workbench_issue
 WHERE ($2::text = 'member' AND EXISTS (
     SELECT 1 FROM member WHERE workspace_id = $1 AND user_id = $3
 )) OR ($2::text = 'agent' AND EXISTS (
@@ -668,6 +680,54 @@ func (q *Queries) ListInboxWorkbenchIssues(ctx context.Context, arg ListInboxWor
 	return items, nil
 }
 
+const listWorkbenchRequirementNotices = `-- name: ListWorkbenchRequirementNotices :many
+SELECT id, workspace_id, recipient_type, recipient_id, type, severity, issue_id, title, body, read, archived, created_at, actor_type, actor_id, details, section FROM inbox_item
+WHERE workspace_id = $1 AND issue_id = $2
+  AND recipient_type = 'member' AND details->>'source' = 'workbench_requirements'
+`
+
+type ListWorkbenchRequirementNoticesParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	IssueID     pgtype.UUID `json:"issue_id"`
+}
+
+func (q *Queries) ListWorkbenchRequirementNotices(ctx context.Context, arg ListWorkbenchRequirementNoticesParams) ([]InboxItem, error) {
+	rows, err := q.db.Query(ctx, listWorkbenchRequirementNotices, arg.WorkspaceID, arg.IssueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []InboxItem{}
+	for rows.Next() {
+		var i InboxItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.RecipientType,
+			&i.RecipientID,
+			&i.Type,
+			&i.Severity,
+			&i.IssueID,
+			&i.Title,
+			&i.Body,
+			&i.Read,
+			&i.Archived,
+			&i.CreatedAt,
+			&i.ActorType,
+			&i.ActorID,
+			&i.Details,
+			&i.Section,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markAllInboxRead = `-- name: MarkAllInboxRead :execrows
 UPDATE inbox_item SET read = true
 WHERE workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND archived = false AND read = false
@@ -811,6 +871,36 @@ func (q *Queries) MarkWorkbenchInboxHandled(ctx context.Context, arg MarkWorkben
 		return nil, err
 	}
 	return items, nil
+}
+
+const pruneWorkbenchInbox = `-- name: PruneWorkbenchInbox :execrows
+WITH expired AS (
+    SELECT i.id FROM inbox_item i
+    WHERE i.created_at < $1
+      AND (i.details->>'workbench' = 'true' OR i.details->>'source' = 'workbench_delivery'
+           OR EXISTS (
+               SELECT 1 FROM issue
+               WHERE issue.workspace_id = i.workspace_id AND issue.id = i.issue_id
+                 AND (jsonb_typeof(issue.acceptance_criteria->'team') = 'object'
+                      OR jsonb_typeof(issue.properties->'workbench_handoff') = 'object')
+           ))
+    ORDER BY i.created_at, i.id
+    LIMIT $2
+)
+DELETE FROM inbox_item WHERE id IN (SELECT id FROM expired)
+`
+
+type PruneWorkbenchInboxParams struct {
+	Cutoff    pgtype.Timestamptz `json:"cutoff"`
+	BatchSize int32              `json:"batch_size"`
+}
+
+func (q *Queries) PruneWorkbenchInbox(ctx context.Context, arg PruneWorkbenchInboxParams) (int64, error) {
+	result, err := q.db.Exec(ctx, pruneWorkbenchInbox, arg.Cutoff, arg.BatchSize)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const unarchiveInboxByIssue = `-- name: UnarchiveInboxByIssue :execrows

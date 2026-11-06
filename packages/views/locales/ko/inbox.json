@@ -90,6 +90,7 @@
     "autopilot_quota_exceeded": "자동화 실행 한도 도달"
   },
   "labels": {
+    "requirements_ready": "요구사항 확인이 필요합니다",
     "delivery_ready": "검토할 납품 증빙이 준비되었습니다",
     "test_security_conflict": "테스트와 보안 결론이 서로 다릅니다",
     "set_status_to": "상태 변경:",

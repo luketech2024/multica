@@ -222,6 +222,70 @@ func (q *Queries) ListWorkbenchPlanChildren(ctx context.Context, arg ListWorkben
 	return items, nil
 }
 
+const listWorkbenchRequirementCandidates = `-- name: ListWorkbenchRequirementCandidates :many
+SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no FROM issue
+WHERE issue.id > $1 AND issue.parent_issue_id IS NULL
+  AND jsonb_typeof(issue.acceptance_criteria->'team') = 'object'
+  AND (issue.status IN ('todo', 'backlog', 'paused') OR EXISTS (
+      SELECT 1 FROM inbox_item notice
+      WHERE notice.workspace_id = issue.workspace_id AND notice.issue_id = issue.id
+        AND notice.details->>'source' = 'workbench_requirements' AND notice.read = false
+  ))
+ORDER BY issue.id LIMIT 100
+`
+
+func (q *Queries) ListWorkbenchRequirementCandidates(ctx context.Context, afterID pgtype.UUID) ([]Issue, error) {
+	rows, err := q.db.Query(ctx, listWorkbenchRequirementCandidates, afterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Issue{}
+	for rows.Next() {
+		var i Issue
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Title,
+			&i.Description,
+			&i.Status,
+			&i.Priority,
+			&i.AssigneeType,
+			&i.AssigneeID,
+			&i.CreatorType,
+			&i.CreatorID,
+			&i.ParentIssueID,
+			&i.AcceptanceCriteria,
+			&i.ContextRefs,
+			&i.Position,
+			&i.DueDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Number,
+			&i.ProjectID,
+			&i.OriginType,
+			&i.OriginID,
+			&i.FirstExecutedAt,
+			&i.StartDate,
+			&i.Metadata,
+			&i.Stage,
+			&i.Properties,
+			&i.Revision,
+			&i.LastActivityAt,
+			&i.TriageState,
+			&i.DuplicateOfIssueID,
+			&i.ExternalTicketNo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWorkbenchReviewCandidates = `-- name: ListWorkbenchReviewCandidates :many
 SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
 WHERE id > $1 AND parent_issue_id IS NULL AND project_id IS NOT NULL

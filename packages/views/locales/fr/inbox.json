@@ -92,6 +92,7 @@
     "autopilot_quota_exceeded": "Limite d'exécutions d'automatisation atteinte"
   },
   "labels": {
+    "requirements_ready": "Les exigences attendent votre confirmation",
     "delivery_ready": "Les preuves de livraison sont prêtes pour votre validation",
     "test_security_conflict": "Les conclusions des tests et de sécurité sont contradictoires",
     "set_status_to": "Statut défini sur",

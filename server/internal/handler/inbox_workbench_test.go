@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -8,7 +9,48 @@ import (
 	"github.com/google/uuid"
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
+
+func TestWorkbenchInboxCreationMarksAllSourcesAndQuietsRoutineStatus(t *testing.T) {
+	workspace := dbfx.Workspace(t, "Workbench notice policy", "workbench-policy-"+uuid.NewString())
+	dbfx.Member(t, workspace, testUserID, "owner")
+	parent := dbfx.Issue(t, "Workbench parent", testutil.Cols{"workspace_id": workspace, "acceptance_criteria": []byte(`{"v":1,"team":{}}`)})
+	child := dbfx.Issue(t, "Workbench child", testutil.Cols{"workspace_id": workspace, "properties": []byte(`{"workbench_handoff":{"v":2}}`)})
+	native := dbfx.Issue(t, "Native issue", testutil.Cols{"workspace_id": workspace})
+	for _, tc := range []struct {
+		name, issue, kind, severity string
+		workbench, read             bool
+	}{
+		{"parent status", parent, "status_changed", "info", true, true},
+		{"child mention", child, "mentioned", "info", true, false},
+		{"parent assignment", parent, "issue_assigned", "action_required", true, false},
+		{"review", parent, "review_requested", "action_required", true, false},
+		{"urgent status", parent, "status_changed", "action_required", true, false},
+		{"native", native, "status_changed", "info", false, false},
+		{"announcement", "", "system", "info", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			params := db.CreateInboxItemParams{WorkspaceID: parseUUID(workspace), RecipientID: parseUUID(testUserID), RecipientType: "member",
+				Type: tc.kind, Severity: tc.severity, Title: tc.name, Details: []byte(`{"comment_id":"kept"}`)}
+			if tc.issue != "" {
+				params.IssueID = parseUUID(tc.issue)
+			}
+			item, err := testHandler.Queries.CreateInboxItem(context.Background(), params)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dbfx.Cleanup(t, "DELETE FROM inbox_item WHERE id=$1", item.ID)
+			var details map[string]string
+			if err := json.Unmarshal(item.Details, &details); err != nil {
+				t.Fatal(err)
+			}
+			if (details["workbench"] == "true") != tc.workbench || item.Read != tc.read || details["comment_id"] != "kept" {
+				t.Fatalf("notice read=%v details=%v, want workbench=%v read=%v", item.Read, details, tc.workbench, tc.read)
+			}
+		})
+	}
+}
 
 func TestWorkbenchInboxActionTracksTaskIndependentlyOfReadState(t *testing.T) {
 	workspace := dbfx.Workspace(t, "Workbench inbox", "workbench-inbox-"+uuid.NewString())

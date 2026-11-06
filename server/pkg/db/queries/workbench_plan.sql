@@ -71,3 +71,14 @@ WITH RECURSIVE dependencies(id) AS (
     JOIN issue prior ON prior.id::text = dependency.id AND prior.workspace_id = @workspace_id
 )
 SELECT issue.* FROM issue JOIN dependencies ON issue.id = dependencies.id;
+
+-- name: ListWorkbenchRequirementCandidates :many
+SELECT issue.* FROM issue
+WHERE issue.id > @after_id AND issue.parent_issue_id IS NULL
+  AND jsonb_typeof(issue.acceptance_criteria->'team') = 'object'
+  AND (issue.status IN ('todo', 'backlog', 'paused') OR EXISTS (
+      SELECT 1 FROM inbox_item notice
+      WHERE notice.workspace_id = issue.workspace_id AND notice.issue_id = issue.id
+        AND notice.details->>'source' = 'workbench_requirements' AND notice.read = false
+  ))
+ORDER BY issue.id LIMIT 100;

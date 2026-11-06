@@ -11,6 +11,11 @@ ORDER BY i.created_at DESC;
 SELECT * FROM issue
 WHERE workspace_id = @workspace_id AND id = ANY(@issue_ids::uuid[]);
 
+-- name: ListWorkbenchRequirementNotices :many
+SELECT * FROM inbox_item
+WHERE workspace_id = @workspace_id AND issue_id = @issue_id
+  AND recipient_type = 'member' AND details->>'source' = 'workbench_requirements';
+
 -- name: ListArchivedInboxItems :many
 -- Archived counterpart of ListInboxItems, backing the inbox's "Archived"
 -- sub-view (MUL-3736).
@@ -96,18 +101,46 @@ WHERE id = $1 AND workspace_id = $2;
 -- name: CreateInboxItem :one
 -- A missing recipient is a quiet skip (pgx.ErrNoRows), not a delivery failure.
 -- Check the insertion snapshot without adding recipient row locks.
+WITH workbench_issue AS (
+    SELECT EXISTS (
+        SELECT 1 FROM issue
+        WHERE workspace_id = $1 AND id = $6
+          AND (jsonb_typeof(acceptance_criteria->'team') = 'object'
+               OR jsonb_typeof(properties->'workbench_handoff') = 'object')
+    ) AS enabled
+)
 INSERT INTO inbox_item (
     workspace_id, recipient_type, recipient_id,
     type, severity, issue_id, title, body,
-    actor_type, actor_id, details, id
+    actor_type, actor_id, details, id, read
 )
-SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE(sqlc.narg('id')::uuid, gen_random_uuid())
+SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+       CASE WHEN enabled THEN COALESCE(sqlc.arg('details')::jsonb, '{}'::jsonb) || '{"workbench":"true"}'::jsonb ELSE sqlc.arg('details')::jsonb END,
+       COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()),
+       enabled AND $4::text = 'status_changed' AND $5::text <> 'action_required'
+FROM workbench_issue
 WHERE ($2::text = 'member' AND EXISTS (
     SELECT 1 FROM member WHERE workspace_id = $1 AND user_id = $3
 )) OR ($2::text = 'agent' AND EXISTS (
     SELECT 1 FROM agent WHERE workspace_id = $1 AND id = $3
 ))
 RETURNING *;
+
+-- name: PruneWorkbenchInbox :execrows
+WITH expired AS (
+    SELECT i.id FROM inbox_item i
+    WHERE i.created_at < @cutoff
+      AND (i.details->>'workbench' = 'true' OR i.details->>'source' = 'workbench_delivery'
+           OR EXISTS (
+               SELECT 1 FROM issue
+               WHERE issue.workspace_id = i.workspace_id AND issue.id = i.issue_id
+                 AND (jsonb_typeof(issue.acceptance_criteria->'team') = 'object'
+                      OR jsonb_typeof(issue.properties->'workbench_handoff') = 'object')
+           ))
+    ORDER BY i.created_at, i.id
+    LIMIT @batch_size
+)
+DELETE FROM inbox_item WHERE id IN (SELECT id FROM expired);
 
 -- name: MarkInboxRead :one
 UPDATE inbox_item SET read = true

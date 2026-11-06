@@ -19,6 +19,9 @@ import (
 func (s *TaskService) DispatchWorkbenchPlans(ctx context.Context) error {
 	cursor := pgtype.UUID{Valid: true}
 	var failures []error
+	if err := s.ReconcileWorkbenchRequirements(ctx); err != nil {
+		failures = append(failures, err)
+	}
 	if err := s.ReconcileWorkbenchReviews(ctx); err != nil {
 		failures = append(failures, err)
 	}

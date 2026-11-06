@@ -90,6 +90,7 @@
     "autopilot_quota_exceeded": "自動化の実行上限に達しました"
   },
   "labels": {
+    "requirements_ready": "要件の確認をお願いします",
     "delivery_ready": "成果の証跡が揃い、レビューを待っています",
     "test_security_conflict": "テストとセキュリティの判定が一致していません",
     "set_status_to": "ステータスを変更:",

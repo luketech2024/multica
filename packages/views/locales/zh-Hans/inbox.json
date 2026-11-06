@@ -90,6 +90,7 @@
     "autopilot_quota_exceeded": "自动化执行次数已用完"
   },
   "labels": {
+    "requirements_ready": "需求条目待你确认",
     "delivery_ready": "交付证据已齐备，等待你验收",
     "test_security_conflict": "测试与安全结论冲突",
     "set_status_to": "状态设为",
