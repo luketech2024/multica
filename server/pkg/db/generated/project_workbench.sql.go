@@ -11,6 +11,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getProjectBusinessTemplate = `-- name: GetProjectBusinessTemplate :one
+SELECT id, project_id, workspace_id, resource_type, resource_ref, label, position, created_at, created_by FROM project_resource
+WHERE workspace_id=$1 AND project_id=$2 AND resource_type='workbench_template'
+`
+
+type GetProjectBusinessTemplateParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+}
+
+func (q *Queries) GetProjectBusinessTemplate(ctx context.Context, arg GetProjectBusinessTemplateParams) (ProjectResource, error) {
+	row := q.db.QueryRow(ctx, getProjectBusinessTemplate, arg.WorkspaceID, arg.ProjectID)
+	var i ProjectResource
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.WorkspaceID,
+		&i.ResourceType,
+		&i.ResourceRef,
+		&i.Label,
+		&i.Position,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const getProjectWorkbenchRoles = `-- name: GetProjectWorkbenchRoles :one
 SELECT id, project_id, workspace_id, resource_type, resource_ref, label, position, created_at, created_by FROM project_resource
 WHERE workspace_id=$1 AND project_id=$2 AND resource_type='workbench_roles'

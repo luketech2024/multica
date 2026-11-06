@@ -2,6 +2,7 @@ import {
   cloneElement,
   forwardRef,
   useImperativeHandle,
+  useEffect,
   useRef,
   useState,
   type ReactElement,
@@ -364,9 +365,15 @@ vi.mock("../editor", async () => {
   const composer = await vi.importActual<typeof import("../editor/use-composer-submit")>(
     "../editor/use-composer-submit",
   );
-  const ContentEditor = forwardRef(({ defaultValue, onUpdate, onSubmit, onUploadFile, onUploadingChange, placeholder, attachments }: any, ref: any) => {
-    const valueRef = useRef(defaultValue || "");
-    const [value, setValue] = useState(defaultValue || "");
+  const ContentEditor = forwardRef(({ defaultValue, value: controlledValue, onUpdate, onSubmit, onUploadFile, onUploadingChange, placeholder, attachments }: any, ref: any) => {
+    const valueRef = useRef(controlledValue ?? defaultValue ?? "");
+    const [value, setValue] = useState(controlledValue ?? defaultValue ?? "");
+    useEffect(() => {
+      if (controlledValue !== undefined) {
+        valueRef.current = controlledValue;
+        setValue(controlledValue);
+      }
+    }, [controlledValue]);
     // Mirrors the real editor's `uploading` node attrs: the placeholder is in
     // the doc from before the await until the upload settles, and the host
     // hears about it through onUploadingChange.
@@ -963,6 +970,8 @@ describe("CreateIssueModal", () => {
       title: "",
       description: "",
       requirementsText: "",
+      requirementsBoundsText: "",
+      templatePrefill: undefined,
       externalTicketNo: "",
       status: "in_progress",
       assigneeType: "member",

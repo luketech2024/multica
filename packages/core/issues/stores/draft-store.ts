@@ -47,6 +47,14 @@ export interface IssueCreateShared {
 export interface IssueCreateManual {
   externalTicketNo?: string;
   requirementsText?: string;
+  requirementsBoundsText?: string;
+  templatePrefill?: {
+    projectId: string;
+    revision: number;
+    description: string;
+    requirementsText: string;
+    requirementsBoundsText: string;
+  };
   title: string;
   description: string;
   status: IssueStatus;
@@ -204,6 +212,7 @@ function hasDraftContent(draft: IssueCreateDraft): boolean {
     manual.title ||
     manual.description ||
     manual.requirementsText ||
+    manual.requirementsBoundsText ||
     manual.externalTicketNo ||
     agent.prompt ||
     Object.keys(manual.propertyValues).length > 0 ||

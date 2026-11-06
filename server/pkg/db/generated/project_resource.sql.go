@@ -12,7 +12,7 @@ import (
 )
 
 const countProjectResources = `-- name: CountProjectResources :one
-SELECT count(*) FROM project_resource WHERE project_id = $1 AND resource_type <> 'workbench_roles'
+SELECT count(*) FROM project_resource WHERE project_id = $1 AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 `
 
 func (q *Queries) CountProjectResources(ctx context.Context, projectID pgtype.UUID) (int64, error) {
@@ -99,7 +99,7 @@ func (q *Queries) GetProjectResource(ctx context.Context, id pgtype.UUID) (Proje
 const getProjectResourceCounts = `-- name: GetProjectResourceCounts :many
 SELECT project_id, count(*)::bigint AS resource_count
 FROM project_resource
-WHERE project_id = ANY($1::uuid[]) AND resource_type <> 'workbench_roles'
+WHERE project_id = ANY($1::uuid[]) AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 GROUP BY project_id
 `
 
@@ -188,7 +188,7 @@ func (q *Queries) GetProjectResourceInWorkspaceForUpdate(ctx context.Context, ar
 
 const listProjectResources = `-- name: ListProjectResources :many
 SELECT id, project_id, workspace_id, resource_type, resource_ref, label, position, created_at, created_by FROM project_resource
-WHERE project_id = $1 AND resource_type <> 'workbench_roles'
+WHERE project_id = $1 AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY position ASC, created_at ASC
 `
 
@@ -224,7 +224,7 @@ func (q *Queries) ListProjectResources(ctx context.Context, projectID pgtype.UUI
 
 const listProjectResourcesForProjects = `-- name: ListProjectResourcesForProjects :many
 SELECT id, project_id, workspace_id, resource_type, resource_ref, label, position, created_at, created_by FROM project_resource
-WHERE project_id = ANY($1::uuid[]) AND resource_type <> 'workbench_roles'
+WHERE project_id = ANY($1::uuid[]) AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY project_id, position ASC, created_at ASC
 `
 
@@ -260,7 +260,7 @@ func (q *Queries) ListProjectResourcesForProjects(ctx context.Context, projectId
 
 const listProjectResourcesInWorkspace = `-- name: ListProjectResourcesInWorkspace :many
 SELECT id, project_id, workspace_id, resource_type, resource_ref, label, position, created_at, created_by FROM project_resource
-WHERE project_id = $1 AND workspace_id = $2 AND resource_type <> 'workbench_roles'
+WHERE project_id = $1 AND workspace_id = $2 AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY position ASC, created_at ASC
 `
 

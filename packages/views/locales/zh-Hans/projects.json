@@ -273,5 +273,28 @@
     "duplicate_name": "已有同名项目",
     "name_length": "项目名称需为 2–40 字",
     "description_required": "描述项目及其约束（必填）"
+  },
+  "templates": {
+    "title": "业务模板",
+    "counts": "验收 {{acceptance}} · 禁止 {{forbidden}} · DoD {{dod}} · 角色 {{roles}}",
+    "details": "查看模板全部字段",
+    "background": "项目背景",
+    "audience": "角色与用户",
+    "scope_out": "范围边界",
+    "acceptance": "验收骨架",
+    "forbidden": "禁止项与检查方式",
+    "dod": "完成定义",
+    "resources": "参考资源",
+    "terms": "术语表",
+    "name": "模板名称",
+    "line_hint": "每行一项。项目背景需填写四行，也可留空。",
+    "rule": "禁止规则",
+    "check": "检查方式",
+    "resource_type": "资源类型",
+    "resource_ref": "路径或网址",
+    "version": "版本",
+    "term": "术语",
+    "meaning": "含义",
+    "duplicate_term": "术语名称不能重复。"
   }
 }

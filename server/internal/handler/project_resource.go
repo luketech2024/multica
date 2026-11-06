@@ -676,8 +676,8 @@ func (h *Handler) UpdateProjectResource(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "project resource not found")
 		return
 	}
-	if existing.ResourceType == "workbench_roles" {
-		writeError(w, http.StatusConflict, "use the project team configuration endpoint")
+	if existing.ResourceType == "workbench_roles" || existing.ResourceType == "workbench_template" {
+		writeError(w, http.StatusConflict, "use the project configuration endpoint")
 		return
 	}
 
@@ -920,8 +920,8 @@ func (h *Handler) DeleteProjectResource(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "project resource not found")
 		return
 	}
-	if resource.ResourceType == "workbench_roles" {
-		writeError(w, http.StatusConflict, "use the project team configuration endpoint")
+	if resource.ResourceType == "workbench_roles" || resource.ResourceType == "workbench_template" {
+		writeError(w, http.StatusConflict, "use the project configuration endpoint")
 		return
 	}
 	tx, err := h.TxStarter.Begin(r.Context())

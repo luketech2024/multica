@@ -35,6 +35,7 @@ type Gates struct {
 }
 
 type Requirements struct {
+	Template   *ProjectTemplate     `json:"template,omitempty"`
 	Team       *ProjectTeamSnapshot `json:"team,omitempty"`
 	V          int                  `json:"v"`
 	Version    int                  `json:"version"`
@@ -45,7 +46,7 @@ type Requirements struct {
 }
 
 var itemID = regexp.MustCompile(`^A-([0-9]+)$`)
-var placeholder = regexp.MustCompile(`(?i)\b(TBD|TODO)\b|待明确|待补充|待确认`)
+var placeholder = regexp.MustCompile(`(?i)\b(TBD|TODO)\b|待明确|待补充|待确认|\{[^{}]*\}`)
 
 func ParseRequirements(raw []byte) (Requirements, error) {
 	result := Requirements{V: 1, Version: 1, NextItemNo: 1, Items: []Item{}, Bounds: []string{}}

@@ -32,6 +32,7 @@ export interface Project {
 }
 
 export interface CreateProjectRequest {
+  business_template?: { id: string; revision: number };
   workbench_roles?: ProjectRoles["config"];
   title: string;
   description?: string;

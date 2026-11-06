@@ -29,7 +29,10 @@
     "save_failed": "需求保存失败。",
     "team_snapshot": "任务团队 · 配置第 {{revision}} 版",
     "role_enabled": "已启用",
-    "role_disabled": "角色未启用 · 用户承担"
+    "role_disabled": "角色未启用 · 用户承担",
+    "template_placeholder": "请替换花括号中的占位内容后再确认需求。",
+    "template_failed": "项目模板加载失败。",
+    "template_retry": "重试"
   },
   "inline_run": {
     "label": "{{name}} 的运行",

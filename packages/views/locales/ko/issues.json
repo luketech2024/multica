@@ -29,7 +29,10 @@
     "save_failed": "요구사항을 저장하지 못했습니다.",
     "team_snapshot": "작업 팀 · 설정 {{revision}}",
     "role_enabled": "활성화",
-    "role_disabled": "역할 비활성화 · 사용자 책임"
+    "role_disabled": "역할 비활성화 · 사용자 책임",
+    "template_placeholder": "요구사항을 확인하기 전에 중괄호 안의 자리표시자를 바꾸세요.",
+    "template_failed": "프로젝트 템플릿을 불러오지 못했습니다.",
+    "template_retry": "다시 시도"
   },
   "inline_run": {
     "label": "{{name}} 실행",

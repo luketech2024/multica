@@ -3,6 +3,7 @@ import type { ProjectRoles } from "../workbench/schemas";
 import { createDraftStore } from "../drafts/create-draft-store";
 
 interface ProjectDraft {
+  businessTemplate?: { id: string; revision: number };
   workbenchRoles?: ProjectRoles["config"];
   title: string;
   description: string;

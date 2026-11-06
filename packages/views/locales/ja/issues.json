@@ -29,7 +29,10 @@
     "save_failed": "要件を保存できませんでした。",
     "team_snapshot": "タスクチーム · 設定 {{revision}}",
     "role_enabled": "有効",
-    "role_disabled": "ロール無効 · ユーザー責任"
+    "role_disabled": "ロール無効 · ユーザー責任",
+    "template_placeholder": "要件を確認する前に、中括弧内のプレースホルダーを置き換えてください。",
+    "template_failed": "プロジェクトテンプレートを読み込めませんでした。",
+    "template_retry": "再試行"
   },
   "inline_run": {
     "label": "{{name}} の実行",

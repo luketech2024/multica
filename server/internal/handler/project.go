@@ -105,6 +105,10 @@ func (h *Handler) loadProjectResourceCount(ctx context.Context, projectID pgtype
 }
 
 type CreateProjectRequest struct {
+	BusinessTemplate *struct {
+		ID       string `json:"id"`
+		Revision int64  `json:"revision"`
+	} `json:"business_template,omitempty"`
 	WorkbenchRoles json.RawMessage                       `json:"workbench_roles,omitempty"`
 	Title          string                                `json:"title"`
 	Description    *string                               `json:"description"`
@@ -409,6 +413,31 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var team *workbench.ProjectRoleConfiguration
+	var template *workbench.ProjectTemplate
+	if req.BusinessTemplate != nil {
+		assets, err := workbench.BuiltinBusinessTemplates()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to load business templates")
+			return
+		}
+		for _, asset := range assets {
+			if asset.ID == req.BusinessTemplate.ID && asset.Revision == req.BusinessTemplate.Revision {
+				template = &workbench.ProjectTemplate{SourceID: asset.ID, SourceRevision: asset.Revision, Revision: 1, Content: asset.Content}
+				if len(req.WorkbenchRoles) == 0 {
+					roles := workbench.DefaultProjectRoles()
+					for _, role := range asset.DisabledRoles {
+						roles.Roles[role] = workbench.ProjectRole{Enabled: false}
+					}
+					req.WorkbenchRoles, _ = json.Marshal(roles)
+				}
+				break
+			}
+		}
+		if template == nil {
+			writeError(w, http.StatusConflict, "business template changed or is unavailable")
+			return
+		}
+	}
 	if len(req.WorkbenchRoles) > 0 {
 		if utf8.RuneCountInString(req.Title) < 2 || utf8.RuneCountInString(req.Title) > 40 {
 			writeError(w, http.StatusBadRequest, "project name must contain 2 to 40 characters")
@@ -494,6 +523,18 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		}
 		if err = writeWorkbenchAudit(r.Context(), qtx, project.WorkspaceID, creator, "project_roles_created", map[string]any{"project_id": uuidToString(project.ID), "after": team.Config, "revision": team.Revision}); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to record initial role audit")
+			return
+		}
+	}
+	if template != nil {
+		raw, _ := json.Marshal(template)
+		_, err = qtx.CreateProjectResource(r.Context(), db.CreateProjectResourceParams{ProjectID: project.ID, WorkspaceID: project.WorkspaceID, ResourceType: "workbench_template", ResourceRef: raw, Label: pgtype.Text{String: template.Content.Name, Valid: true}, CreatedBy: creator})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to save project template")
+			return
+		}
+		if err = writeWorkbenchAudit(r.Context(), qtx, project.WorkspaceID, creator, "project_template_created", map[string]any{"project_id": uuidToString(project.ID), "after": template}); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to record project template audit")
 			return
 		}
 	}

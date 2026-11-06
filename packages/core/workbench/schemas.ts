@@ -31,6 +31,48 @@ export const ProjectRolesSchema = z.object({
 });
 export type ProjectRoles = z.infer<typeof ProjectRolesSchema>;
 
+export const BusinessTemplateSchema = z.object({
+  v: z.literal(1),
+  name: z.string().min(1).refine((value) => Array.from(value).length <= 80),
+  background: z.array(z.string()),
+  audience: z.array(z.string()),
+  scope_out: z.array(z.string()),
+  ac_skeleton: z.array(z.string().refine((value) => Array.from(value).length <= 120)),
+  forbidden: z.array(
+    z.object({ rule: z.string().min(1), check: z.string().min(1) }),
+  ),
+  dod: z.array(z.string()),
+  resources: z.array(
+    z.object({
+      type: z.string(),
+      ref: z.string().min(1),
+      version: z.string().min(1),
+    }),
+  ),
+  terms: z.record(z.string(), z.string()),
+});
+export const BusinessTemplateAssetSchema = z.object({
+  id: z.string(),
+  revision: z.number().int().positive(),
+  content: BusinessTemplateSchema,
+  disabled_roles: z.array(z.enum(projectRoleOrder)),
+});
+export const BusinessTemplatesSchema = z.object({
+  templates: z.array(BusinessTemplateAssetSchema),
+});
+export const ProjectTemplateSchema = z.object({
+  source_id: z.string(),
+  source_revision: z.number().int().nonnegative(),
+  revision: z.number().int().positive(),
+  content: BusinessTemplateSchema,
+});
+export const ProjectTemplateResponseSchema = z.object({
+  template: ProjectTemplateSchema.nullable(),
+});
+export type BusinessTemplate = z.infer<typeof BusinessTemplateSchema>;
+export type BusinessTemplateAsset = z.infer<typeof BusinessTemplateAssetSchema>;
+export type ProjectTemplate = z.infer<typeof ProjectTemplateSchema>;
+
 export const DeployTargetSchema = z.object({
   id: z.string(),
   workspace_id: z.string(),

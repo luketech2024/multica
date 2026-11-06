@@ -29,7 +29,10 @@
     "save_failed": "需求儲存失敗。",
     "team_snapshot": "任務團隊 · 設定第 {{revision}} 版",
     "role_enabled": "已啟用",
-    "role_disabled": "角色未啟用 · 使用者承擔"
+    "role_disabled": "角色未啟用 · 使用者承擔",
+    "template_placeholder": "請替換大括號中的佔位內容後再確認需求。",
+    "template_failed": "專案範本載入失敗。",
+    "template_retry": "重試"
   },
   "inline_run": {
     "label": "{{name}} 的執行",

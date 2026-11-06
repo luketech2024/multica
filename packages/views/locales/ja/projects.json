@@ -273,5 +273,28 @@
     "duplicate_name": "同じ名前のプロジェクトが既にあります。",
     "name_length": "プロジェクト名は2〜40文字で入力してください。",
     "description_required": "プロジェクトと制約を説明してください（必須）"
+  },
+  "templates": {
+    "title": "業務テンプレート",
+    "counts": "受入 {{acceptance}} · 規則 {{forbidden}} · DoD {{dod}} · ロール {{roles}}",
+    "details": "すべての項目を表示",
+    "background": "背景",
+    "audience": "利用者",
+    "scope_out": "対象外",
+    "acceptance": "受入基準",
+    "forbidden": "禁止事項と確認方法",
+    "dod": "完了の定義",
+    "resources": "参考資料",
+    "terms": "用語集",
+    "name": "テンプレート名",
+    "line_hint": "1行に1項目を入力してください。背景は4行または空欄にしてください。",
+    "rule": "禁止ルール",
+    "check": "確認方法",
+    "resource_type": "リソースの種類",
+    "resource_ref": "パスまたはURL",
+    "version": "バージョン",
+    "term": "用語",
+    "meaning": "意味",
+    "duplicate_term": "用語名は重複できません。"
   }
 }

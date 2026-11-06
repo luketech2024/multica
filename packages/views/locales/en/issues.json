@@ -29,7 +29,10 @@
     "save_failed": "Could not save requirements.",
     "team_snapshot": "Task team · configuration {{revision}}",
     "role_enabled": "Enabled",
-    "role_disabled": "Role disabled · user responsibility"
+    "role_disabled": "Role disabled · user responsibility",
+    "template_placeholder": "Replace the placeholders in braces before confirming requirements.",
+    "template_failed": "Could not load the project template.",
+    "template_retry": "Retry"
   },
   "inline_run": {
     "label": "{{name}} run",

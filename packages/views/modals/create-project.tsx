@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { ProjectRolesSchema, projectRoleOrder } from "@multica/core/workbench/configuration";
 import { ProjectRolesFields } from "../projects/components/project-roles-fields";
+import { BusinessTemplatePicker } from "../projects/components/business-template-picker";
 import { CalendarClock, CalendarDays, ChevronRight, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, UserMinus } from "@multica/ui/icons";
 
 /**
@@ -166,6 +167,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const clearDraft = useProjectDraftStore((s) => s.clearDraft);
 
   const [step, setStep] = useState(0);
+  const [businessTemplate, setBusinessTemplate] = useState(draft.businessTemplate);
   const [team, setTeam] = useState(() => draft.workbenchRoles ?? ProjectRolesSchema.parse({
     revision: 1,
     config: {
@@ -412,6 +414,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
       const project = await createProject.mutateAsync({
         title: title.trim(),
         workbench_roles: team,
+        business_template: businessTemplate,
         description: descEditorRef.current?.getMarkdown()?.trim() || undefined,
         icon,
         status,
@@ -932,6 +935,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             </PopoverContent>
           </Popover>
           <TitleEditor
+            key={businessTemplate?.id ?? "custom"}
             autoFocus
             defaultValue={draft.title}
             placeholder={t(($) => $.create_project.title_placeholder)}
@@ -944,9 +948,27 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className={cn("flex-1 min-h-0 overflow-y-auto px-5", step !== 0 && "hidden")}>
+          <div className="mb-4">
+            <BusinessTemplatePicker value={businessTemplate} onChange={(asset) => {
+              const selected = { id: asset.id, revision: asset.revision };
+              const nextDescription = descEditorRef.current?.getMarkdown()?.trim() || asset.content.background.join("\n");
+              const nextTeam = ProjectRolesSchema.parse({
+                revision: 1,
+                config: { v: 1, roles: Object.fromEntries(projectRoleOrder.map((role) => [role, {
+                  ...team.roles[role], enabled: !asset.disabled_roles.includes(role),
+                }])) },
+              }).config;
+              setBusinessTemplate(selected);
+              setDescription(nextDescription);
+              setTeam(nextTeam);
+              setDraft({ businessTemplate: selected, description: nextDescription, workbenchRoles: nextTeam });
+              if (!title.trim() && asset.id !== "blank") updateTitle(asset.content.name);
+            }} />
+          </div>
           <ContentEditor
+            key={businessTemplate?.id ?? "custom"}
             ref={descEditorRef}
-            defaultValue={draft.description}
+            defaultValue={description}
             placeholder={tProjects(($) => $.wizard.description_required)}
             onUpdate={(md) => {
               setDescription(md);

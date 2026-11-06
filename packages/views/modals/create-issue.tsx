@@ -1,5 +1,6 @@
 "use client";
 import { parseRequirementsInput } from "@multica/core/issues/requirements-input";
+import { projectTemplateOptions, prefillTaskTemplate } from "@multica/core/workbench/configuration";
 import { Input } from "@multica/ui/components/ui/input";
 import { ExternalTicketInput } from "../issues/components/external-ticket-input";
 import { Textarea } from "@multica/ui/components/ui/textarea";
@@ -351,6 +352,17 @@ export function ManualCreatePanel({
   // List cache usually has it already, so this resolves synchronously.
   const wsId = useWorkspaceId();
   const queryClient = useQueryClient();
+  const taskTemplate = useQuery({
+    ...projectTemplateOptions(wsId, projectId ?? ""),
+    enabled: !!projectId && !parentIssueId && !anchorCommentId,
+  });
+  useEffect(() => {
+    if (parentIssueId || anchorCommentId || (projectId && !taskTemplate.isSuccess)) return;
+    const current = useIssueDraftStore.getState().draft.manual;
+    const description = descEditorRef.current?.getMarkdown() ?? current.description;
+    const patch = prefillTaskTemplate({ ...current, description }, projectId ?? "", taskTemplate.data?.template ?? null);
+    if (patch) setManual(patch);
+  }, [projectId, parentIssueId, anchorCommentId, taskTemplate.data, taskTemplate.isSuccess, setManual]);
   const { categoryOf: draftStatusCategory, colorOf, iconOf } = useIssueStatuses(wsId);
   const { data: workspaceProperties = [] } = useQuery(propertyListOptions(wsId));
   const { data: parentIssue } = useQuery({
@@ -478,6 +490,8 @@ export function ManualCreatePanel({
       title: "",
       description: "",
       requirementsText: "",
+      requirementsBoundsText: "",
+      templatePrefill: undefined,
       externalTicketNo: "",
       status,
       assigneeType,
@@ -544,9 +558,12 @@ export function ManualCreatePanel({
       submittedDraftRef.current = useIssueDraftStore.getState().draft;
       try {
       const description = descEditorRef.current?.getMarkdown()?.trim() || undefined;
-      const acceptanceCriteria = draft.manual.requirementsText?.trim()
-        ? parseRequirementsInput(draft.manual.requirementsText).criteria
+      const acceptanceCriteria = draft.manual.requirementsText?.trim() || draft.manual.requirementsBoundsText?.trim() || taskTemplate.data?.template
+        ? parseRequirementsInput(draft.manual.requirementsText ?? "").criteria
         : undefined;
+      if (acceptanceCriteria) {
+        acceptanceCriteria.bounds.push(...(draft.manual.requirementsBoundsText ?? "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
+      }
       const activeAttachmentIds = draftAttachments
         .filter((a) => contentReferencesAttachment(description ?? "", a))
         .map((a) => a.id);
@@ -1036,7 +1053,7 @@ export function ManualCreatePanel({
             <div {...descDropZoneProps} className="relative flex flex-1 flex-col min-h-0 overflow-y-auto px-5">
               <ContentEditor
                 ref={descEditorRef}
-                defaultValue={draft.manual.description}
+                value={draft.manual.description}
                 placeholder={t(($) => $.create_issue.description_placeholder)}
                 onUpdate={(md) => setManual({ description: md })}
                 onSubmit={handleSubmit}
@@ -1048,7 +1065,16 @@ export function ManualCreatePanel({
               <label className="my-3 block space-y-1 text-caption">
                 <span>{tIssues(($) => $.requirements.input)}</span>
                 <Textarea value={draft.manual.requirementsText ?? ""} onChange={(event) => setManual({ requirementsText: event.target.value })} />
+                {/\{[^{}]*\}/.test(draft.manual.requirementsText ?? "") && <span className="text-muted-foreground">{tIssues(($) => $.requirements.template_placeholder)}</span>}
                 {draft.manual.requirementsText && parseRequirementsInput(draft.manual.requirementsText).truncated && <span className="text-warning">{tIssues(($) => $.requirements.truncated)}</span>}
+              </label>
+              {!!projectId && !parentIssueId && !anchorCommentId && taskTemplate.isError && <p role="alert" className="text-caption text-destructive">
+                {tIssues(($) => $.requirements.template_failed)}
+                <Button type="button" variant="ghost" size="sm" onClick={() => void taskTemplate.refetch()}>{tIssues(($) => $.requirements.template_retry)}</Button>
+              </p>}
+              <label className="mb-3 block space-y-1 text-caption">
+                <span>{tIssues(($) => $.requirements.bounds)}</span>
+                <Textarea value={draft.manual.requirementsBoundsText ?? ""} onChange={(event) => setManual({ requirementsBoundsText: event.target.value })} />
               </label>
               {descDragOver && <FileDropOverlay />}
             </div>

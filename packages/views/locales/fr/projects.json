@@ -273,5 +273,28 @@
     "duplicate_name": "Un projet porte déjà ce nom.",
     "name_length": "Le nom doit contenir entre 2 et 40 caractères.",
     "description_required": "Décrivez le projet et ses contraintes (obligatoire)"
+  },
+  "templates": {
+    "title": "Modèle métier",
+    "counts": "Acceptation {{acceptance}} · Règles {{forbidden}} · DoD {{dod}} · Rôles {{roles}}",
+    "details": "Afficher tous les champs",
+    "background": "Contexte",
+    "audience": "Public",
+    "scope_out": "Hors périmètre",
+    "acceptance": "Critères d’acceptation",
+    "forbidden": "Interdictions et contrôles",
+    "dod": "Définition de terminé",
+    "resources": "Références",
+    "terms": "Glossaire",
+    "name": "Nom du modèle",
+    "line_hint": "Une entrée par ligne. Le contexte doit contenir quatre lignes ou rester vide.",
+    "rule": "Règle",
+    "check": "Méthode de vérification",
+    "resource_type": "Type de ressource",
+    "resource_ref": "Chemin ou URL",
+    "version": "Version",
+    "term": "Terme",
+    "meaning": "Définition",
+    "duplicate_term": "Chaque terme doit être unique."
   }
 }

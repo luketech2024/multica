@@ -29,7 +29,10 @@
     "save_failed": "Échec de l’enregistrement.",
     "team_snapshot": "Équipe de la tâche · configuration {{revision}}",
     "role_enabled": "Activé",
-    "role_disabled": "Rôle désactivé · responsabilité utilisateur"
+    "role_disabled": "Rôle désactivé · responsabilité utilisateur",
+    "template_placeholder": "Remplacez les éléments entre accolades avant de confirmer les exigences.",
+    "template_failed": "Impossible de charger le modèle du projet.",
+    "template_retry": "Réessayer"
   },
   "inline_run": {
     "label": "Exécution de {{name}}",

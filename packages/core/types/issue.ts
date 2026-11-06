@@ -1,6 +1,6 @@
 import type { Label } from "./label";
 import type { IssuePropertyValues } from "./property";
-import type { ProjectRoles } from "../workbench/schemas";
+import type { ProjectRoles, ProjectTemplate } from "../workbench/schemas";
 
 /** Four lifecycle classifications. User-facing columns group by status key. */
 export type IssueStatusCategory =
@@ -185,6 +185,7 @@ export interface IssueDuplicateOf {
 }
 
 export interface AcceptanceCriteria {
+  template?: ProjectTemplate;
   team?: ProjectRoles & { project_id: string };
   v: 1;
   version: number;

@@ -6,10 +6,22 @@ import {
   DeployTargetsSchema,
   ProjectRolesSchema,
   projectRoleOrder,
+  ProjectTemplateResponseSchema,
+  BusinessTemplateSchema,
   parseWorkbenchResponse,
 } from "./schemas";
 
 describe("workbench configuration responses", () => {
+  it("counts template limits in Unicode characters", () => {
+    const content = { v: 1, name: "😀".repeat(80), background: [], audience: [], scope_out: [], ac_skeleton: ["😀".repeat(120)], forbidden: [], dod: [], resources: [], terms: {} };
+    expect(BusinessTemplateSchema.safeParse(content).success).toBe(true);
+    expect(BusinessTemplateSchema.safeParse({ ...content, name: content.name + "a" }).success).toBe(false);
+  });
+  it("rejects project templates with missing prohibition checks", () => {
+    const content = { v: 1, name: "Project", background: [], audience: [], scope_out: [], ac_skeleton: [], forbidden: [{ rule: "Do not leak keys", check: "" }], dod: [], resources: [], terms: {} };
+    expect(() => parseWorkbenchResponse({ template: { source_id: "blank", source_revision: 1, revision: 1, content } }, ProjectTemplateResponseSchema, "template")).toThrow();
+    expect(parseWorkbenchResponse({ template: null }, ProjectTemplateResponseSchema, "template").template).toBeNull();
+  });
   it("rejects incomplete roles and invalid revisions while defaulting optional bindings", () => {
     const roles = Object.fromEntries(
       projectRoleOrder.map((role) => [role, { enabled: true }]),

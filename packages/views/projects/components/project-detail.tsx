@@ -29,6 +29,7 @@ import { PriorityIcon } from "../../issues/components/priority-icon";
 import { ProjectResourcesSection } from "./project-resources-section";
 import { DeployTargetsSection } from "./deploy-targets-section";
 import { ProjectRolesSection } from "./project-roles-section";
+import { ProjectBusinessTemplateSection } from "./project-business-template-section";
 import { ProjectStartDatePicker } from "./project-start-date-picker";
 import { ProjectDueDatePicker } from "./project-due-date-picker";
 import { ProjectWorkflowControl } from "../../workflows/project-workflow-row";
@@ -507,6 +508,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <ProjectResourcesSection projectId={projectId} />
       <DeployTargetsSection key={projectId} projectId={projectId} />
       <ProjectRolesSection key={`roles-${projectId}`} projectId={projectId} />
+      <ProjectBusinessTemplateSection key={`template-${projectId}`} projectId={projectId} />
     </div>
   );
 

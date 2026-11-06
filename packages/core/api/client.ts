@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
+import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
@@ -4243,6 +4244,21 @@ export class ApiClient {
   async getProjectWorkbenchRoles(projectId: string) {
     const endpoint = `/api/projects/${projectId}/workbench-roles`;
     return parseWorkbenchResponse(await this.fetch(endpoint), ProjectRolesSchema, endpoint);
+  }
+
+  async listBusinessTemplates() {
+    const endpoint = "/api/workbench/business-templates";
+    return parseWorkbenchResponse(await this.fetch(endpoint), BusinessTemplatesSchema, endpoint);
+  }
+
+  async getProjectBusinessTemplate(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/business-template`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), ProjectTemplateResponseSchema, endpoint);
+  }
+
+  async saveProjectBusinessTemplate(projectId: string, content: BusinessTemplate, revision: number) {
+    const endpoint = `/api/projects/${projectId}/business-template`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PUT", body: JSON.stringify({ content, expected_revision: revision }) }), ProjectTemplateResponseSchema, endpoint);
   }
 
   async saveProjectWorkbenchRoles(projectId: string, config: ProjectRoles["config"], revision: number) {

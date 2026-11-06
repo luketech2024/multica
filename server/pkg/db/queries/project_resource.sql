@@ -1,6 +1,6 @@
 -- name: ListProjectResources :many
 SELECT * FROM project_resource
-WHERE project_id = $1 AND resource_type <> 'workbench_roles'
+WHERE project_id = $1 AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY position ASC, created_at ASC;
 
 -- name: ListProjectResourcesInWorkspace :many
@@ -8,12 +8,12 @@ ORDER BY position ASC, created_at ASC;
 -- own workspace_id, so a corrupt project reference cannot pull another tenant's
 -- repository URLs or local paths into a claim response.
 SELECT * FROM project_resource
-WHERE project_id = $1 AND workspace_id = $2 AND resource_type <> 'workbench_roles'
+WHERE project_id = $1 AND workspace_id = $2 AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY position ASC, created_at ASC;
 
 -- name: ListProjectResourcesForProjects :many
 SELECT * FROM project_resource
-WHERE project_id = ANY(sqlc.arg('project_ids')::uuid[]) AND resource_type <> 'workbench_roles'
+WHERE project_id = ANY(sqlc.arg('project_ids')::uuid[]) AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 ORDER BY project_id, position ASC, created_at ASC;
 
 -- name: GetProjectResource :one
@@ -51,10 +51,10 @@ RETURNING *;
 DELETE FROM project_resource WHERE id = $1;
 
 -- name: CountProjectResources :one
-SELECT count(*) FROM project_resource WHERE project_id = $1 AND resource_type <> 'workbench_roles';
+SELECT count(*) FROM project_resource WHERE project_id = $1 AND resource_type NOT IN ('workbench_roles', 'workbench_template');
 
 -- name: GetProjectResourceCounts :many
 SELECT project_id, count(*)::bigint AS resource_count
 FROM project_resource
-WHERE project_id = ANY(sqlc.arg('project_ids')::uuid[]) AND resource_type <> 'workbench_roles'
+WHERE project_id = ANY(sqlc.arg('project_ids')::uuid[]) AND resource_type NOT IN ('workbench_roles', 'workbench_template')
 GROUP BY project_id;

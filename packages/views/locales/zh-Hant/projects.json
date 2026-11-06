@@ -273,5 +273,28 @@
     "duplicate_name": "已有同名專案",
     "name_length": "專案名稱需為 2–40 字",
     "description_required": "描述專案及其限制（必填）"
+  },
+  "templates": {
+    "title": "業務範本",
+    "counts": "驗收 {{acceptance}} · 禁止 {{forbidden}} · DoD {{dod}} · 角色 {{roles}}",
+    "details": "查看範本全部欄位",
+    "background": "專案背景",
+    "audience": "角色與使用者",
+    "scope_out": "範圍邊界",
+    "acceptance": "驗收骨架",
+    "forbidden": "禁止事項與檢查方式",
+    "dod": "完成定義",
+    "resources": "參考資源",
+    "terms": "術語表",
+    "name": "範本名稱",
+    "line_hint": "每行一項。專案背景需填寫四行，也可留空。",
+    "rule": "禁止規則",
+    "check": "檢查方式",
+    "resource_type": "資源類型",
+    "resource_ref": "路徑或網址",
+    "version": "版本",
+    "term": "術語",
+    "meaning": "含義",
+    "duplicate_term": "術語名稱不能重複。"
   }
 }

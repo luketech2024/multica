@@ -12,7 +12,7 @@ const webRepoUrl = "https://github.com/multica-ai/web";
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown[] }) => ({
-    data: options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
+    data: options.queryKey?.[0] === "workbench" ? { templates: [] } : options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
   }),
   // The modal now reads the runtime list to gate worktree mode, and
   // runtimeListOptions builds its descriptor with queryOptions.

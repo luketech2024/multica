@@ -2254,6 +2254,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Get("/deploy-targets", h.ListDeployTargets)
 					r.Get("/workbench-roles", h.GetProjectWorkbenchRoles)
 					r.Put("/workbench-roles", h.SaveProjectWorkbenchRoles)
+					r.Get("/business-template", h.GetProjectBusinessTemplate)
+					r.Put("/business-template", h.SaveProjectBusinessTemplate)
 					r.Post("/deploy-targets", h.SaveDeployTarget)
 					r.Put("/deploy-targets/{targetId}", h.SaveDeployTarget)
 					r.Delete("/deploy-targets/{targetId}", h.DeleteDeployTarget)
@@ -2271,6 +2273,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				r.Delete("/{credentialId}", h.DeleteWorkbenchCredential)
 				r.Get("/{credentialId}/references", h.ListWorkbenchCredentialReferences)
 			})
+			r.Get("/api/workbench/business-templates", h.ListBusinessTemplates)
 
 			// Squads
 			r.Route("/api/squads", func(r chi.Router) {

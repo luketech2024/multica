@@ -273,5 +273,28 @@
     "duplicate_name": "같은 이름의 프로젝트가 이미 있습니다.",
     "name_length": "프로젝트 이름은 2~40자로 입력하세요.",
     "description_required": "프로젝트와 제약 조건을 설명하세요 (필수)"
+  },
+  "templates": {
+    "title": "업무 템플릿",
+    "counts": "검수 {{acceptance}} · 규칙 {{forbidden}} · DoD {{dod}} · 역할 {{roles}}",
+    "details": "모든 템플릿 항목 보기",
+    "background": "배경",
+    "audience": "사용자",
+    "scope_out": "범위 제외",
+    "acceptance": "검수 기준",
+    "forbidden": "금지 사항 및 검사 방법",
+    "dod": "완료 정의",
+    "resources": "참고 자료",
+    "terms": "용어집",
+    "name": "템플릿 이름",
+    "line_hint": "한 줄에 한 항목을 입력하세요. 배경은 네 줄로 작성하거나 비워 두세요.",
+    "rule": "금지 규칙",
+    "check": "확인 방법",
+    "resource_type": "리소스 유형",
+    "resource_ref": "경로 또는 URL",
+    "version": "버전",
+    "term": "용어",
+    "meaning": "의미",
+    "duplicate_term": "용어 이름은 중복될 수 없습니다."
   }
 }

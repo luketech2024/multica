@@ -8,8 +8,35 @@ import type {
   DeployTargetInput,
   CredentialInput,
   ProjectRoles,
+  ProjectTemplate,
 } from "./schemas";
 export * from "./schemas";
+export { prefillTaskTemplate } from "./template-prefill";
+
+export function businessTemplatesOptions(wsId: string) {
+  return queryOptions({
+    queryKey: ["workbench", wsId, "business-templates"],
+    queryFn: () => api.listBusinessTemplates(),
+  });
+}
+
+export function projectTemplateOptions(wsId: string, projectId: string) {
+  return queryOptions({
+    queryKey: ["projects", wsId, "detail", projectId, "business-template"],
+    queryFn: () => api.getProjectBusinessTemplate(projectId),
+  });
+}
+
+export function useSaveProjectTemplate(wsId: string, projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ content, revision }: ProjectTemplate) =>
+      api.saveProjectBusinessTemplate(projectId, content, revision),
+    onSuccess: (data) => {
+      qc.setQueryData(projectTemplateOptions(wsId, projectId).queryKey, data);
+    },
+  });
+}
 
 export const workbenchKeys = {
   roles: (wsId: string, projectId: string) =>

@@ -8,6 +8,7 @@ import { issueStatusCategory } from "@multica/core/issues";
 import { projectRoleOrder } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
+import { BusinessTemplateContent } from "../../projects/components/business-template-content";
 
 export function RequirementsPanel({ issue }: { issue: Issue }) {
   const { t } = useTranslation("issues");
@@ -47,6 +48,10 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
         <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
       </div>
       {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
+      {criteria.template && <details className="text-caption">
+        <summary className="cursor-pointer">{criteria.template.content.name} · {t(($) => $.requirements.version, { version: criteria.template.revision })}</summary>
+        <div className="mt-2"><BusinessTemplateContent template={criteria.template.content} /></div>
+      </details>}
       {criteria.team && <details className="text-caption">
         <summary className="cursor-pointer">{t(($) => $.requirements.team_snapshot, { revision: criteria.team.revision })}</summary>
         <ul className="mt-2 space-y-1">

@@ -27,6 +27,7 @@ vi.mock("../../workflows/project-workflow-menu", () => ({
 vi.mock("../../workflows/project-workflow-row", () => ({ ProjectWorkflowControl: () => null }));
 vi.mock("./deploy-targets-section", () => ({ DeployTargetsSection: () => null }));
 vi.mock("./project-roles-section", () => ({ ProjectRolesSection: () => null }));
+vi.mock("./project-business-template-section", () => ({ ProjectBusinessTemplateSection: () => null }));
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: readonly unknown[] }) => {

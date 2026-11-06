@@ -335,6 +335,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 	// foreign workspace.
 	projectID := p.ProjectID
 	var parentTeam *workbench.ProjectTeamSnapshot
+	var parentTemplate *workbench.ProjectTemplate
 	if p.ParentIssueID.Valid {
 		parent, err := qtx.GetIssueInWorkspace(ctx, db.GetIssueInWorkspaceParams{
 			ID:          p.ParentIssueID,
@@ -355,6 +356,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 				return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
 			}
 			parentTeam = parentCriteria.Team
+			parentTemplate = parentCriteria.Template
 		}
 	}
 	if projectID.Valid {
@@ -375,12 +377,23 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 					return IssueCreateResult{}, fmt.Errorf("%w: subtasks must use their parent's project", ErrIssueRequirements)
 				}
 				criteria.Team = parentTeam
+				criteria.Template = parentTemplate
 			} else {
 				roles, _, err := workbench.LoadProjectRoles(ctx, qtx, project)
 				if err != nil {
 					return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
 				}
 				criteria.Team = &workbench.ProjectTeamSnapshot{ProjectID: util.UUIDToString(projectID), ProjectRoleConfiguration: roles}
+				row, err := qtx.GetProjectBusinessTemplate(ctx, db.GetProjectBusinessTemplateParams{WorkspaceID: p.WorkspaceID, ProjectID: projectID})
+				if err == nil {
+					var template workbench.ProjectTemplate
+					if json.Unmarshal(row.ResourceRef, &template) != nil || workbench.ValidateBusinessTemplate(template.Content) != nil {
+						return IssueCreateResult{}, fmt.Errorf("%w: invalid project template", ErrIssueRequirements)
+					}
+					criteria.Template = &template
+				} else if !errors.Is(err, pgx.ErrNoRows) {
+					return IssueCreateResult{}, err
+				}
 			}
 			p.AcceptanceCriteria, err = json.Marshal(criteria)
 			if err != nil {
