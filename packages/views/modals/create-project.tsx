@@ -25,6 +25,7 @@ function GithubIcon({ className }: { className?: string }) {
 }
 import { useQuery } from "@tanstack/react-query";
 import { useCreateProject } from "@multica/core/projects/mutations";
+import { projectListOptions } from "@multica/core/projects/queries";
 import { useProjectDraftStore } from "@multica/core/projects";
 import {
   PROJECT_STATUS_CONFIG,
@@ -155,6 +156,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const wsId = useWorkspaceId();
   const { data: members = [] } = useQuery(memberListOptions(wsId));
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
+  const { data: projects = [] } = useQuery(projectListOptions(wsId));
   const { getActorName } = useActorName();
   const projectStatusLabels = useProjectStatusLabels();
   const projectPriorityLabels = useProjectPriorityLabels();
@@ -172,6 +174,10 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     },
   }).config);
   const [title, setTitle] = useState(draft.title);
+  const [description, setDescription] = useState(draft.description);
+  const titleLength = Array.from(title.trim()).length;
+  const duplicateName = projects.some((project) => project.title.trim().toLowerCase() === title.trim().toLowerCase());
+  const validBasics = titleLength >= 2 && titleLength <= 40 && !!description.trim() && !duplicateName;
   const descEditorRef = useRef<ContentEditorRef>(null);
   const [status, setStatus] = useState<ProjectStatus>(draft.status);
   const [priority, setPriority] = useState<ProjectPriority>(draft.priority);
@@ -362,7 +368,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = async () => {
     // Checked here as well as on the button: TitleEditor's onSubmit calls this
     // directly, so a disabled button alone leaves the keyboard path open.
-    if (!title.trim() || submitting) return;
+    if (!validBasics || submitting) return;
     if (sourceMode === "repos" && hasRejectedRepoRef) return;
     if (step < 2) {
       setStep(step + 1);
@@ -933,14 +939,19 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             onChange={(v) => updateTitle(v)}
             onSubmit={handleSubmit}
           />
+          {duplicateName && <p role="alert" className="mt-1 text-caption text-destructive">{tProjects(($) => $.wizard.duplicate_name)}</p>}
+          {titleLength > 0 && (titleLength < 2 || titleLength > 40) && <p role="alert" className="mt-1 text-caption text-destructive">{tProjects(($) => $.wizard.name_length)}</p>}
         </div>
 
         <div className={cn("flex-1 min-h-0 overflow-y-auto px-5", step !== 0 && "hidden")}>
           <ContentEditor
             ref={descEditorRef}
             defaultValue={draft.description}
-            placeholder={t(($) => $.create_project.description_placeholder)}
-            onUpdate={(md) => setDraft({ description: md })}
+            placeholder={tProjects(($) => $.wizard.description_required)}
+            onUpdate={(md) => {
+              setDescription(md);
+              setDraft({ description: md });
+            }}
             debounceMs={500}
           />
           <p className="mt-1 text-caption text-muted-foreground">
@@ -1176,7 +1187,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             size="sm"
             onClick={handleSubmit}
             disabled={
-              !title.trim() ||
+              !validBasics ||
               submitting ||
               (sourceMode === "repos" && hasRejectedRepoRef)
             }

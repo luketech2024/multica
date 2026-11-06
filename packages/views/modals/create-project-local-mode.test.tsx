@@ -38,7 +38,7 @@ vi.mock("@tanstack/react-query", () => ({
   // pickers, which expect a different shape.
   useQuery: (options: { queryKey?: unknown[] }) => {
     const key = options?.queryKey?.[0];
-    if (key === "members" || key === "agents") return { data: [] };
+    if (key === "members" || key === "agents" || key === "projects") return { data: [] };
     return {
       data: [
         {
@@ -71,7 +71,7 @@ vi.mock("@multica/core/projects", () => ({
     selector({
       draft: {
         title: "Game Client",
-        description: "",
+        description: "Project context",
         status: "planned",
         priority: "none",
         icon: "📁",

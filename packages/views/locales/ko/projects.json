@@ -269,6 +269,9 @@
     "team": "팀 구성",
     "next": "다음",
     "back": "이전",
-    "summary": "{{title}} · 저장소 {{count}}개"
+    "summary": "{{title}} · 저장소 {{count}}개",
+    "duplicate_name": "같은 이름의 프로젝트가 이미 있습니다.",
+    "name_length": "프로젝트 이름은 2~40자로 입력하세요.",
+    "description_required": "프로젝트와 제약 조건을 설명하세요 (필수)"
   }
 }

@@ -16,7 +16,7 @@ func TestCreateProjectWithTeamIsAtomic(t *testing.T) {
 	config := workbench.DefaultProjectRoles()
 	config.Roles["sec"] = workbench.ProjectRole{Enabled: false}
 	var project ProjectResponse
-	body := map[string]any{"title": "Atomic project team", "workbench_roles": config, "resources": []map[string]any{{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/review.git"}}}}
+	body := map[string]any{"title": "Atomic project team", "description": "Verify project team configuration", "workbench_roles": config, "resources": []map[string]any{{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/review.git"}}}}
 	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusCreated).JSON(&project)
 	t.Cleanup(func() {
 		testutil.Call(t, testHandler.DeleteProject, testutil.WithURLParams(newRequest("DELETE", "/api/projects/"+project.ID, nil), "id", project.ID)).Want(http.StatusNoContent)
@@ -33,6 +33,10 @@ func TestCreateProjectWithTeamIsAtomic(t *testing.T) {
 	dbfx.QueryRow(t, `SELECT count(*) FROM activity_log WHERE action='project_roles_created' AND details->>'project_id'=$1`, project.ID).Scan(&audits)
 	if audits != 1 {
 		t.Fatal("initial configuration audit missing")
+	}
+	for _, invalid := range []map[string]any{{"title": "A"}, {"description": nil}} {
+		request := testutil.WithURLParams(newRequest("PUT", "/api/projects/"+project.ID, invalid), "id", project.ID)
+		testutil.Call(t, testHandler.UpdateProject, request).Want(http.StatusBadRequest)
 	}
 	config.Roles["product"] = workbench.ProjectRole{Enabled: false}
 	body["title"], body["workbench_roles"] = "Invalid atomic project team", config

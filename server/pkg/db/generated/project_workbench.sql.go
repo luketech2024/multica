@@ -38,6 +38,15 @@ func (q *Queries) GetProjectWorkbenchRoles(ctx context.Context, arg GetProjectWo
 	return i, err
 }
 
+const lockProjectNames = `-- name: LockProjectNames :exec
+SELECT pg_advisory_xact_lock(hashtextextended('project-names:' || $1::uuid::text, 0))
+`
+
+func (q *Queries) LockProjectNames(ctx context.Context, workspaceID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, lockProjectNames, workspaceID)
+	return err
+}
+
 const lockProjectWorkbenchRoles = `-- name: LockProjectWorkbenchRoles :one
 SELECT id FROM project WHERE workspace_id=$1 AND id=$2 FOR UPDATE
 `
@@ -52,4 +61,24 @@ func (q *Queries) LockProjectWorkbenchRoles(ctx context.Context, arg LockProject
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const projectTitleExists = `-- name: ProjectTitleExists :one
+SELECT EXISTS(SELECT 1 FROM project
+WHERE workspace_id=$1
+  AND lower(btrim(title))=lower(btrim($2::text))
+  AND ($3::uuid IS NULL OR id<>$3::uuid))
+`
+
+type ProjectTitleExistsParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Title       string      `json:"title"`
+	ExcludeID   pgtype.UUID `json:"exclude_id"`
+}
+
+func (q *Queries) ProjectTitleExists(ctx context.Context, arg ProjectTitleExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, projectTitleExists, arg.WorkspaceID, arg.Title, arg.ExcludeID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

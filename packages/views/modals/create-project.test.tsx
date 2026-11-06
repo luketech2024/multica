@@ -11,7 +11,9 @@ const apiRepoDescription = "API and daemon runtime";
 const webRepoUrl = "https://github.com/multica-ai/web";
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: [] }),
+  useQuery: (options: { queryKey?: unknown[] }) => ({
+    data: options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
+  }),
   // The modal now reads the runtime list to gate worktree mode, and
   // runtimeListOptions builds its descriptor with queryOptions.
   queryOptions: (options: unknown) => options,
@@ -28,7 +30,7 @@ vi.mock("@multica/core/projects", () => ({
     selector({
       draft: {
         title: "",
-        description: "",
+        description: "Project context",
         status: "planned",
         priority: "medium",
         leadType: undefined,
@@ -79,13 +81,13 @@ vi.mock("../editor", () => {
   // invisible until a test clicks Create Project.
   const ContentEditor = React.forwardRef<
     { getMarkdown: () => string },
-    { placeholder?: string }
-  >(({ placeholder }, ref) => {
+    { placeholder?: string; defaultValue?: string; onUpdate?: (value: string) => void }
+  >(({ placeholder, defaultValue, onUpdate }, ref) => {
     const inner = React.useRef<HTMLTextAreaElement>(null);
     React.useImperativeHandle(ref, () => ({
       getMarkdown: () => inner.current?.value ?? "",
     }));
-    return <textarea ref={inner} placeholder={placeholder} />;
+    return <textarea ref={inner} placeholder={placeholder} defaultValue={defaultValue} onChange={(event) => onUpdate?.(event.target.value)} />;
   });
   ContentEditor.displayName = "ContentEditor";
 
@@ -212,6 +214,18 @@ vi.mock("sonner", () => ({
 import { CreateProjectModal } from "./create-project";
 
 describe("CreateProjectModal", () => {
+  it("blocks duplicate names and missing descriptions before advancing", async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
+    const title = screen.getByPlaceholderText(/project title/i);
+    await user.type(title, "  EXISTING PROJECT  ");
+    expect(screen.getByText("A project with this name already exists.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    await user.clear(title);
+    await user.type(title, "Unique project");
+    await user.clear(screen.getByPlaceholderText("Describe the project and its constraints (required)"));
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+  });
   it("retains the team and current step after creation fails, then retries atomically", async () => {
     createProjectMock.mockClear();
     createProjectMock.mockRejectedValueOnce(new Error("Save failed"));

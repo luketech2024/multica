@@ -269,6 +269,9 @@
     "team": "Team",
     "next": "Next",
     "back": "Back",
-    "summary": "{{title}} · {{count}} repositories"
+    "summary": "{{title}} · {{count}} repositories",
+    "duplicate_name": "A project with this name already exists.",
+    "name_length": "Use 2–40 characters for the project name.",
+    "description_required": "Describe the project and its constraints (required)"
   }
 }

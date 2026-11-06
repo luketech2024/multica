@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -271,6 +272,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	req.Title = strings.TrimSpace(req.Title)
 	if req.Title == "" {
 		writeError(w, http.StatusBadRequest, "title is required")
 		return
@@ -408,6 +410,14 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	var team *workbench.ProjectRoleConfiguration
 	if len(req.WorkbenchRoles) > 0 {
+		if utf8.RuneCountInString(req.Title) < 2 || utf8.RuneCountInString(req.Title) > 40 {
+			writeError(w, http.StatusBadRequest, "project name must contain 2 to 40 characters")
+			return
+		}
+		if req.Description == nil || strings.TrimSpace(*req.Description) == "" {
+			writeError(w, http.StatusBadRequest, "project description is required")
+			return
+		}
 		if _, ok := h.requireWorkspaceRole(w, r, workspaceID, "workspace not found", "owner", "admin", "member"); !ok {
 			return
 		}
@@ -427,19 +437,6 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		team = &workbench.ProjectRoleConfiguration{Config: config, Revision: 1}
 	}
 
-	// Projects without bundled configuration retain the simple create path.
-	if len(req.Resources) == 0 && team == nil {
-		project, err := h.Queries.CreateProject(r.Context(), createParams)
-		if err != nil {
-			h.writeProjectWriteError(w, r, err, "create")
-			return
-		}
-		resp := projectToResponse(project)
-		h.publish(protocol.EventProjectCreated, workspaceID, "member", userID, map[string]any{"project": resp})
-		writeJSON(w, http.StatusCreated, resp)
-		return
-	}
-
 	// Transactional path: project + all resources are atomic.
 	tx, err := h.TxStarter.Begin(r.Context())
 	if err != nil {
@@ -448,6 +445,9 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(r.Context())
 	qtx := h.Queries.WithTx(tx)
+	if !reserveProjectTitle(w, r, qtx, wsUUID, req.Title, pgtype.UUID{}) {
+		return
+	}
 
 	project, err := qtx.CreateProject(r.Context(), createParams)
 	if err != nil {
@@ -561,6 +561,23 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	var rawFields map[string]json.RawMessage
 	json.Unmarshal(bodyBytes, &rawFields)
+	if req.Title != nil || rawFields["description"] != nil {
+		_, roleErr := h.Queries.GetProjectWorkbenchRoles(r.Context(), db.GetProjectWorkbenchRolesParams{WorkspaceID: wsUUID, ProjectID: prevProject.ID})
+		if roleErr != nil && !errors.Is(roleErr, pgx.ErrNoRows) {
+			writeError(w, http.StatusInternalServerError, "failed to load project configuration")
+			return
+		}
+		if roleErr == nil {
+			if req.Title != nil && (utf8.RuneCountInString(strings.TrimSpace(*req.Title)) < 2 || utf8.RuneCountInString(strings.TrimSpace(*req.Title)) > 40) {
+				writeError(w, http.StatusBadRequest, "project name must contain 2 to 40 characters")
+				return
+			}
+			if rawFields["description"] != nil && (req.Description == nil || strings.TrimSpace(*req.Description) == "") {
+				writeError(w, http.StatusBadRequest, "project description is required")
+				return
+			}
+		}
+	}
 
 	params := db.UpdateProjectParams{ID: prevProject.ID}
 	_, params.DescriptionSet = rawFields["description"]
@@ -570,7 +587,12 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	_, params.StartDateSet = rawFields["start_date"]
 	_, params.DueDateSet = rawFields["due_date"]
 	if req.Title != nil {
-		params.Title = pgtype.Text{String: *req.Title, Valid: true}
+		name := strings.TrimSpace(*req.Title)
+		if name == "" {
+			writeError(w, http.StatusBadRequest, "project name is required")
+			return
+		}
+		params.Title = pgtype.Text{String: name, Valid: true}
 	}
 	if req.Status != nil {
 		if !validateProjectEnum(w, "status", *req.Status, validProjectStatuses) {
@@ -642,9 +664,23 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 			params.DueDate = pgtype.Date{Valid: false} // explicit null = clear date
 		}
 	}
-	project, err := h.Queries.UpdateProject(r.Context(), params)
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to begin project update")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	qtx := h.Queries.WithTx(tx)
+	if params.Title.Valid && params.Title.String != prevProject.Title && !reserveProjectTitle(w, r, qtx, wsUUID, params.Title.String, prevProject.ID) {
+		return
+	}
+	project, err := qtx.UpdateProject(r.Context(), params)
 	if err != nil {
 		h.writeProjectWriteError(w, r, err, "update")
+		return
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to commit project update")
 		return
 	}
 	resp := projectToResponse(project)

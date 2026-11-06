@@ -269,6 +269,9 @@
     "team": "チーム",
     "next": "次へ",
     "back": "戻る",
-    "summary": "{{title}} · {{count}} リポジトリ"
+    "summary": "{{title}} · {{count}} リポジトリ",
+    "duplicate_name": "同じ名前のプロジェクトが既にあります。",
+    "name_length": "プロジェクト名は2〜40文字で入力してください。",
+    "description_required": "プロジェクトと制約を説明してください（必須）"
   }
 }

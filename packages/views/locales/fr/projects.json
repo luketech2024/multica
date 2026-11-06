@@ -269,6 +269,9 @@
     "team": "Équipe",
     "next": "Suivant",
     "back": "Précédent",
-    "summary": "{{title}} · {{count}} dépôts"
+    "summary": "{{title}} · {{count}} dépôts",
+    "duplicate_name": "Un projet porte déjà ce nom.",
+    "name_length": "Le nom doit contenir entre 2 et 40 caractères.",
+    "description_required": "Décrivez le projet et ses contraintes (obligatoire)"
   }
 }
