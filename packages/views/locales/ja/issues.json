@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "実行概要",
+    "conclusion": "結論",
+    "changes": "変更",
+    "validation": "検証",
+    "risks": "リスク",
+    "missing": "未提供",
+    "expand": "出力全体を表示",
+    "collapse": "出力を折りたたむ"
+  },
+  "requirements": {
+    "input": "受け入れ条件（1行に1項目）",
+    "truncated": "120文字を超える項目は切り詰められます。",
+    "activity_updated": "要件を更新しました",
+    "title": "要件確認",
+    "version": "v{{version}}",
+    "locked": "要件は確認済みでロックされています",
+    "empty": "確認する前に受け入れ条件を追加してください。",
+    "check": "{{id}} を確認",
+    "new_item": "新しい項目",
+    "remove": "削除",
+    "item_text": "条件 {{id}}",
+    "add": "条件を追加",
+    "bounds": "対象外（1行に1項目）",
+    "save": "変更を保存",
+    "discard": "編集を破棄",
+    "confirm": "要件を確認",
+    "save_failed": "要件を保存できませんでした。"
+  },
   "inline_run": {
     "label": "{{name}} の実行",
     "stop": "停止",

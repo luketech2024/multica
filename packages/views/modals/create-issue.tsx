@@ -1,4 +1,6 @@
 "use client";
+import { parseRequirementsInput } from "@multica/core/issues/requirements-input";
+import { Textarea } from "@multica/ui/components/ui/textarea";
 
 import { issueStatusCategory } from "@multica/core/issues";
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
@@ -473,6 +475,7 @@ export function ManualCreatePanel({
     setManual({
       title: "",
       description: "",
+      requirementsText: "",
       status,
       assigneeType,
       assigneeId,
@@ -538,6 +541,9 @@ export function ManualCreatePanel({
       submittedDraftRef.current = useIssueDraftStore.getState().draft;
       try {
       const description = descEditorRef.current?.getMarkdown()?.trim() || undefined;
+      const acceptanceCriteria = draft.manual.requirementsText?.trim()
+        ? parseRequirementsInput(draft.manual.requirementsText).criteria
+        : undefined;
       const activeAttachmentIds = draftAttachments
         .filter((a) => contentReferencesAttachment(description ?? "", a))
         .map((a) => a.id);
@@ -550,6 +556,7 @@ export function ManualCreatePanel({
             capture_token: sourcePreview.capture_token,
             issue: {
               title: title.trim(),
+              acceptance_criteria: acceptanceCriteria,
               description,
               status,
               priority,
@@ -568,6 +575,7 @@ export function ManualCreatePanel({
       } else {
         issue = await createIssueMutation.mutateAsync({
           title: title.trim(),
+          acceptance_criteria: acceptanceCriteria,
           description,
           status,
           priority,
@@ -1017,7 +1025,7 @@ export function ManualCreatePanel({
             </div>
 
             {/* Description — takes remaining space */}
-            <div {...descDropZoneProps} className="relative flex flex-1 min-h-0 overflow-y-auto px-5">
+            <div {...descDropZoneProps} className="relative flex flex-1 flex-col min-h-0 overflow-y-auto px-5">
               <ContentEditor
                 ref={descEditorRef}
                 defaultValue={draft.manual.description}
@@ -1029,6 +1037,11 @@ export function ManualCreatePanel({
                 debounceMs={500}
                 attachments={draftAttachments}
               />
+              <label className="my-3 block space-y-1 text-caption">
+                <span>{tIssues(($) => $.requirements.input)}</span>
+                <Textarea value={draft.manual.requirementsText ?? ""} onChange={(event) => setManual({ requirementsText: event.target.value })} />
+                {draft.manual.requirementsText && parseRequirementsInput(draft.manual.requirementsText).truncated && <span className="text-warning">{tIssues(($) => $.requirements.truncated)}</span>}
+              </label>
               {descDragOver && <FileDropOverlay />}
             </div>
 

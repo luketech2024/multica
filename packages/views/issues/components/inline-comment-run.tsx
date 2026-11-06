@@ -24,7 +24,7 @@ import { buildTimeline } from "../../common/task-transcript/build-timeline";
 import { buildSteps, groupSteps, isCallStep, isGroupRow, type TraceRow } from "../../common/task-transcript/build-steps";
 import { traceEventSummary, traceToolArgSummary } from "../../common/task-transcript/trace-event-presenter";
 import { redactSecrets } from "../../common/task-transcript/redact";
-import { ReadonlyContent } from "../../editor";
+import { WorkbenchRunSummary } from "../../common/task-transcript/workbench-summary";
 import { useLocale, useT, useTimeAgo } from "../../i18n";
 import { formatDuration } from "../../agents/components/agent-activity-hover-content";
 import { failureNeedsAction, isCancelledOutcome, runOutcomeLabel } from "../../agents/components/tabs/task-failure";
@@ -233,7 +233,7 @@ export function InlineCommentRun({ run, className, viewState, showIdentity = fal
       </div>
       <div className={cn(showIdentity && "pl-8")}>
         {replyTo}
-        {output && <div className="mt-2 text-body"><ReadonlyContent content={redactSecrets(output)} /></div>}
+        {output && <div className="mt-2 text-body"><WorkbenchRunSummary key={task.id} content={output} /></div>}
         {needsAction && rawError && <TruncatedTooltip content={rawError}>
           <p
             className="mt-1.5 line-clamp-4 whitespace-pre-wrap break-words rounded-md border bg-muted/50 px-2.5 py-1.5 font-mono text-caption text-muted-foreground">
@@ -316,7 +316,7 @@ function InlineSteer({ steer }: { steer: DeliveredSteer }) {
   const name = getActorName(steer.actorType, steer.actorId);
   const summary = traceEventSummary({ type: "text", content: steer.content });
   return <div className="flex min-w-0 items-center gap-2 rounded-xs bg-brand/7 px-1 py-1.5 text-caption dark:bg-brand/12" data-steer-comment={steer.id}>
-    <CornerDownRight aria-hidden className="size-3.5 shrink-0 text-brand" />
+    <CornerDownRight aria-hidden className="size-3.5 shrink-0 text-brand-text" />
     <span className="min-w-0 flex-1 truncate" title={steer.content}>
       <span className="font-medium">{t(($) => $.inline_run.steer_step, { name })}</span>
       <span className="text-muted-foreground"> · {summary}</span>

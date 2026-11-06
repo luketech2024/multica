@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "Run summary",
+    "conclusion": "Conclusion",
+    "changes": "Changes",
+    "validation": "Validation",
+    "risks": "Risks",
+    "missing": "Not provided",
+    "expand": "Show full output",
+    "collapse": "Collapse output"
+  },
+  "requirements": {
+    "input": "Acceptance criteria (one per line)",
+    "truncated": "Entries longer than 120 characters will be shortened.",
+    "activity_updated": "updated requirements",
+    "title": "Requirements",
+    "version": "v{{version}}",
+    "locked": "Requirements confirmed and locked",
+    "empty": "Add criteria before confirming requirements.",
+    "check": "Check {{id}}",
+    "new_item": "New item",
+    "remove": "Remove",
+    "item_text": "Criterion {{id}}",
+    "add": "Add criterion",
+    "bounds": "Out of scope (one per line)",
+    "save": "Save changes",
+    "discard": "Discard edits",
+    "confirm": "Confirm requirements",
+    "save_failed": "Could not save requirements."
+  },
   "inline_run": {
     "label": "{{name}} run",
     "stop": "Stop",

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, forwardRef } from "react";
 import { useWorkspaceId } from "@multica/core/hooks";
+import { parseWorkbenchSummary } from "@multica/core/issues/workbench-summary";
+import { WorkbenchRunSummary } from "./workbench-summary";
 import { useTraceIssueLabels } from "./use-trace-issue-labels";
 import { Virtuoso, type VirtuosoHandle, type Components } from "react-virtuoso";
 import {
@@ -476,6 +478,7 @@ export function AgentTranscriptDialog({
   // One step per tool call, with its result folded in — see build-steps.ts for
   // why the pairing is positional.
   const steps = useMemo(() => buildSteps(items), [items]);
+  const summaryText = useMemo(() => items.findLast((item) => item.type === "text" && item.content && parseWorkbenchSummary(item.content))?.content, [items]);
 
   // A facet reads as what its rows look like: the glyph the rows carry, and the
   // name the rows print. The first step of a kind stands in for the glyph. The
@@ -1099,6 +1102,7 @@ export function AgentTranscriptDialog({
 
         {/* ── What the run produced ──────────────────────────────────── */}
         <RunOutcomeRow outcome={outcome} branch={task.branch_name} />
+        {summaryText && <div className="max-h-64 shrink-0 overflow-auto px-4 py-2"><WorkbenchRunSummary key={task.id} content={summaryText} /></div>}
 
         {/* ── Where the time went ────────────────────────────────────── */}
         {lanes && (

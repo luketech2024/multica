@@ -127,3 +127,24 @@ Workspace-scoped queries filter by `workspace_id`; membership gates access and `
 - Use names, types, and tests to express behavior. Code comments are English and kept for non-obvious rationale and constraints; remove superseded plans and incident narratives when updating code. Preserve tool directives and mixed-version contracts.
 - New global pre-workspace routes use a single word or `/{noun}/{verb}`, not hyphenated root names. Update `server/internal/handler/reserved_slugs.json`, run `pnpm generate:reserved-slugs`, and commit `packages/core/paths/reserved-slugs.ts` when changing reserved slugs.
 - Use atomic conventional commits and the repository PR template. For releases, follow [.github/RELEASING.md](.github/RELEASING.md); default to a patch bump unless specified otherwise.
+
+
+### Workbench completion output
+
+End completed agent tasks with one paired summary block. Keep the conclusion to
+80 characters and each remaining section to at most five entries of 100 characters.
+Report actual verification and remaining limitations. The full transcript remains
+the evidence behind the summary. Include a preview URL only when that preview exists,
+using `/preview/{project}/{issue}/` on the configured preview origin.
+
+```text
+<!-- wb-summary v1 -->
+结论：Completed behavior
+改动：
+- Changed files and scope
+验证：
+- Commands run and observed results
+风险：
+- Remaining limitations
+<!-- /wb-summary -->
+```

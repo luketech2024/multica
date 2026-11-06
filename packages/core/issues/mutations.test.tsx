@@ -142,6 +142,22 @@ describe("useCreateCommentSubIssue", () => {
   });
 });
 
+describe("useUpdateIssue revision from list", () => {
+  it("sends the visible board revision without opening the detail first", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const issue = makeIssue(1, { revision: 7 });
+    qc.setQueryData<ListIssuesCache>(issueKeys.list(WS_ID), {
+      byStatus: { unstarted: { issues: [issue], total: 1 } },
+    });
+    const updateIssue = vi.fn().mockResolvedValue({ ...issue, status: "in_progress", revision: 8 });
+    setApiInstance({ updateIssue } as unknown as ApiClient);
+    const { result } = renderHook(() => useUpdateIssue(), { wrapper: createWrapper(qc) });
+    await act(async () => { await result.current.mutateAsync({ id: issue.id, status: "in_progress" }); });
+    expect(updateIssue).toHaveBeenCalledWith(issue.id, { status: "in_progress", expected_revision: 7 });
+    qc.clear();
+  });
+});
+
 describe("useUpdateIssue — optimistic move keeps every bucketed board in sync", () => {
   const sort: IssueSortParam = { sort_by: "position", sort_direction: undefined };
   const myScope = "assigned";

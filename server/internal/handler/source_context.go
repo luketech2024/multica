@@ -721,7 +721,8 @@ func (h *Handler) createManualCommentSubIssue(w http.ResponseWriter, r *http.Req
 	}
 	prefix := h.getIssuePrefix(r.Context(), workspaceID)
 	result, err := h.IssueService.Create(r.Context(), service.IssueCreateParams{
-		WorkspaceID: workspaceID, Title: title, Description: ptrToText(input.Description), Status: status, Priority: priority,
+		AcceptanceCriteria: input.AcceptanceCriteria,
+		WorkspaceID:        workspaceID, Title: title, Description: ptrToText(input.Description), Status: status, Priority: priority,
 		AssigneeType: assigneeType, AssigneeID: assigneeID, CreatorType: "member", CreatorID: userID,
 		ParentIssueID: capture.SourceIssueID, ProjectID: projectID, StartDate: startDate, DueDate: dueDate,
 		AttachmentIDs: attachmentIDs, LabelIDs: labelIDs, Properties: properties, Stage: stage,
@@ -903,6 +904,9 @@ func (h *Handler) writeSourceContextError(w http.ResponseWriter, err error, limi
 		message = propertyErr.Message
 	case errors.Is(err, service.ErrIssuePropertiesTooLarge):
 		status, code = http.StatusBadRequest, "issue_properties_too_large"
+		message = err.Error()
+	case errors.Is(err, service.ErrIssueRequirements):
+		status, code = http.StatusBadRequest, "invalid_requirements"
 		message = err.Error()
 	case errors.Is(err, errSourceContextBadRequest):
 		status, code = http.StatusBadRequest, "invalid_request"

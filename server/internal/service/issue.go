@@ -23,6 +23,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/issueworkflow"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/util"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/dbid"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -62,22 +63,23 @@ func NewIssueService(q *db.Queries, tx TxStarter, bus *events.Bus, ac analytics.
 // to IssueService.Create. The handler owns the parsing step that turns its
 // request payload into this struct; the service stays transport-agnostic.
 type IssueCreateParams struct {
-	WorkspaceID   pgtype.UUID
-	Title         string
-	Description   pgtype.Text
-	Status        string
-	Priority      string
-	AssigneeType  pgtype.Text
-	AssigneeID    pgtype.UUID
-	CreatorType   string // "agent" or "member"
-	CreatorID     pgtype.UUID
-	ParentIssueID pgtype.UUID
-	ProjectID     pgtype.UUID
-	StartDate     pgtype.Date
-	DueDate       pgtype.Date
-	OriginType    pgtype.Text
-	OriginID      pgtype.UUID
-	AttachmentIDs []pgtype.UUID
+	AcceptanceCriteria []byte
+	WorkspaceID        pgtype.UUID
+	Title              string
+	Description        pgtype.Text
+	Status             string
+	Priority           string
+	AssigneeType       pgtype.Text
+	AssigneeID         pgtype.UUID
+	CreatorType        string // "agent" or "member"
+	CreatorID          pgtype.UUID
+	ParentIssueID      pgtype.UUID
+	ProjectID          pgtype.UUID
+	StartDate          pgtype.Date
+	DueDate            pgtype.Date
+	OriginType         pgtype.Text
+	OriginID           pgtype.UUID
+	AttachmentIDs      []pgtype.UUID
 	// LabelIDs are the issue-scoped labels to attach to the new issue. They
 	// are validated and written inside the create transaction (see Create),
 	// so the issue is never committed with a partial or wrong label set. An
@@ -185,6 +187,7 @@ func (e *IssuePropertyValidationError) Error() string { return e.Message }
 // transaction. Callers translate this into a 409 — the request was valid when
 // it arrived, so retrying against the refreshed catalog is the remedy.
 var ErrIssueStatusUnavailable = errors.New("issue status is no longer available")
+var ErrIssueRequirements = errors.New("invalid issue requirements")
 
 var ErrSourceContextAlreadyAttached = errors.New("source context is already attached")
 
@@ -233,6 +236,16 @@ type IssueCreateResult struct {
 // Caller-owned validation is limited to transport-shaped checks: title
 // required, RFC3339 date format, assignee pair sanity.
 func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts IssueCreateOpts) (IssueCreateResult, error) {
+	if len(p.AcceptanceCriteria) > 0 {
+		if p.Status != "todo" && p.Status != "backlog" {
+			return IssueCreateResult{}, fmt.Errorf("%w: new requirements must start in todo or backlog", ErrIssueRequirements)
+		}
+		criteria, err := workbench.EditRequirements(nil, p.AcceptanceCriteria, false, util.UUIDToString(p.CreatorID), p.CreatorType, time.Now())
+		if err != nil {
+			return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
+		}
+		p.AcceptanceCriteria = criteria
+	}
 	issueCountPolicy := ResolveIssueCountPolicy(ctx, s.Entitlements, p.WorkspaceID)
 	tx, err := s.TxStarter.Begin(ctx)
 	if err != nil {
@@ -377,47 +390,49 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 	var assignedTask db.AgentTaskQueue
 	if p.OriginType.Valid {
 		issue, err = qtx.CreateIssueWithOrigin(ctx, db.CreateIssueWithOriginParams{
-			ID:            dbid.NewV7(),
-			WorkspaceID:   p.WorkspaceID,
-			Title:         p.Title,
-			Description:   p.Description,
-			Status:        p.Status,
-			Priority:      p.Priority,
-			AssigneeType:  p.AssigneeType,
-			AssigneeID:    p.AssigneeID,
-			CreatorType:   p.CreatorType,
-			CreatorID:     p.CreatorID,
-			ParentIssueID: p.ParentIssueID,
-			Position:      newPosition,
-			StartDate:     p.StartDate,
-			DueDate:       p.DueDate,
-			Number:        issueNumber,
-			ProjectID:     projectID,
-			OriginType:    p.OriginType,
-			OriginID:      p.OriginID,
-			Stage:         p.Stage,
-			Properties:    properties,
+			AcceptanceCriteria: p.AcceptanceCriteria,
+			ID:                 dbid.NewV7(),
+			WorkspaceID:        p.WorkspaceID,
+			Title:              p.Title,
+			Description:        p.Description,
+			Status:             p.Status,
+			Priority:           p.Priority,
+			AssigneeType:       p.AssigneeType,
+			AssigneeID:         p.AssigneeID,
+			CreatorType:        p.CreatorType,
+			CreatorID:          p.CreatorID,
+			ParentIssueID:      p.ParentIssueID,
+			Position:           newPosition,
+			StartDate:          p.StartDate,
+			DueDate:            p.DueDate,
+			Number:             issueNumber,
+			ProjectID:          projectID,
+			OriginType:         p.OriginType,
+			OriginID:           p.OriginID,
+			Stage:              p.Stage,
+			Properties:         properties,
 		})
 	} else {
 		issue, err = qtx.CreateIssue(ctx, db.CreateIssueParams{
-			ID:            dbid.NewV7(),
-			WorkspaceID:   p.WorkspaceID,
-			Title:         p.Title,
-			Description:   p.Description,
-			Status:        p.Status,
-			Priority:      p.Priority,
-			AssigneeType:  p.AssigneeType,
-			AssigneeID:    p.AssigneeID,
-			CreatorType:   p.CreatorType,
-			CreatorID:     p.CreatorID,
-			ParentIssueID: p.ParentIssueID,
-			Position:      newPosition,
-			StartDate:     p.StartDate,
-			DueDate:       p.DueDate,
-			Number:        issueNumber,
-			ProjectID:     projectID,
-			Stage:         p.Stage,
-			Properties:    properties,
+			AcceptanceCriteria: p.AcceptanceCriteria,
+			ID:                 dbid.NewV7(),
+			WorkspaceID:        p.WorkspaceID,
+			Title:              p.Title,
+			Description:        p.Description,
+			Status:             p.Status,
+			Priority:           p.Priority,
+			AssigneeType:       p.AssigneeType,
+			AssigneeID:         p.AssigneeID,
+			CreatorType:        p.CreatorType,
+			CreatorID:          p.CreatorID,
+			ParentIssueID:      p.ParentIssueID,
+			Position:           newPosition,
+			StartDate:          p.StartDate,
+			DueDate:            p.DueDate,
+			Number:             issueNumber,
+			ProjectID:          projectID,
+			Stage:              p.Stage,
+			Properties:         properties,
 		})
 	}
 	if err != nil {

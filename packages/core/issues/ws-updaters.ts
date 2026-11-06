@@ -230,7 +230,7 @@ function patchIssueSnapshot(
   }
 }
 
-function freshestCachedIssueRevision(
+export function freshestCachedIssueRevision(
   qc: QueryClient,
   wsId: string,
   issueId: string,

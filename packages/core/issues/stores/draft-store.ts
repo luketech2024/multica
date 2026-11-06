@@ -45,6 +45,7 @@ export interface IssueCreateShared {
 }
 
 export interface IssueCreateManual {
+  requirementsText?: string;
   title: string;
   description: string;
   status: IssueStatus;
@@ -201,6 +202,7 @@ function hasDraftContent(draft: IssueCreateDraft): boolean {
   return !!(
     manual.title ||
     manual.description ||
+    manual.requirementsText ||
     agent.prompt ||
     Object.keys(manual.propertyValues).length > 0 ||
     // Recoverable uploads only; failed/interrupted remnants do not pin a draft.

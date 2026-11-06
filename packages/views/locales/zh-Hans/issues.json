@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "执行摘要",
+    "conclusion": "结论",
+    "changes": "改动",
+    "validation": "验证",
+    "risks": "风险",
+    "missing": "未提供",
+    "expand": "展开完整输出",
+    "collapse": "收起完整输出"
+  },
+  "requirements": {
+    "input": "验收条目（每行一项）",
+    "truncated": "超过 120 字的条目将截断，请核对条目内容。",
+    "activity_updated": "更新了需求条目",
+    "title": "需求确认",
+    "version": "v{{version}}",
+    "locked": "需求已确认并锁定",
+    "empty": "请添加验收条目后确认需求。",
+    "check": "勾选 {{id}}",
+    "new_item": "新条目",
+    "remove": "移除",
+    "item_text": "条目 {{id}}",
+    "add": "添加条目",
+    "bounds": "不在本次范围（每行一项）",
+    "save": "保存修改",
+    "discard": "放弃编辑",
+    "confirm": "确认需求",
+    "save_failed": "需求保存失败。"
+  },
   "inline_run": {
     "label": "{{name}} 的运行",
     "stop": "停止",

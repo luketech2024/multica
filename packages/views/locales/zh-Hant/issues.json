@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "執行摘要",
+    "conclusion": "結論",
+    "changes": "改動",
+    "validation": "驗證",
+    "risks": "風險",
+    "missing": "未提供",
+    "expand": "展開完整輸出",
+    "collapse": "收起完整輸出"
+  },
+  "requirements": {
+    "input": "驗收條目（每行一項）",
+    "truncated": "超過 120 字的條目將截斷，請核對條目內容。",
+    "activity_updated": "更新了需求條目",
+    "title": "需求確認",
+    "version": "v{{version}}",
+    "locked": "需求已確認並鎖定",
+    "empty": "請新增驗收條目後確認需求。",
+    "check": "勾選 {{id}}",
+    "new_item": "新條目",
+    "remove": "移除",
+    "item_text": "條目 {{id}}",
+    "add": "新增條目",
+    "bounds": "不在本次範圍（每行一項）",
+    "save": "儲存修改",
+    "discard": "放棄編輯",
+    "confirm": "確認需求",
+    "save_failed": "需求儲存失敗。"
+  },
   "inline_run": {
     "label": "{{name}} 的執行",
     "stop": "停止",

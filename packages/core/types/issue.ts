@@ -183,7 +183,27 @@ export interface IssueDuplicateOf {
   status: IssueStatus;
 }
 
+export interface AcceptanceCriteria {
+  v: 1;
+  version: number;
+  next_item_no: number;
+  items: Array<{
+    id: string;
+    text: string;
+    origin: string;
+    covers: string[];
+    checked: { at: string; by: string } | null;
+    note: string | null;
+  }>;
+  bounds: string[];
+  gate: {
+    spec: { passed_at: string; passed_by: string } | null;
+    accept: { passed_at: string; passed_by: string } | null;
+  };
+}
+
 export interface Issue {
+  acceptance_criteria?: AcceptanceCriteria;
   id: string;
   workspace_id: string;
   number: number;

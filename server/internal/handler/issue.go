@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/channelmedia"
 	"github.com/multica-ai/multica/server/internal/dispatch"
@@ -31,6 +32,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/qoderruntime"
 	"github.com/multica-ai/multica/server/internal/service"
 	"github.com/multica-ai/multica/server/internal/util"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	agentpkg "github.com/multica-ai/multica/server/pkg/agent"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -38,13 +40,14 @@ import (
 
 // IssueResponse is the JSON response for an issue.
 type IssueResponse struct {
-	ID          string  `json:"id"`
-	WorkspaceID string  `json:"workspace_id"`
-	Number      int32   `json:"number"`
-	Identifier  string  `json:"identifier"`
-	Title       string  `json:"title"`
-	Description *string `json:"description"`
-	Status      string  `json:"status"`
+	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
+	ID                 string          `json:"id"`
+	WorkspaceID        string          `json:"workspace_id"`
+	Number             int32           `json:"number"`
+	Identifier         string          `json:"identifier"`
+	Title              string          `json:"title"`
+	Description        *string         `json:"description"`
+	Status             string          `json:"status"`
 	// StatusCategory encodes lifecycle using the legacy seven-value wire enum. It is
 	// omitted when an endpoint cannot resolve a custom status, so consumers must
 	// fall back to their catalog rather than treat a blank as "no category".
@@ -319,6 +322,11 @@ func (h *Handler) broadcastCancelledWakeups(ctx context.Context, workspaceID pgt
 // writeIssueStatusRaceError renders errIssueStatusArchivedRace as a 409 and
 // reports whether it handled the error.
 func writeIssueStatusRaceError(w http.ResponseWriter, err error) bool {
+	var constraint *pgconn.PgError
+	if errors.As(err, &constraint) && constraint.ConstraintName == "workbench_execution_gate" {
+		writeError(w, http.StatusConflict, constraint.Message)
+		return true
+	}
 	if errors.Is(err, errIssueStatusArchivedRace) {
 		writeError(w, http.StatusConflict,
 			"the target status was archived while this request was in flight; reload the status list and retry")
@@ -477,6 +485,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		statusCategory = i.Status
 	}
 	return IssueResponse{
+		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,
@@ -515,6 +524,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
+		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,
@@ -585,6 +595,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
+		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,
@@ -1756,7 +1767,7 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 	query := fmt.Sprintf(`SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
-	   i.revision, i.duplicate_of_issue_id
+	   i.revision, i.duplicate_of_issue_id, i.acceptance_criteria
 FROM issue i
 WHERE %s
 ORDER BY %s
@@ -1798,6 +1809,7 @@ LIMIT %s OFFSET %s`, whereSql, orderBy, limitRef, offsetRef)
 			&row.Properties,
 			&row.Revision,
 			&row.DuplicateOfIssueID,
+			&row.AcceptanceCriteria,
 		); err != nil {
 			slog.Warn("ListIssues scan failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "failed to list issues")
@@ -2356,7 +2368,7 @@ WITH ranked AS (
 		i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
 		i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at,
-		i.number, i.project_id, i.metadata, i.stage, i.properties, i.revision, i.duplicate_of_issue_id,
+		i.number, i.project_id, i.metadata, i.stage, i.properties, i.revision, i.duplicate_of_issue_id, i.acceptance_criteria,
 		COUNT(*) OVER (PARTITION BY i.assignee_type, i.assignee_id) AS group_total,
 		ROW_NUMBER() OVER (
 			PARTITION BY i.assignee_type, i.assignee_id
@@ -2369,7 +2381,7 @@ SELECT
 	id, workspace_id, title, description, status, priority,
 	assignee_type, assignee_id, creator_type, creator_id,
 	parent_issue_id, position, start_date, due_date, created_at, updated_at, last_activity_at,
-	number, project_id, metadata, stage, properties, revision, duplicate_of_issue_id, group_total
+	number, project_id, metadata, stage, properties, revision, duplicate_of_issue_id, acceptance_criteria, group_total
 FROM ranked
 WHERE rn > %s AND rn <= %s + %s
 ORDER BY
@@ -2419,6 +2431,7 @@ ORDER BY
 			&row.Properties,
 			&row.Revision,
 			&row.DuplicateOfIssueID,
+			&row.AcceptanceCriteria,
 			&row.GroupTotal,
 		); err != nil {
 			slog.Warn("ListGroupedIssues scan failed", "error", err)
@@ -3061,18 +3074,19 @@ func readRuntimeCLIVersion(metadata []byte) string {
 }
 
 type CreateIssueRequest struct {
-	Title         string   `json:"title"`
-	Description   *string  `json:"description"`
-	Status        string   `json:"status"`
-	Priority      string   `json:"priority"`
-	AssigneeType  *string  `json:"assignee_type"`
-	AssigneeID    *string  `json:"assignee_id"`
-	ParentIssueID *string  `json:"parent_issue_id"`
-	ProjectID     *string  `json:"project_id"`
-	Stage         *int32   `json:"stage,omitempty"`
-	StartDate     *string  `json:"start_date"`
-	DueDate       *string  `json:"due_date"`
-	AttachmentIDs []string `json:"attachment_ids,omitempty"`
+	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
+	Title              string          `json:"title"`
+	Description        *string         `json:"description"`
+	Status             string          `json:"status"`
+	Priority           string          `json:"priority"`
+	AssigneeType       *string         `json:"assignee_type"`
+	AssigneeID         *string         `json:"assignee_id"`
+	ParentIssueID      *string         `json:"parent_issue_id"`
+	ProjectID          *string         `json:"project_id"`
+	Stage              *int32          `json:"stage,omitempty"`
+	StartDate          *string         `json:"start_date"`
+	DueDate            *string         `json:"due_date"`
+	AttachmentIDs      []string        `json:"attachment_ids,omitempty"`
 	// LabelIDs are issue-scoped labels to attach to the new issue in the same
 	// transaction as the create. Unknown or non-issue ids are rejected with
 	// 400 (service.ErrIssueLabelNotFound) rather than silently dropped.
@@ -3488,26 +3502,27 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.IssueService.Create(r.Context(), service.IssueCreateParams{
-		WorkspaceID:    wsUUID,
-		Title:          req.Title,
-		Description:    ptrToText(req.Description),
-		Status:         status,
-		Priority:       priority,
-		AssigneeType:   assigneeType,
-		AssigneeID:     assigneeID,
-		CreatorType:    creatorType,
-		CreatorID:      parseUUID(actualCreatorID),
-		ParentIssueID:  parentIssueID,
-		ProjectID:      projectID,
-		StartDate:      startDate,
-		DueDate:        dueDate,
-		OriginType:     originType,
-		OriginID:       originID,
-		Stage:          ptrToInt4(req.Stage),
-		AttachmentIDs:  attachmentIDs,
-		LabelIDs:       labelIDs,
-		Properties:     properties,
-		AllowDuplicate: req.AllowDuplicate,
+		AcceptanceCriteria: req.AcceptanceCriteria,
+		WorkspaceID:        wsUUID,
+		Title:              req.Title,
+		Description:        ptrToText(req.Description),
+		Status:             status,
+		Priority:           priority,
+		AssigneeType:       assigneeType,
+		AssigneeID:         assigneeID,
+		CreatorType:        creatorType,
+		CreatorID:          parseUUID(actualCreatorID),
+		ParentIssueID:      parentIssueID,
+		ProjectID:          projectID,
+		StartDate:          startDate,
+		DueDate:            dueDate,
+		OriginType:         originType,
+		OriginID:           originID,
+		Stage:              ptrToInt4(req.Stage),
+		AttachmentIDs:      attachmentIDs,
+		LabelIDs:           labelIDs,
+		Properties:         properties,
+		AllowDuplicate:     req.AllowDuplicate,
 	}, service.IssueCreateOpts{
 		ActorID:          actualCreatorID,
 		AnalyticsAgentID: analyticsAgentID,
@@ -3554,6 +3569,10 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "one or more labels not found in this workspace")
 		return
 	}
+	if errors.Is(err, service.ErrIssueRequirements) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if errors.Is(err, service.ErrIssueStatusUnavailable) {
 		writeError(w, http.StatusConflict,
 			"the target status was archived while this request was in flight; reload the status list and retry")
@@ -3586,8 +3605,10 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateIssueRequest struct {
-	ExpectedRevision *int64  `json:"expected_revision,omitempty"`
-	Title            *string `json:"title"`
+	AcceptanceCriteria  json.RawMessage `json:"acceptance_criteria,omitempty"`
+	ConfirmRequirements bool            `json:"confirm_requirements,omitempty"`
+	ExpectedRevision    *int64          `json:"expected_revision,omitempty"`
+	Title               *string         `json:"title"`
 	// TitleBase is the title adopted by the editor before producing Title. It
 	// protects title edits without coupling them to unrelated issue mutations.
 	TitleBase   *string `json:"title_base,omitempty"`
@@ -3798,6 +3819,13 @@ func (h *Handler) updateIssueAtomically(ctx context.Context, workspaceID pgtype.
 	if err != nil {
 		return db.Issue{}, current, false, fmt.Errorf("update locked issue: %w", err)
 	}
+	var requirementsActivity db.ActivityLog
+	if len(params.AcceptanceCriteria) > 0 && !bytes.Equal(current.AcceptanceCriteria, issue.AcceptanceCriteria) {
+		requirementsActivity, err = recordRequirementsActivity(ctx, qtx, current, issue)
+		if err != nil {
+			return db.Issue{}, current, false, fmt.Errorf("record requirements audit: %w", err)
+		}
+	}
 
 	attachmentsChanged := false
 	if len(attachmentIDs) > 0 {
@@ -3825,6 +3853,7 @@ func (h *Handler) updateIssueAtomically(ctx context.Context, workspaceID pgtype.
 		return db.Issue{}, current, false, fmt.Errorf("commit atomic issue update: %w", err)
 	}
 	h.broadcastCancelledWakeups(ctx, workspaceID, cancelledWakeups)
+	h.publishRequirementsActivity(requirementsActivity)
 	return issue, current, attachmentsChanged, nil
 }
 
@@ -3894,6 +3923,34 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// COALESCE fields — only set when explicitly provided
+	if req.Status != nil && *req.Status != prevIssue.Status && req.ExpectedRevision == nil {
+		var criteriaVersion struct {
+			V int `json:"v"`
+		}
+		if json.Unmarshal(prevIssue.AcceptanceCriteria, &criteriaVersion) == nil && criteriaVersion.V == 1 {
+			writeError(w, http.StatusBadRequest, "expected_revision is required for workbench status changes")
+			return
+		}
+	}
+	if len(req.AcceptanceCriteria) > 0 || req.ConfirmRequirements {
+		if req.ExpectedRevision == nil {
+			writeError(w, http.StatusBadRequest, "expected_revision is required for requirements changes")
+			return
+		}
+		state := issueToResponse(prevIssue, "")
+		h.fillStatusCategory(r.Context(), prevIssue.WorkspaceID, &state)
+		if state.StatusCategory != "todo" && state.StatusCategory != "backlog" && state.StatusCategory != "unstarted" {
+			writeError(w, http.StatusConflict, "requirements can only be edited before execution")
+			return
+		}
+		actorType, actorID := h.resolveActor(r, userID, workspaceID)
+		criteria, criteriaErr := workbench.EditRequirements(prevIssue.AcceptanceCriteria, req.AcceptanceCriteria, req.ConfirmRequirements, actorID, actorType, time.Now())
+		if criteriaErr != nil {
+			writeError(w, http.StatusBadRequest, criteriaErr.Error())
+			return
+		}
+		params.AcceptanceCriteria = criteria
+	}
 	if req.Title != nil {
 		params.Title = pgtype.Text{String: *req.Title, Valid: true}
 	}
@@ -4087,7 +4144,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	writeCtx := withWakeupHandedTo(r.Context(), h.handedToAgent(r.Context(), prevIssue, params, handoff != nil))
 	var issue db.Issue
 	attachmentsChanged := false
-	if req.Description != nil || req.TitleBase != nil || req.DescriptionBase != nil || len(attachmentIDs) > 0 {
+	if req.Description != nil || req.TitleBase != nil || req.DescriptionBase != nil || len(attachmentIDs) > 0 || len(params.AcceptanceCriteria) > 0 {
 		var lockedPrev db.Issue
 		issue, lockedPrev, attachmentsChanged, err = h.updateIssueAtomically(
 			writeCtx, prevIssue.WorkspaceID, params, rawFields, req.TitleBase, req.DescriptionBase, attachmentIDs, statusKeyForGuard, handoff != nil,

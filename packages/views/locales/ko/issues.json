@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "실행 요약",
+    "conclusion": "결론",
+    "changes": "변경",
+    "validation": "검증",
+    "risks": "위험",
+    "missing": "제공되지 않음",
+    "expand": "전체 출력 보기",
+    "collapse": "출력 접기"
+  },
+  "requirements": {
+    "input": "인수 조건 (한 줄에 한 항목)",
+    "truncated": "120자를 초과하는 항목은 잘립니다.",
+    "activity_updated": "요구사항을 업데이트했습니다",
+    "title": "요구사항 확인",
+    "version": "v{{version}}",
+    "locked": "요구사항이 확인되어 잠겼습니다",
+    "empty": "확인하기 전에 인수 조건을 추가하세요.",
+    "check": "{{id}} 확인",
+    "new_item": "새 항목",
+    "remove": "제거",
+    "item_text": "조건 {{id}}",
+    "add": "조건 추가",
+    "bounds": "범위 제외 (한 줄에 한 항목)",
+    "save": "변경 저장",
+    "discard": "편집 취소",
+    "confirm": "요구사항 확인",
+    "save_failed": "요구사항을 저장하지 못했습니다."
+  },
   "inline_run": {
     "label": "{{name}} 실행",
     "stop": "중지",

@@ -1,4 +1,33 @@
 {
+  "run_summary": {
+    "title": "Résumé",
+    "conclusion": "Conclusion",
+    "changes": "Modifications",
+    "validation": "Validation",
+    "risks": "Risques",
+    "missing": "Non fourni",
+    "expand": "Afficher la sortie complète",
+    "collapse": "Réduire la sortie"
+  },
+  "requirements": {
+    "input": "Critères d’acceptation (un par ligne)",
+    "truncated": "Les critères de plus de 120 caractères seront tronqués.",
+    "activity_updated": "a modifié les exigences",
+    "title": "Exigences",
+    "version": "v{{version}}",
+    "locked": "Exigences confirmées et verrouillées",
+    "empty": "Ajoutez des critères avant de confirmer.",
+    "check": "Cocher {{id}}",
+    "new_item": "Nouveau critère",
+    "remove": "Retirer",
+    "item_text": "Critère {{id}}",
+    "add": "Ajouter un critère",
+    "bounds": "Hors périmètre (un par ligne)",
+    "save": "Enregistrer",
+    "discard": "Abandonner les modifications",
+    "confirm": "Confirmer les exigences",
+    "save_failed": "Échec de l’enregistrement."
+  },
   "inline_run": {
     "label": "Exécution de {{name}}",
     "stop": "Arrêter",

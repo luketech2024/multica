@@ -57,6 +57,7 @@ import {
   onIssueAuxiliaryRevision,
   invalidateIssueOwnerProjections,
   reconcileIssueFullSnapshotRevision,
+  freshestCachedIssueRevision,
 } from "./ws-updaters";
 
 // Shared mutation variable types — used by both mutation hooks and
@@ -195,7 +196,12 @@ export function useUpdateIssue() {
       const { position: _optimisticPosition, ...target } = data;
       return api.moveIssue(id, { ...target, ...moveIntent });
     },
-    onMutate: ({ id, move_intent: _moveIntent, ...data }) => {
+    onMutate: (variables) => {
+      if (variables.status !== undefined && variables.expected_revision === undefined) {
+        const revision = freshestCachedIssueRevision(qc, wsId, variables.id);
+        if (revision !== undefined) variables.expected_revision = revision;
+      }
+      const { id, move_intent: _moveIntent, ...data } = variables;
       // suppress_run is a write-time control field, not an Issue column.
       // description_base is merge metadata, while description itself
       // is resolved against that base on the server and therefore is not safe
@@ -211,6 +217,8 @@ export function useUpdateIssue() {
         description_base: _descriptionBase,
         title_base: _titleBase,
         expected_revision: _expectedRevision,
+        acceptance_criteria: _acceptanceCriteria,
+        confirm_requirements: _confirmRequirements,
         ...patch
       } = data;
       // Fire-and-forget cancelQueries — keeps onMutate synchronous so the

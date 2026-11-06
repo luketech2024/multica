@@ -6,6 +6,7 @@ import {
   issueStatusCategory,
 } from "@multica/core/issues";
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
+import { RequirementsPanel } from "./requirements-panel";
 import { useStatusLabel } from "../utils/status-label";
 import { priorityLabel } from "../utils/priority-label";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
@@ -395,6 +396,8 @@ function formatActivity(
       });
     case "description_updated":
       return t(($) => $.activity.description_updated);
+    case "requirements_updated":
+      return t(($) => $.requirements.activity_updated);
     case "duplicate_marked":
       return t(($) => $.activity.duplicate_marked, {
         identifier: details.original_identifier || "?",
@@ -2907,6 +2910,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   const sidebarContent = (
     <IssueSidebarStack>
+      <RequirementsPanel key={issue.id} issue={issue} />
       {/* Properties */}
       <div>
         <IssueSidebarSectionHeader title={t(($) => $.detail.section_properties)} open={propertiesOpen} onOpenChange={setPropertiesOpen}  />

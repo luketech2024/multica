@@ -1451,7 +1451,31 @@ export const CommentSubIssueTaskResponseSchema = z.object({
   task_id: z.string().min(1),
 }).loose();
 
+export const AcceptanceCriteriaSchema = z.object({
+  v: z.literal(1),
+  version: z.number().int().positive().default(1),
+  next_item_no: z.number().int().positive().default(1),
+  items: z.array(z.object({
+    id: z.string().regex(/^A-[0-9]+$/),
+    text: z.string(),
+    origin: z.string(),
+    covers: z.array(z.string()).nullable().transform((value) => value ?? []),
+    checked: z.object({ at: z.string(), by: z.string() }).nullable(),
+    note: z.string().nullable(),
+  })),
+  bounds: z.array(z.string()).default([]),
+  gate: z.object({
+    spec: z.object({ passed_at: z.string(), passed_by: z.string() }).nullable(),
+    accept: z.object({ passed_at: z.string(), passed_by: z.string() }).nullable(),
+  }).default({ spec: null, accept: null }),
+});
+
+const EmptyAcceptanceCriteriaSchema = z.union([z.null(), z.array(z.never()).length(0)])
+  .transform(() => AcceptanceCriteriaSchema.parse({ v: 1, items: [], bounds: [] }));
+
 export const IssueSchema = z.object({
+  // Invalid or unsupported criteria stay unavailable for editing.
+  acceptance_criteria: z.union([AcceptanceCriteriaSchema, EmptyAcceptanceCriteriaSchema]).optional().catch(undefined),
   id: z.string(),
   workspace_id: z.string(),
   number: z.number(),
