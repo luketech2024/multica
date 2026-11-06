@@ -204,7 +204,10 @@ func TestRequirementsExecutionGateCannotBeBypassedByStatusWriter(t *testing.T) {
 	assertBlocked(move("done"))
 	criteria.Gate.Accept = &workbench.GateCheck{PassedAt: "2026-11-06T00:00:00Z", PassedBy: testUserID}
 	persist()
-	if err := move("done"); err != nil {
+	assertBlocked(move("done"))
+	criteria.Gate.Accept.PassedAt = "2026-11-06T00:00:01Z"
+	raw, _ = json.Marshal(criteria)
+	if _, err := testPool.Exec(context.Background(), `UPDATE issue SET acceptance_criteria=$1,status='done' WHERE id=$2`, raw, id); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -19,8 +19,8 @@ interface IssueDetailRouteProps {
 }
 
 /**
- * Rewrite `/{ws}/issues/{uuid}` to `/{ws}/issues/{identifier}` once the issue
- * is known, so the address bar and any copied URL read as `MUL-123`.
+ * Native issue links use their resolved identifier. Workbench tasks pass an
+ * immutable ID so workspace prefix changes do not invalidate their links.
  *
  * A replace, not a push: the UUID URL is the same page, and a history entry
  * for it would make Back bounce the user between two spellings of one issue.
@@ -29,21 +29,23 @@ export function useCanonicalIssueUrl(
   routeId: string,
   identifier: string | undefined,
   hash = "",
+  immutableId?: string,
 ) {
   const paths = useWorkspacePaths();
   const navigation = useNavigation();
-  const canonicalHref = identifier ? `${paths.issueDetail(identifier)}${hash}` : null;
+  const segment = immutableId ?? identifier;
+  const canonicalHref = segment ? `${paths.issueDetail(segment)}${hash}` : null;
   // `useWorkspacePaths()` and the navigation adapter are both rebuilt on
   // render, so this ref — not the dependency array — is what guarantees the
   // replace runs once per target instead of on every commit.
   const replacedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!canonicalHref || routeId === identifier) return;
+    if (!canonicalHref || routeId === segment) return;
     if (replacedRef.current === canonicalHref) return;
     replacedRef.current = canonicalHref;
     navigation.replace(canonicalHref);
-  }, [canonicalHref, identifier, routeId, navigation]);
+  }, [canonicalHref, segment, routeId, navigation]);
 }
 
 export function parseCommentHighlightHash(hash: string): string | undefined {
@@ -73,7 +75,10 @@ export function IssueDetailRoute({ routeId, onDelete }: IssueDetailRouteProps) {
   const { canonicalId, issue, isResolving, notFound } = useCanonicalIssue(wsId, routeId);
   const highlight = useCommentHighlightHash();
 
-  useCanonicalIssueUrl(routeId, issue?.identifier, highlight.hash);
+  const immutableId = issue?.acceptance_criteria?.team || issue?.workbench_handoff
+    ? canonicalId ?? undefined
+    : undefined;
+  useCanonicalIssueUrl(routeId, issue?.identifier, highlight.hash, immutableId);
 
   if (isResolving) return <IssueDetailSkeleton />;
 
@@ -82,6 +87,9 @@ export function IssueDetailRoute({ routeId, onDelete }: IssueDetailRouteProps) {
   // refetch it, and restart this component's resolve/remount cycle — an
   // unbounded request loop that never settles. See `CanonicalIssue.notFound`.
   if (notFound || !canonicalId) return <IssueNotFound showBackLink={!onDelete} />;
+
+  // Finish the workbench's stable-ID redirect before exposing editable drafts.
+  if (immutableId && routeId !== immutableId) return <IssueDetailSkeleton />;
 
   // The page hosts a side peek so Shift+Click on an issue mention in the
   // description or comments opens it floating over the page. Keyed so moving

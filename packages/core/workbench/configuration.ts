@@ -15,6 +15,7 @@ import type {
 export * from "./schemas";
 export { workbenchPipeline } from "./pipeline";
 export type { PipelineState } from "./pipeline";
+export type { DeliveryEvidence, DeliveryEvidenceInput, DeliveryReviewInput } from "./delivery";
 export { prefillTaskTemplate } from "./template-prefill";
 export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
 export { parseWorkbenchHandoff, analyzeExecutionPlan } from "./execution-plan";
@@ -56,6 +57,30 @@ export function useSaveExecutionPlan(wsId: string, issueId: string) {
   return useMutation({
     mutationFn: (input: import("./execution-plan").ExecutionPlanInput) =>
       api.saveExecutionPlan(issueId, input),
+    onSettled: () => qc.invalidateQueries({ queryKey: issueKeys.all(wsId) }),
+  });
+}
+
+export function useSaveDeliveryEvidence(wsId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ revision, evidence }: { revision: number; evidence: import("./delivery").DeliveryEvidenceInput }) =>
+      api.saveDeliveryEvidence(issueId, revision, evidence),
+    onSettled: () => qc.invalidateQueries({ queryKey: issueKeys.all(wsId) }),
+  });
+}
+
+export function deliveryReviewOptions(wsId: string, issueId: string, revision?: number) {
+  return queryOptions({
+    queryKey: [...issueKeys.all(wsId), "delivery-review", issueId, revision],
+    queryFn: () => api.getDeliveryReview(issueId),
+  });
+}
+
+export function useReviewDelivery(wsId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: import("./delivery").DeliveryReviewInput) => api.reviewDelivery(issueId, input),
     onSettled: () => qc.invalidateQueries({ queryKey: issueKeys.all(wsId) }),
   });
 }

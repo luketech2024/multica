@@ -434,6 +434,19 @@ export class TestApiClient {
     return res.json();
   }
 
+  async saveExecutionPlan(id: string, input: Record<string, unknown>) {
+    const res = await this.authedFetch(`/api/issues/${id}/execution-plan`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) {
+      throw new Error(`save execution plan failed: ${res.status} ${await res.text()}`);
+    }
+    const issue = await res.json();
+    this.createdIssueIds.push(...issue.acceptance_criteria.plan.issues);
+    return issue;
+  }
+
   /** Clean up all issues created during this test. */
   async cleanup() {
     if (this.seededIssueIds.length > 0 && this.workspaceId) {

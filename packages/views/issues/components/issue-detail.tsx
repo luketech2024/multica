@@ -8,6 +8,8 @@ import {
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
 import { WorkbenchPipeline } from "./workbench-pipeline";
+import { DeliveryEvidence } from "./delivery-evidence";
+import { DeliveryReview } from "./delivery-review";
 import { ExecutionControl } from "./execution-control";
 import { WorkbenchHandoffPanel } from "./workbench-handoff-panel";
 import { TaskPreview } from "./task-preview";
@@ -2920,6 +2922,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   const sidebarContent = (
     <IssueSidebarStack>
       <WorkbenchPipeline issue={issue} />
+      <DeliveryEvidence key={`delivery-${issue.id}`} issue={issue} />
       <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />
@@ -3768,6 +3771,8 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
           })()}
 
           <div className="my-8 border-t" />
+
+          <DeliveryReview key={`review-${issue.id}`} issue={issue} />
 
           {/* Activity / Comments */}
           <div>

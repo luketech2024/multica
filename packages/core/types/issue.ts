@@ -188,6 +188,8 @@ export interface IssueDuplicateOf {
 }
 
 export interface AcceptanceCriteria {
+  review?: import("../workbench/delivery").DeliveryDecision;
+  delivery?: Record<string, import("../workbench/delivery").DeliveryEvidence>;
   resume_runs?: string[];
   needs_resplit?: boolean;
   plan?: { version: number; key: string; digest: string; issues: string[] };

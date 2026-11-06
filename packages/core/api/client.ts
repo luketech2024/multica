@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { DeliveryReviewSchema, type DeliveryReviewState, type DeliveryReviewInput } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
 import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
@@ -1628,6 +1629,31 @@ export class ApiClient {
       method: "POST", body: JSON.stringify(data),
     }), IssueSchema, null, { endpoint });
     if (!issue) throw new Error("Invalid execution plan response");
+    return issue;
+  }
+
+  async saveDeliveryEvidence(id: string, revision: number, evidence: import("../workbench/delivery").DeliveryEvidenceInput): Promise<Issue> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/delivery-evidence`;
+    const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {
+      method: "POST", body: JSON.stringify({ expected_revision: revision, evidence }),
+    }), IssueSchema, null, { endpoint });
+    if (!issue) throw new Error("Invalid delivery evidence response");
+    return issue;
+  }
+
+  async getDeliveryReview(id: string): Promise<DeliveryReviewState> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/delivery-review`;
+    const review = parseWithFallback<DeliveryReviewState | null>(await this.fetch(endpoint), DeliveryReviewSchema, null, { endpoint });
+    if (!review) throw new Error("Invalid delivery review response");
+    return review;
+  }
+
+  async reviewDelivery(id: string, input: DeliveryReviewInput): Promise<Issue> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/delivery-review`;
+    const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {
+      method: "POST", body: JSON.stringify(input),
+    }), IssueSchema, null, { endpoint });
+    if (!issue) throw new Error("Invalid delivery review response");
     return issue;
   }
 

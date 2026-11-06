@@ -23,9 +23,10 @@ func TestExecutionPlanIsAtomicIdempotentAndEnforcesDependencies(t *testing.T) {
 	}
 	dbfx.Cleanup(t, `DELETE FROM issue WHERE parent_issue_id=$1`, parent)
 	criteria := workbench.Requirements{V: 1, Version: 1, NextItemNo: 2,
-		Items: []workbench.Item{{ID: "A-01", Text: "Export report", Checked: &workbench.Check{By: testUserID, At: "confirmed"}}},
-		Gate:  workbench.Gates{Spec: &workbench.GateCheck{PassedAt: "confirmed", PassedBy: testUserID}},
-		Team:  &workbench.ProjectTeamSnapshot{ProjectID: project, ProjectRoleConfiguration: workbench.ProjectRoleConfiguration{Config: workbench.DefaultProjectRoles(), Revision: 1}},
+		Delivery: map[string]workbench.DeliveryEvidence{"retired-child": {Summary: "Previous plan report"}},
+		Items:    []workbench.Item{{ID: "A-01", Text: "Export report", Checked: &workbench.Check{By: testUserID, At: "confirmed"}}},
+		Gate:     workbench.Gates{Spec: &workbench.GateCheck{PassedAt: "confirmed", PassedBy: testUserID}},
+		Team:     &workbench.ProjectTeamSnapshot{ProjectID: project, ProjectRoleConfiguration: workbench.ProjectRoleConfiguration{Config: workbench.DefaultProjectRoles(), Revision: 1}},
 	}
 	raw, _ := json.Marshal(criteria)
 	if _, err := testPool.Exec(ctx, `UPDATE issue SET acceptance_criteria=$1 WHERE id=$2`, raw, parent); err != nil {
@@ -60,6 +61,9 @@ func TestExecutionPlanIsAtomicIdempotentAndEnforcesDependencies(t *testing.T) {
 	tasks[0].DependsOn = nil
 	saved := call("plan-1", 1, current.Revision, http.StatusOK)
 	parsed, _ := workbench.ParseRequirements(saved.AcceptanceCriteria)
+	if len(parsed.Delivery) != 0 {
+		t.Fatal("new execution plan retained current delivery conclusions from the previous plan")
+	}
 	if parsed.Plan == nil || len(parsed.Plan.Issues) != 3 || len(parsed.Items[0].Covers) != 3 {
 		t.Fatal("plan coverage was not saved")
 	}

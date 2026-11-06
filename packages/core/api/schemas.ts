@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ProjectRolesSchema, ProjectTemplateSchema } from "../workbench/schemas";
 import { WorkbenchHandoffSchema } from "../workbench/execution-plan";
 import { ExecutionPauseSchema } from "../workbench/execution-control";
+import { DeliveryEvidenceSchema, DeliveryDecisionSchema } from "../workbench/delivery";
 import { normalizeIssueStatusCategory } from "../issues/config/status";
 import type {
   WorkflowHandoffPreview,
@@ -1476,6 +1477,8 @@ const AcceptanceCriteriaBaseSchema = z.object({
 });
 
 export const AcceptanceCriteriaSchema = AcceptanceCriteriaBaseSchema.extend({
+  review: DeliveryDecisionSchema.optional().catch(undefined),
+  delivery: z.record(z.string().uuid(), DeliveryEvidenceSchema).optional().catch(undefined),
   plan: z.object({ version: z.number().int().positive(), key: z.string(), digest: z.string(), issues: z.array(z.string().uuid()) }).optional(),
   needs_resplit: z.boolean().optional(),
   resume_runs: z.array(z.string().uuid()).optional(),

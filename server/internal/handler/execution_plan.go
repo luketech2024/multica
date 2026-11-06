@@ -187,6 +187,7 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		criteria.Items[index].Covers = coverage[criteria.Items[index].ID]
 	}
 	criteria.Plan, criteria.NeedsResplit = plan, false
+	criteria.Delivery, criteria.Review = nil, nil
 	raw, _ := json.Marshal(criteria)
 	after, err := q.UpdateIssue(r.Context(), db.UpdateIssueParams{
 		ID: current.ID, AcceptanceCriteria: raw, Status: strToText("todo"), ExpectedRevision: pgtype.Int8{Int64: current.Revision, Valid: true},

@@ -70,6 +70,21 @@ describe("useCanonicalIssueUrl", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it("keeps workbench UUID links stable while the visible identifier changes", () => {
+    const id = "cb240efb-154c-42a8-ae92-42b02676feca";
+    const { rerender } = renderHook(({ identifier }) => useCanonicalIssueUrl(id, identifier, "", id), {
+      wrapper, initialProps: { identifier: "TRS-134" },
+    });
+    rerender({ identifier: "NEW-134" });
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("resolves a workbench identifier link to its immutable ID and retains the comment", () => {
+    const id = "cb240efb-154c-42a8-ae92-42b02676feca";
+    renderHook(() => useCanonicalIssueUrl("TRS-134", "TRS-134", "#comment-comment-7", id), { wrapper });
+    expect(replace).toHaveBeenCalledWith(`/acme/issues/${id}#comment-comment-7`);
+  });
+
   // `useWorkspacePaths()` returns a fresh object per call, so the effect's
   // dependencies change identity on every commit. Without the ref guard this
   // re-fired the replace forever.

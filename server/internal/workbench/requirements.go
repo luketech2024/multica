@@ -35,19 +35,21 @@ type Gates struct {
 }
 
 type Requirements struct {
-	Plan         *ExecutionPlan       `json:"plan,omitempty"`
-	NeedsResplit bool                 `json:"needs_resplit,omitempty"`
-	ResumeRuns   []string             `json:"resume_runs,omitempty"`
-	ResumeError  string               `json:"resume_error,omitempty"`
-	Change       *RequirementChange   `json:"change,omitempty"`
-	Template     *ProjectTemplate     `json:"template,omitempty"`
-	Team         *ProjectTeamSnapshot `json:"team,omitempty"`
-	V            int                  `json:"v"`
-	Version      int                  `json:"version"`
-	NextItemNo   int                  `json:"next_item_no"`
-	Items        []Item               `json:"items"`
-	Bounds       []string             `json:"bounds"`
-	Gate         Gates                `json:"gate"`
+	Review       *DeliveryReview             `json:"review,omitempty"`
+	Delivery     map[string]DeliveryEvidence `json:"delivery,omitempty"`
+	Plan         *ExecutionPlan              `json:"plan,omitempty"`
+	NeedsResplit bool                        `json:"needs_resplit,omitempty"`
+	ResumeRuns   []string                    `json:"resume_runs,omitempty"`
+	ResumeError  string                      `json:"resume_error,omitempty"`
+	Change       *RequirementChange          `json:"change,omitempty"`
+	Template     *ProjectTemplate            `json:"template,omitempty"`
+	Team         *ProjectTeamSnapshot        `json:"team,omitempty"`
+	V            int                         `json:"v"`
+	Version      int                         `json:"version"`
+	NextItemNo   int                         `json:"next_item_no"`
+	Items        []Item                      `json:"items"`
+	Bounds       []string                    `json:"bounds"`
+	Gate         Gates                       `json:"gate"`
 }
 
 var itemID = regexp.MustCompile(`^A-([0-9]+)$`)
