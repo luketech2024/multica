@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
+import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
 import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
@@ -4296,6 +4297,21 @@ export class ApiClient {
   async listDeployTargets(projectId: string) {
     const endpoint = `/api/projects/${projectId}/deploy-targets`;
     return parseWorkbenchResponse(await this.fetch(endpoint), DeployTargetsSchema, endpoint);
+  }
+
+  async listRepositoryStacks() {
+    const endpoint = "/api/workbench/repository-stacks";
+    return parseWorkbenchResponse(await this.fetch(endpoint), RepositoryStackCatalogSchema, endpoint);
+  }
+
+  async getRepositoryProfile(projectId: string, repositoryId: string) {
+    const endpoint = `/api/projects/${projectId}/resources/${repositoryId}/workbench-profile`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), RepositoryProfileSchema, endpoint);
+  }
+
+  async saveRepositoryProfile(projectId: string, repositoryId: string, input: RepositoryProfileInput) {
+    const endpoint = `/api/projects/${projectId}/resources/${repositoryId}/workbench-profile`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "PUT", body: JSON.stringify(input)}), RepositoryProfileSchema, endpoint);
   }
 
   async saveDeployTarget(projectId: string, data: DeployTargetInput, id?: string) {

@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { api } from "../api";
 import { issueKeys } from "../issues/queries";
+import { projectResourceKeys } from "../projects/resource-queries";
 import type {
   DeployTargetInput,
   CredentialInput,
@@ -18,6 +19,23 @@ export { parseWorkbenchHandoff, analyzeExecutionPlan } from "./execution-plan";
 export { previewPropertyName, previewPath, previewURL, validPreviewURL } from "./preview";
 export type { WorkbenchHandoff } from "./execution-plan";
 export type { ExecutionControlAction, ExecutionPause } from "./execution-control";
+
+export function repositoryStackCatalogOptions(wsId: string) {
+  return queryOptions({queryKey: ["repository-stacks", wsId], queryFn: () => api.listRepositoryStacks()});
+}
+export function repositoryProfileOptions(wsId: string, projectId: string, repositoryId: string) {
+  return queryOptions({queryKey: [...projectResourceKeys.list(wsId, projectId), repositoryId, "workbench-profile"], queryFn: () => api.getRepositoryProfile(projectId, repositoryId)});
+}
+export function useSaveRepositoryProfile(wsId: string, projectId: string, repositoryId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: import("./schemas").RepositoryProfileInput) => api.saveRepositoryProfile(projectId, repositoryId, input),
+    onSuccess: (profile) => {
+      qc.setQueryData(repositoryProfileOptions(wsId, projectId, repositoryId).queryKey, profile);
+      qc.invalidateQueries({queryKey: projectResourceKeys.list(wsId, projectId)});
+    },
+  });
+}
 
 export function useControlIssueExecution(wsId: string, issueId: string) {
   const qc = useQueryClient();

@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	agentpkg "github.com/multica-ai/multica/server/pkg/agent"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -698,7 +699,11 @@ func (h *Handler) UpdateProjectResource(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		nextRef = normalized
+		nextRef, err = workbench.PreserveRepositoryProfile(existing.ResourceRef, normalized)
+		if err != nil {
+			writeError(w, http.StatusConflict, "failed to preserve repository profile")
+			return
+		}
 	}
 
 	// Both checks read through the transaction (qtx) rather than the handler's

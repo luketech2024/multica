@@ -73,6 +73,35 @@ export type BusinessTemplate = z.infer<typeof BusinessTemplateSchema>;
 export type BusinessTemplateAsset = z.infer<typeof BusinessTemplateAssetSchema>;
 export type ProjectTemplate = z.infer<typeof ProjectTemplateSchema>;
 
+const RepositoryCommandsSchema = z.object({
+  install: z.string(), test: z.string(), lint: z.array(z.string()), scan: z.string(),
+});
+export const RepositoryStackCatalogSchema = z.object({
+  templates: z.array(z.object({id: z.string(), family: z.string(), runtime: z.string(), derived: RepositoryCommandsSchema, requires: z.array(z.string()).default([])})),
+  tags: z.array(z.object({id: z.string()})),
+  deliveries: z.array(z.string()),
+});
+export const RepositoryProfileSchema = z.object({
+  revision: z.number().int().nonnegative(),
+  stack: z.object({
+    v: z.literal(3), template: z.string(), tags: z.array(z.string()),
+    detected: z.record(z.string(), z.unknown()).nullable(),
+    baseline: z.record(z.string(), z.unknown()).nullable(),
+    derived: RepositoryCommandsSchema,
+    overrides: z.record(z.string(), z.object({value:z.string(),by:z.literal("manual")})),
+    runtime: z.string(), requires: z.array(z.string()), checks: z.array(z.string()),
+  }),
+  delivery: z.array(z.string()).min(1),
+});
+export type RepositoryProfile = z.infer<typeof RepositoryProfileSchema>;
+export interface RepositoryProfileInput {
+  expected_revision: number;
+  template: string;
+  tags: string[];
+  delivery: string[];
+  overrides: Record<string, string>;
+}
+
 export const DeployTargetSchema = z.object({
   id: z.string(),
   workspace_id: z.string(),

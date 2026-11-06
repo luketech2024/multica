@@ -231,6 +231,24 @@ describe("useRealtimeSync — ws instance change", () => {
     }
   });
 
+  it("refreshes repository profiles after a resource update in another client", () => {
+    vi.useFakeTimers();
+    try {
+      const ws = createMockWs();
+      const profileKey = ["projects", "ws-1", "detail", "project", "resources", "repo", "workbench-profile"];
+      const otherKey = ["projects", "ws-2", "detail", "project", "resources", "repo", "workbench-profile"];
+      qc.setQueryData(profileKey, { revision: 1 });
+      qc.setQueryData(otherKey, { revision: 1 });
+      renderHook(() => useRealtimeSync(ws, stores), { wrapper: createWrapper(qc) });
+      vi.mocked(ws.onAny).mock.calls[0]![0]({ type: "project_resource:updated", payload: { project_id: "project" } } as never);
+      vi.advanceTimersByTime(100);
+      expect(qc.getQueryState(profileKey)?.isInvalidated).toBe(true);
+      expect(qc.getQueryState(otherKey)?.isInvalidated).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("invalidates agent projections when a daemon changes liveness", () => {
     vi.useFakeTimers();
     try {

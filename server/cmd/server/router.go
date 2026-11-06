@@ -2265,6 +2265,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Get("/resources", h.ListProjectResources)
 					r.Post("/resources", h.CreateProjectResource)
 					r.Put("/resources/{resourceId}", h.UpdateProjectResource)
+					r.Get("/resources/{resourceId}/workbench-profile", h.GetRepositoryProfile)
+					r.Put("/resources/{resourceId}/workbench-profile", h.SaveRepositoryProfile)
 					r.Delete("/resources/{resourceId}", h.DeleteProjectResource)
 				})
 			})
@@ -2277,6 +2279,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				r.Get("/{credentialId}/references", h.ListWorkbenchCredentialReferences)
 			})
 			r.Get("/api/workbench/business-templates", h.ListBusinessTemplates)
+			r.Get("/api/workbench/repository-stacks", h.ListRepositoryStacks)
 
 			// Squads
 			r.Route("/api/squads", func(r chi.Router) {

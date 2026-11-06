@@ -1,0 +1,300 @@
+{
+  "templates": [
+    {
+      "id": "java-backend",
+      "family": "java",
+      "runtime": "server",
+      "derived": {
+        "install": "mvn -q -B dependency:go-offline",
+        "test": "mvn -q -B test",
+        "lint": [
+          "mvn -q checkstyle:check"
+        ],
+        "scan": "mvn -q org.owasp:dependency-check-maven:check"
+      },
+      "requires": [
+        "java21",
+        "maven"
+      ]
+    },
+    {
+      "id": "java8-legacy",
+      "family": "java",
+      "runtime": "server",
+      "derived": {
+        "install": "mvn -q -B dependency:go-offline",
+        "test": "mvn -q -B test",
+        "lint": [
+          "mvn -q checkstyle:check"
+        ],
+        "scan": "mvn -q org.owasp:dependency-check-maven:check"
+      },
+      "requires": [
+        "java8",
+        "maven"
+      ]
+    },
+    {
+      "id": "python-service",
+      "family": "python",
+      "runtime": "server",
+      "derived": {
+        "install": "uv sync",
+        "test": "uv run pytest -q",
+        "lint": [
+          "uv run ruff check ."
+        ],
+        "scan": "uv run pip-audit"
+      },
+      "requires": [
+        "python312",
+        "uv"
+      ]
+    },
+    {
+      "id": "ai-app",
+      "family": "python",
+      "runtime": "server",
+      "derived": {
+        "install": "uv sync",
+        "test": "uv run pytest -q",
+        "lint": [
+          "uv run ruff check ."
+        ],
+        "scan": "uv run pip-audit"
+      },
+      "requires": [
+        "python312",
+        "uv",
+        "ai-key-environment"
+      ]
+    },
+    {
+      "id": "weapp",
+      "family": "node",
+      "runtime": "local",
+      "derived": {
+        "install": "pnpm install --frozen-lockfile",
+        "test": "pnpm -s lint && npx miniprogram-ci lint",
+        "lint": [
+          "pnpm lint"
+        ],
+        "scan": "pnpm audit --json"
+      },
+      "requires": [
+        "node20",
+        "wechat-developer-tools-login"
+      ]
+    },
+    {
+      "id": "web-frontend",
+      "family": "node",
+      "runtime": "either",
+      "derived": {
+        "install": "pnpm install --frozen-lockfile",
+        "test": "pnpm test",
+        "lint": [
+          "pnpm lint"
+        ],
+        "scan": "pnpm audit --json"
+      },
+      "requires": [
+        "node20",
+        "pnpm"
+      ]
+    },
+    {
+      "id": "custom",
+      "family": "custom",
+      "runtime": "configured",
+      "derived": {
+        "install": "",
+        "test": "",
+        "lint": [],
+        "scan": ""
+      },
+      "requires": []
+    }
+  ],
+  "tags": [
+    {
+      "id": "java21",
+      "family": "java",
+      "template": "java-backend",
+      "requires": [
+        "java21"
+      ]
+    },
+    {
+      "id": "java8",
+      "family": "java",
+      "template": "java8-legacy",
+      "requires": [
+        "java8"
+      ]
+    },
+    {
+      "id": "python312",
+      "family": "python",
+      "template": "python-service",
+      "compatible_templates": [
+        "ai-app"
+      ],
+      "requires": [
+        "python312"
+      ]
+    },
+    {
+      "id": "go122",
+      "family": "go",
+      "template": "custom",
+      "requires": [
+        "go122"
+      ],
+      "derived": {
+        "install": "go mod download",
+        "test": "go test ./...",
+        "lint": [
+          "go vet ./..."
+        ],
+        "scan": "govulncheck ./..."
+      }
+    },
+    {
+      "id": "node20",
+      "family": "node",
+      "template": "web-frontend",
+      "compatible_templates": [
+        "weapp"
+      ],
+      "requires": [
+        "node20"
+      ]
+    },
+    {
+      "id": "ts",
+      "family": "node",
+      "template": "web-frontend",
+      "compatible_templates": [
+        "weapp"
+      ],
+      "requires": [
+        "typescript"
+      ]
+    },
+    {
+      "id": "api",
+      "checks": [
+        "api-contract"
+      ]
+    },
+    {
+      "id": "ui",
+      "checks": [
+        "design-references"
+      ]
+    },
+    {
+      "id": "weapp",
+      "family": "node",
+      "template": "weapp",
+      "requires": [
+        "wechat-developer-tools-login"
+      ],
+      "runtime": "local"
+    },
+    {
+      "id": "ai",
+      "requires": [
+        "ai-key-environment"
+      ],
+      "checks": [
+        "no-secrets-in-code-or-logs"
+      ]
+    },
+    {
+      "id": "data",
+      "checks": [
+        "sample-input-output"
+      ]
+    },
+    {
+      "id": "script",
+      "checks": [
+        "sca-if-dependencies-present"
+      ]
+    },
+    {
+      "id": "integration-test",
+      "by_family": {
+        "java": {
+          "test": "mvn -q -B verify"
+        },
+        "python": {
+          "test": "uv run pytest -q"
+        }
+      },
+      "checks": [
+        "integration-test"
+      ]
+    },
+    {
+      "id": "e2e",
+      "requires": [
+        "e2e-environment"
+      ],
+      "checks": [
+        "e2e-command-required"
+      ]
+    },
+    {
+      "id": "offline",
+      "by_family": {
+        "java": {
+          "install": "mvn -q -B -s \"$MULTICA_MAVEN_SETTINGS\" dependency:go-offline"
+        },
+        "python": {
+          "install": "uv sync --default-index \"$MULTICA_PYTHON_INDEX\""
+        },
+        "node": {
+          "install": "pnpm install --frozen-lockfile --registry \"$MULTICA_NPM_REGISTRY\""
+        },
+        "go": {
+          "install": "GOPROXY=\"$MULTICA_GO_PROXY\" go mod download"
+        }
+      },
+      "requires": [
+        "configured-package-mirror"
+      ],
+      "checks": [
+        "registry-log-hosts"
+      ]
+    },
+    {
+      "id": "docker",
+      "requires": [
+        "docker"
+      ]
+    },
+    {
+      "id": "gpu",
+      "requires": [
+        "gpu-memory"
+      ]
+    },
+    {
+      "id": "readonly",
+      "checks": [
+        "patch-only-no-branch-writes"
+      ]
+    }
+  ],
+  "deliveries": [
+    "docker-image",
+    "weapp-ci",
+    "static-site",
+    "npm-package",
+    "service-process",
+    "none"
+  ]
+}

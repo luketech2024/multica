@@ -141,6 +141,10 @@ When a preview is available, resolve the workspace URL property named `preview_u
 and write its value through the existing issue property API. An administrator enables
 that field. Keep the field name as the integration key. Do not record a suggested
 address as an available preview before deployment has succeeded.
+For a planned subtask, read its selected repository's `stack` and `delivery`
+from the project resources. Command overrides marked `by: manual` take precedence
+over derived defaults. Check the listed prerequisites on the configured runtime,
+and record actual detection, scan and command results with their source revision.
 
 ```text
 <!-- wb-summary v1 -->
