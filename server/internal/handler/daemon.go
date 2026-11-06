@@ -3263,7 +3263,7 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 			}
 		}
 
-		projectCtx, projectErr := h.resolveIssueClaimProjectContext(r.Context(), issue)
+		projectCtx, projectErr := h.resolveIssueClaimProjectContext(r.Context(), issue, runtime)
 		if projectErr != nil {
 			slog.Error("issue claim: load project context failed; preserving task for redelivery",
 				"task_id", uuidToString(task.ID),

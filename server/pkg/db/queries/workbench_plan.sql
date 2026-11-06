@@ -22,3 +22,28 @@ WITH RECURSIVE family AS (
 SELECT EXISTS (SELECT 1 FROM agent_task_queue
     WHERE issue_id IN (SELECT id FROM family)
     AND status IN ('queued','deferred','dispatched','running','waiting_local_directory'));
+
+-- name: ListWorkbenchDispatchCandidates :many
+SELECT child.* FROM issue child
+JOIN issue parent ON parent.id = child.parent_issue_id AND parent.workspace_id = child.workspace_id
+WHERE child.id > @after_id AND child.status = 'todo' AND child.assignee_type = 'agent'
+  AND child.properties #>> '{workbench_handoff,v}' = '2'
+  AND child.properties #>> '{workbench_handoff,superseded}' IS DISTINCT FROM 'true'
+  AND parent.project_id = child.project_id
+  AND parent.status IN ('todo', 'in_progress')
+  AND parent.acceptance_criteria #>> '{gate,spec,passed_at}' IS NOT NULL
+  AND COALESCE(parent.acceptance_criteria->'change', 'null'::jsonb) = 'null'::jsonb
+  AND parent.acceptance_criteria->>'needs_resplit' IS DISTINCT FROM 'true'
+  AND parent.acceptance_criteria #>> '{plan,version}' = child.properties #>> '{workbench_handoff,requirement_version}'
+  AND (parent.acceptance_criteria #> '{plan,issues}') ? child.id::text
+  AND NOT EXISTS (SELECT 1 FROM agent_task_queue run WHERE run.issue_id = child.id)
+  AND NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements_text(child.properties #> '{workbench_handoff,depends_on}') dependency(id)
+      WHERE NOT EXISTS (SELECT 1 FROM issue prior
+          WHERE prior.id::text = dependency.id AND prior.workspace_id = child.workspace_id
+            AND prior.project_id = child.project_id AND prior.status = 'done'
+            AND prior.properties #>> '{workbench_handoff,superseded}' IS DISTINCT FROM 'true'))
+ORDER BY child.id LIMIT 100;
+
+-- name: WorkbenchIssueHasRun :one
+SELECT EXISTS (SELECT 1 FROM agent_task_queue WHERE issue_id = @issue_id);

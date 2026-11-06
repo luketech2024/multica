@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
 func TestExecutionPlanIsAtomicIdempotentAndEnforcesDependencies(t *testing.T) {
@@ -79,14 +81,23 @@ func TestExecutionPlanIsAtomicIdempotentAndEnforcesDependencies(t *testing.T) {
 	if json.Unmarshal(detail.WorkbenchHandoff, &responseHandoff) != nil || responseHandoff.RepoID != repo || responseHandoff.V != 2 {
 		t.Fatal("task detail lost the typed handoff projection")
 	}
-	claim, err := testHandler.resolveIssueClaimProjectContext(ctx, firstIssue)
+	claim, err := testHandler.resolveIssueClaimProjectContext(ctx, firstIssue, db.AgentRuntime{})
 	if err != nil || len(claim.Resources) != 1 || claim.Resources[0].ID != repo || len(claim.Repos) != 1 {
 		t.Fatalf("claim did not restrict execution to the selected repository: %+v, %v", claim, err)
 	}
 	firstIssue.Properties = []byte(`{"workbench_handoff":{"v":2,"role":"product","repo_id":""}}`)
-	claim, err = testHandler.resolveIssueClaimProjectContext(ctx, firstIssue)
+	claim, err = testHandler.resolveIssueClaimProjectContext(ctx, firstIssue, db.AgentRuntime{})
 	if err != nil || len(claim.Resources) != 0 || len(claim.Repos) != 0 {
 		t.Fatal("clarification inherited unrelated repository context")
+	}
+	localRepo := dbfx.Insert(t, "project_resource", testutil.Cols{"project_id": project, "workspace_id": testWorkspaceID, "resource_type": "local_directory", "resource_ref": `{"daemon_id":"selected-machine","local_path":"/test/repo","execution_mode":"in_place"}`})
+	firstIssue.Properties, _ = json.Marshal(map[string]any{"workbench_handoff": workbench.Handoff{V: 2, Role: "dev", RepoID: localRepo}})
+	if _, err = testHandler.resolveIssueClaimProjectContext(ctx, firstIssue, db.AgentRuntime{DaemonID: pgtype.Text{String: "other-machine", Valid: true}}); err == nil {
+		t.Fatal("selected local repository was sent to another machine")
+	}
+	claim, err = testHandler.resolveIssueClaimProjectContext(ctx, firstIssue, db.AgentRuntime{DaemonID: pgtype.Text{String: "selected-machine", Valid: true}})
+	if err != nil || len(claim.Resources) != 1 || claim.Resources[0].ID != localRepo {
+		t.Fatalf("selected local repository unavailable on its own machine: %v", err)
 	}
 	if _, err := testPool.Exec(ctx, `UPDATE issue SET status='in_progress' WHERE id=$1`, first); err != nil {
 		t.Fatal(err)

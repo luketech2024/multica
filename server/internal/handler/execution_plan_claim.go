@@ -9,7 +9,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
-func (h *Handler) resolveIssueClaimProjectContext(ctx context.Context, issue db.Issue) (claimProjectContext, error) {
+func (h *Handler) resolveIssueClaimProjectContext(ctx context.Context, issue db.Issue, runtime db.AgentRuntime) (claimProjectContext, error) {
 	if len(issue.Properties) == 0 {
 		return h.resolveClaimProjectContext(ctx, issue.ProjectID, issue.WorkspaceID)
 	}
@@ -43,6 +43,12 @@ func (h *Handler) resolveIssueClaimProjectContext(ctx context.Context, issue db.
 	}
 	for _, row := range rows {
 		if uuidToString(row.ID) == handoff.RepoID {
+			if row.ResourceType == "local_directory" {
+				var ref localDirectoryRef
+				if json.Unmarshal(row.ResourceRef, &ref) != nil || ref.DaemonID == "" || ref.DaemonID != runtime.DaemonID.String {
+					return claimProjectContext{}, errors.New("the selected local repository belongs to another runtime machine")
+				}
+			}
 			result.Resources, result.Repos = projectResourcesForClaim([]db.ProjectResource{row})
 			return result, nil
 		}

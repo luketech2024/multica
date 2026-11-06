@@ -11,6 +11,81 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const listWorkbenchDispatchCandidates = `-- name: ListWorkbenchDispatchCandidates :many
+SELECT child.id, child.workspace_id, child.title, child.description, child.status, child.priority, child.assignee_type, child.assignee_id, child.creator_type, child.creator_id, child.parent_issue_id, child.acceptance_criteria, child.context_refs, child.position, child.due_date, child.created_at, child.updated_at, child.number, child.project_id, child.origin_type, child.origin_id, child.first_executed_at, child.start_date, child.metadata, child.stage, child.properties, child.revision, child.last_activity_at, child.triage_state, child.duplicate_of_issue_id, child.external_ticket_no FROM issue child
+JOIN issue parent ON parent.id = child.parent_issue_id AND parent.workspace_id = child.workspace_id
+WHERE child.id > $1 AND child.status = 'todo' AND child.assignee_type = 'agent'
+  AND child.properties #>> '{workbench_handoff,v}' = '2'
+  AND child.properties #>> '{workbench_handoff,superseded}' IS DISTINCT FROM 'true'
+  AND parent.project_id = child.project_id
+  AND parent.status IN ('todo', 'in_progress')
+  AND parent.acceptance_criteria #>> '{gate,spec,passed_at}' IS NOT NULL
+  AND COALESCE(parent.acceptance_criteria->'change', 'null'::jsonb) = 'null'::jsonb
+  AND parent.acceptance_criteria->>'needs_resplit' IS DISTINCT FROM 'true'
+  AND parent.acceptance_criteria #>> '{plan,version}' = child.properties #>> '{workbench_handoff,requirement_version}'
+  AND (parent.acceptance_criteria #> '{plan,issues}') ? child.id::text
+  AND NOT EXISTS (SELECT 1 FROM agent_task_queue run WHERE run.issue_id = child.id)
+  AND NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements_text(child.properties #> '{workbench_handoff,depends_on}') dependency(id)
+      WHERE NOT EXISTS (SELECT 1 FROM issue prior
+          WHERE prior.id::text = dependency.id AND prior.workspace_id = child.workspace_id
+            AND prior.project_id = child.project_id AND prior.status = 'done'
+            AND prior.properties #>> '{workbench_handoff,superseded}' IS DISTINCT FROM 'true'))
+ORDER BY child.id LIMIT 100
+`
+
+func (q *Queries) ListWorkbenchDispatchCandidates(ctx context.Context, afterID pgtype.UUID) ([]Issue, error) {
+	rows, err := q.db.Query(ctx, listWorkbenchDispatchCandidates, afterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Issue{}
+	for rows.Next() {
+		var i Issue
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Title,
+			&i.Description,
+			&i.Status,
+			&i.Priority,
+			&i.AssigneeType,
+			&i.AssigneeID,
+			&i.CreatorType,
+			&i.CreatorID,
+			&i.ParentIssueID,
+			&i.AcceptanceCriteria,
+			&i.ContextRefs,
+			&i.Position,
+			&i.DueDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Number,
+			&i.ProjectID,
+			&i.OriginType,
+			&i.OriginID,
+			&i.FirstExecutedAt,
+			&i.StartDate,
+			&i.Metadata,
+			&i.Stage,
+			&i.Properties,
+			&i.Revision,
+			&i.LastActivityAt,
+			&i.TriageState,
+			&i.DuplicateOfIssueID,
+			&i.ExternalTicketNo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWorkbenchPlanChildren = `-- name: ListWorkbenchPlanChildren :many
 SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
 WHERE parent_issue_id = $1 AND workspace_id = $2
@@ -126,6 +201,17 @@ func (q *Queries) SupersedeWorkbenchPlanChild(ctx context.Context, arg Supersede
 		&i.ExternalTicketNo,
 	)
 	return i, err
+}
+
+const workbenchIssueHasRun = `-- name: WorkbenchIssueHasRun :one
+SELECT EXISTS (SELECT 1 FROM agent_task_queue WHERE issue_id = $1)
+`
+
+func (q *Queries) WorkbenchIssueHasRun(ctx context.Context, issueID pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, workbenchIssueHasRun, issueID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const workbenchPlanHasActiveRuns = `-- name: WorkbenchPlanHasActiveRuns :one
