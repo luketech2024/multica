@@ -54,7 +54,7 @@ type ActivityLookups = ReturnType<typeof useActivityLookups>;
  * One task row: agent avatar, name, status dot, status label, duration.
  *
  * Status colour follows the workspace's existing composition rule:
- *   - running                       → brand (text-brand)
+ *   - running                       → brand (text-brand-text)
  *   - queued, runtime online        → muted gray (transient race)
  *   - queued, runtime offline/etc.  → warning amber (genuine stuck)
  * — same rule as agent-presence-indicator.tsx so users see a single,

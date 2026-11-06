@@ -89,7 +89,7 @@ export function StepWelcome({
               {t(($) => $.welcome.headline_line1)}
               <br />
               {t(($) => $.welcome.headline_line2)}{" "}
-              <em className="italic text-brand">{t(($) => $.welcome.headline_emphasis)}</em>
+              <em className="italic text-brand-text">{t(($) => $.welcome.headline_emphasis)}</em>
             </h1>
 
             <div className="flex flex-col gap-4">
@@ -401,5 +401,5 @@ function StatusFooter({
 }
 
 function Mention({ children }: { children: React.ReactNode }) {
-  return <span className="font-medium text-brand">{children}</span>;
+  return <span className="font-medium text-brand-text">{children}</span>;
 }

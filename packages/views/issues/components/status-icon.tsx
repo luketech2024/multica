@@ -169,10 +169,10 @@ const ICON_RENDERERS: Record<IssueStatusIcon, () => React.ReactNode> = {
 
 const BUILT_IN_ICON_COLOR: Record<BuiltInIssueStatus, string> = {
   backlog: "text-muted-foreground",
-  todo: "text-muted-foreground",
-  in_progress: "text-warning",
-  in_review: "text-success",
-  done: "text-info",
+  todo: "text-info",
+  in_progress: "text-brand-text",
+  in_review: "text-warning",
+  done: "text-success",
   blocked: "text-destructive",
   cancelled: "text-muted-foreground",
 };

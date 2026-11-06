@@ -570,7 +570,7 @@ function NextBackFields({
         {onPreview && (
           <>
             {" "}
-            <button type="button" onClick={onPreview} className="text-brand hover:underline">
+            <button type="button" onClick={onPreview} className="text-brand-text hover:underline">
               {t(($) => $.workflows.editor.preview_brief)}
             </button>
           </>

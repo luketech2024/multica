@@ -467,7 +467,7 @@ function UnreadViewRow({
         toggleLabel={t(($) => $.panels.work.project_issues, { name: label })}
         onPrefetch={prefetch}
         onNavigateInPlace={() => setActive(target.containerKey, UNREAD_VIEW_ID)}
-        trailing={<PanelCount value={count} className="font-medium text-brand" />}
+        trailing={<PanelCount value={count} className="font-medium text-brand-text" />}
       />
       {expanded && (
         <SidebarIssueList

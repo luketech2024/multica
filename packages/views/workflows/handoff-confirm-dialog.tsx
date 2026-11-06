@@ -211,7 +211,7 @@ export function WorkflowHandoffConfirmDialog({
                   type="button"
                   onClick={() => setBriefOpen((v) => !v)}
                   aria-expanded={briefOpen}
-                  className="flex items-center gap-1 text-caption font-medium text-brand hover:underline"
+                  className="flex items-center gap-1 text-caption font-medium text-brand-text hover:underline"
                 >
                   {briefOpen ? <ChevronDown aria-hidden className="size-3.5" /> : <ChevronRight aria-hidden className="size-3.5" />}
                   {t(($) => $.workflows.confirm.brief_toggle, { name: handlerName })}

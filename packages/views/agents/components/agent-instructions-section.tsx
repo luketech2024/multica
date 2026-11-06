@@ -152,7 +152,7 @@ function InstructionsPreview({ content }: { content: string }) {
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-1 rounded-sm text-caption font-medium text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-1 rounded-sm text-caption font-medium text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {expanded
             ? tc(($) => $.expandable_description.collapse)

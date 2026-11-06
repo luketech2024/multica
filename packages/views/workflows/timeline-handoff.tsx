@@ -39,7 +39,7 @@ export function TimelineHandoff({ details }: { details: Record<string, string> }
                 type="button"
                 onClick={() => setOpen((v) => !v)}
                 aria-expanded={open}
-                className="text-brand hover:underline"
+                className="text-brand-text hover:underline"
               >
                 {open ? t(($) => $.workflows.timeline.hide_brief) : t(($) => $.workflows.timeline.show_brief)}
               </button>

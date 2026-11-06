@@ -123,7 +123,7 @@
     box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent);
   }
   50% {
-    color: var(--brand);
+    color: var(--brand-text);
     box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand) 40%, transparent);
   }
 }

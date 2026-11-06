@@ -150,7 +150,7 @@ export function FeedbackModal({
               href="https://github.com/multica-ai/multica/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand underline decoration-brand/40 underline-offset-2 hover:decoration-brand"
+              className="text-brand-text underline decoration-brand/40 underline-offset-2 hover:decoration-brand"
             >
               {t(($) => $.feedback.github_hint_link)}
             </a>

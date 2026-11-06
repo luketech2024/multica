@@ -102,7 +102,7 @@ export function OnboardingStarterCards({
               <div className="mt-0.5 text-caption text-muted-foreground">
                 {card.desc}
               </div>
-              <div className="mt-auto flex items-center gap-1 pt-2.5 text-label font-medium text-brand">
+              <div className="mt-auto flex items-center gap-1 pt-2.5 text-label font-medium text-brand-text">
                 {t(($) => $.onboarding_cards.cta)}
                 <ArrowUpRight aria-hidden="true" className="size-3.5" />
               </div>
@@ -201,7 +201,7 @@ function DelegateVignette() {
           <Bar className="w-5/6" />
           <Bar className="w-1/2" />
         </div>
-        <LoaderCircle aria-hidden="true" className="size-3.5 shrink-0 text-brand" />
+        <LoaderCircle aria-hidden="true" className="size-3.5 shrink-0 text-brand-text" />
       </MiniCard>
       <MiniCard className="flex-row items-center gap-1.5 px-2 py-1.5">
         <Check aria-hidden="true" className="size-3.5 shrink-0 text-success" />
@@ -219,7 +219,7 @@ function DigestVignette() {
   const { t } = useT("chat");
   return (
     <div className="flex w-43 flex-col gap-1.5">
-      <div className="flex items-center gap-1 self-start rounded-full bg-brand/12 px-2 py-0.5 text-micro font-semibold text-brand">
+      <div className="flex items-center gap-1 self-start rounded-full bg-brand/12 px-2 py-0.5 text-micro font-semibold text-brand-text">
         <Clock aria-hidden="true" className="size-2.5" />
         {t(($) => $.onboarding_cards.digest_badge)}
       </div>

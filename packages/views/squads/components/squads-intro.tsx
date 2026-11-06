@@ -143,7 +143,7 @@ function MemberStatusCard({
       <div
         className={cn(
           "mt-1 truncate pl-6",
-          highlighted ? "font-medium text-brand" : "text-muted-foreground",
+          highlighted ? "font-medium text-brand-text" : "text-muted-foreground",
         )}
       >
         {status}

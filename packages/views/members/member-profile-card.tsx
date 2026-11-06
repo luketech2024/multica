@@ -154,7 +154,7 @@ function OwnedAgentsSection({ agents }: { agents: Agent[] }) {
             </div>
             <span
               aria-hidden
-              className="mt-0.5 shrink-0 font-normal text-brand opacity-0 transition-opacity group-hover:opacity-100"
+              className="mt-0.5 shrink-0 font-normal text-brand-text opacity-0 transition-opacity group-hover:opacity-100"
             >
               {t(($) => $.card.detail_link)}
             </span>

@@ -10,22 +10,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default: "bg-brand bg-[image:var(--brand-gradient)] text-brand-foreground shadow-[var(--brand-glow)] hover:brightness-105 active:brightness-100",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        // Brand-filled state for a control that is currently ON (an active
-        // filter, a selected toggle). Self-contained on purpose: passing
-        // brand classes through `className` on top of `outline` does NOT
-        // work — `outline` ships `dark:bg-input/30`, `hover:bg-muted` and
-        // `aria-expanded:bg-muted`, and those win the cascade (the `dark:`
-        // ones by specificity, since `dark` compiles to `&:is(.dark *)`),
-        // repainting the chip neutral. That is what silently killed the
-        // brand colour in dark mode — see MUL-4884.
-        //
-        // `brand` needs no `dark:` of its own: the --brand token already
-        // flips per theme, so one set of rules is correct in both.
-        // aria-expanded is pinned to the hover value so opening a popover
-        // reads as hover rather than as a colour change.
+          "border-surface-border bg-surface text-surface-foreground hover:bg-surface-hover hover:text-surface-foreground aria-expanded:bg-surface-hover aria-expanded:text-surface-foreground",
+        // Keep selected colors on hover and while its popover is open.
         brand:
           "border-brand bg-brand text-brand-foreground hover:bg-brand/90 hover:text-brand-foreground active:bg-brand/85 aria-expanded:bg-brand/90 aria-expanded:text-brand-foreground",
         // Brand tint for "there is activity here" — present, but not
@@ -37,10 +25,10 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "hover:bg-surface-hover hover:text-foreground aria-expanded:bg-surface-hover aria-expanded:text-foreground",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border-destructive/30 bg-surface text-destructive hover:border-destructive/60 hover:bg-surface-hover focus-visible:border-destructive focus-visible:ring-destructive/20",
+        link: "text-brand-text underline-offset-4 hover:underline",
       },
       size: {
         default:

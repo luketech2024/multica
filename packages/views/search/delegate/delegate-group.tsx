@@ -51,8 +51,8 @@ export function DelegateGroup({
     <PaletteGroup
       heading={
         <>
-          <Sparkles className="size-3 text-brand" />
-          <span className="text-brand">{t(($) => $.delegate.heading)}</span>
+          <Sparkles className="size-3 text-brand-text" />
+          <span className="text-brand-text">{t(($) => $.delegate.heading)}</span>
         </>
       }
     >

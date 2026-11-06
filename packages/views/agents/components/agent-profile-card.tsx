@@ -105,7 +105,7 @@ export function AgentProfileCard({ agentId }: AgentProfileCardProps) {
         {!isArchived && (
           <AppLink
             href={p.agentDetail(agent.id)}
-            className="mr-1 mt-0.5 shrink-0 text-caption font-normal text-brand opacity-0 transition-opacity group-hover:opacity-100"
+            className="mr-1 mt-0.5 shrink-0 text-caption font-normal text-brand-text opacity-0 transition-opacity group-hover:opacity-100"
           >
             {t(($) => $.profile_card.detail_link)}
           </AppLink>

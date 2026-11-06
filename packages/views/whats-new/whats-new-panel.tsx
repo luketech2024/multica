@@ -60,7 +60,7 @@ export function WhatsNewPanel({
                 </span>
                 <span className="text-muted-foreground">{formatReleaseDate(release.date, i18n.language)}</span>
                 {unread && (
-                  <span className="ml-auto inline-flex items-center gap-1.5 text-micro font-medium text-brand">
+                  <span className="ml-auto inline-flex items-center gap-1.5 text-micro font-medium text-brand-text">
                     <span aria-hidden className="size-1.5 rounded-full bg-brand" />
                     {t(($) => $.whats_new.panel.new)}
                   </span>

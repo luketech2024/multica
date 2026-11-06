@@ -46,7 +46,7 @@ export function HighlightActionButton({
         target="_blank"
         rel="noopener noreferrer"
         onClick={onDone}
-        className="inline-flex items-center gap-0.5 text-label font-medium text-brand hover:underline"
+        className="inline-flex items-center gap-0.5 text-label font-medium text-brand-text hover:underline"
       >
         {label}
         <ArrowUpRight className="size-3.5" />
@@ -78,7 +78,7 @@ export function HighlightActionButton({
     <button
       type="button"
       onClick={run}
-      className="inline-flex cursor-pointer items-center gap-0.5 text-label font-medium text-brand hover:underline"
+      className="inline-flex cursor-pointer items-center gap-0.5 text-label font-medium text-brand-text hover:underline"
     >
       {label}
       <ArrowRight className="size-3.5" />

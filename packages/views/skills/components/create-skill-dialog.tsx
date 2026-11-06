@@ -272,7 +272,7 @@ function SourceCard({
       <button
         type="button"
         onClick={() => openExternal(browseUrl)}
-        className="mt-0.5 block max-w-full truncate text-left font-mono text-caption text-brand underline decoration-brand/40 underline-offset-2 hover:decoration-brand"
+        className="mt-0.5 block max-w-full truncate text-left font-mono text-caption text-brand-text underline decoration-brand/40 underline-offset-2 hover:decoration-brand"
       >
         {exampleHost}
       </button>

@@ -108,7 +108,7 @@ function EventArt() {
         <div className="flex items-center gap-2">
           <ActorAvatar {...TURING} size="sm" />
           <span className="font-medium">{TURING.name}</span>
-          <IntroArtTag className="bg-brand/10 text-brand">
+          <IntroArtTag className="bg-brand/10 text-brand-text">
             {tIssues(($) => $.wakeups.triggered_by_wakeup)}
           </IntroArtTag>
         </div>

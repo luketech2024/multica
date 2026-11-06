@@ -14,7 +14,7 @@ import {
 export const taskStatusConfig: Record<string, { icon: typeof CheckCircle2; color: string }> = {
   queued: { icon: Clock, color: "text-muted-foreground" },
   dispatched: { icon: Play, color: "text-info" },
-  running: { icon: Loader2, color: "text-brand" },
+  running: { icon: Loader2, color: "text-brand-text" },
   completed: { icon: CheckCircle2, color: "text-success" },
   failed: { icon: XCircle, color: "text-destructive" },
   cancelled: { icon: XCircle, color: "text-muted-foreground" },

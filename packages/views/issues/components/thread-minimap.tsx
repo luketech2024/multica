@@ -622,7 +622,7 @@ export function ThreadMinimap({
         ? previewItem.threadIndex
         : previewIndex;
   const rowClassName =
-    "flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-left text-body text-muted-foreground transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-active:font-medium data-active:text-brand";
+    "flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-left text-body text-muted-foreground transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-active:font-medium data-active:text-brand-text";
 
   return (
     // Positioning shim; only the nav and the card take pointer events so the
@@ -753,7 +753,7 @@ export function ThreadMinimap({
                   >
                     <button
                       {...rowProps}
-                      className="flex w-full items-center gap-2 rounded-md py-1 pl-3 pr-3 text-left text-label text-muted-foreground transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-active:font-medium data-active:text-brand"
+                      className="flex w-full items-center gap-2 rounded-md py-1 pl-3 pr-3 text-left text-label text-muted-foreground transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-active:font-medium data-active:text-brand-text"
                     >
                       <span className="inline-flex shrink-0" aria-hidden="true">
                         {avatarFor(item.entry, "xs")}

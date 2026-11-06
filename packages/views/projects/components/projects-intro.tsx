@@ -162,7 +162,7 @@ function ContextArt() {
           <span className="font-medium">{AGENT.name}</span>
           <span className="truncate text-muted-foreground">{t(($) => $.intro.art.run_started)}</span>
         </div>
-        <div className="mt-1 flex items-center gap-1 pl-7 font-medium text-brand">
+        <div className="mt-1 flex items-center gap-1 pl-7 font-medium text-brand-text">
           <Check className="size-3.5 shrink-0" />
           <span className="truncate">{t(($) => $.intro.art.context_loaded)}</span>
         </div>

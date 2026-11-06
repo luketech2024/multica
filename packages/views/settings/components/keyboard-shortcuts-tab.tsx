@@ -288,7 +288,7 @@ function ShortcutRow({
         action.id === "send" && isPlainShortcut(shortcut, "Enter") ? (
           <>
             {description}
-            <span className="mt-1 block text-brand">
+            <span className="mt-1 block text-brand-text">
               {t(($) => $.shortcuts.send_enter_hint)}
             </span>
           </>
@@ -306,7 +306,7 @@ function ShortcutRow({
             onBlur={onCancelRecording}
             className={cn(
               "inline-flex h-8 min-w-28 items-center justify-center rounded-md border bg-background px-2.5 font-mono text-caption font-medium shadow-xs outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring",
-              recording && "border-brand bg-brand/5 text-brand ring-2 ring-brand/20",
+              recording && "border-brand bg-brand/5 text-brand-text ring-2 ring-brand/20",
               error && "border-destructive text-destructive ring-destructive/20",
             )}
             aria-label={t(($) => $.shortcuts.record_aria, { action: label })}

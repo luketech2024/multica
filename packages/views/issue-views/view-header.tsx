@@ -504,7 +504,7 @@ export function IssueViewHeader({
               >
                 {advancedMode ? <ListTree className="size-4" /> : <Filter className="size-4" />}
                 {filterCount > 0 && (
-                  <span className="rounded-sm bg-brand/10 px-1 text-caption font-medium tabular-nums text-brand">
+                  <span className="rounded-sm bg-brand/10 px-1 text-caption font-medium tabular-nums text-brand-text">
                     {filterCount}
                   </span>
                 )}

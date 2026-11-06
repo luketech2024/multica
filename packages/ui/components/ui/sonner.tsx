@@ -30,7 +30,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <OctagonXIcon className="size-4 text-destructive" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin text-brand" />
+          <Loader2Icon className="size-4 animate-spin text-brand-text" />
         ),
       }}
       style={

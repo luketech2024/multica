@@ -668,7 +668,7 @@ export function RuntimeChoiceList({
               <button
                 type="button"
                 onClick={onAddRemote}
-                className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm font-medium text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm font-medium text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Plus aria-hidden="true" className="size-3.5" />
                 {t(($) => $.creation_studio.runtime_step.add_remote)}

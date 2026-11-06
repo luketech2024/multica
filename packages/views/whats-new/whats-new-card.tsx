@@ -39,7 +39,7 @@ export function WhatsNewCard({
     <div className="flex flex-col" data-slot="whats-new-card">
       <div className="flex items-start gap-2 pt-3.5 pr-2 pb-2.5 pl-4">
         <div className="min-w-0 flex-1">
-          <p className="text-caption font-medium text-brand">
+          <p className="text-caption font-medium text-brand-text">
             {t(($) => $.whats_new.card.eyebrow, { range })}
           </p>
           <h2 className="mt-0.5 text-title-sm font-semibold">

@@ -1491,7 +1491,7 @@ export function ManualCreatePanel({
                   aria-busy={gate.uploading || undefined}
                   className="relative group flex shrink-0 items-center gap-1.5 justify-self-end text-caption px-2 py-1 rounded-sm text-muted-foreground bg-brand/5 hover:bg-brand/10 hover:text-foreground transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <ArrowLeftRight className="size-3.5 text-brand transition-transform duration-300 group-hover:rotate-180" />
+                  <ArrowLeftRight className="size-3.5 text-brand-text transition-transform duration-300 group-hover:rotate-180" />
                   {t(($) => $.create_issue.switch_to_agent)}
                   <BorderBeam />
                 </button>

@@ -199,7 +199,7 @@ export function CollectionFilterButton({
     >
       <Filter className="size-4" />
       {count > 0 ? (
-        <span className="rounded-sm bg-brand/10 px-1 text-caption font-medium tabular-nums text-brand">
+        <span className="rounded-sm bg-brand/10 px-1 text-caption font-medium tabular-nums text-brand-text">
           {count}
         </span>
       ) : null}

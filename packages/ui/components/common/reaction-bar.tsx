@@ -65,7 +65,7 @@ function ReactionBar({
                 onClick={() => onToggle(g.emoji)}
                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption transition-colors hover:bg-brand/15 ${
                   g.reacted
-                    ? "border-brand/30 bg-brand/8 text-brand"
+                    ? "border-brand/30 bg-brand/8 text-brand-text"
                     : "border-brand/10 bg-brand/4 text-muted-foreground"
                 }`}
               >

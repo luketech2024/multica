@@ -91,7 +91,7 @@ export interface WorkloadVisual {
 
 export const workloadConfig: Record<Workload, WorkloadVisual> = {
   working: {
-    textClass: "text-brand",
+    textClass: "text-brand-text",
     icon: Loader2,
   },
   queued: {

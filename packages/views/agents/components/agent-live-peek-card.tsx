@@ -192,7 +192,7 @@ function CurrentIssueRow({
           <TruncatedTooltip content={`${issue.identifier} ${issue.title}`}>
             <AppLink
               href={issueHref(issueId)}
-              className="min-w-0 truncate text-brand hover:underline"
+              className="min-w-0 truncate text-brand-text hover:underline"
             >
               <span className="mr-1 font-mono text-micro">{issue.identifier}</span>
               <span>{issue.title}</span>

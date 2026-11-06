@@ -178,7 +178,7 @@ function ShareArt() {
       <IntroArtCard highlighted>
         <div className="flex items-center gap-2">
           <span className={cn(mono, "flex-1 truncate font-medium")}>{LOCAL_SKILLS[0]}</span>
-          <span className="flex shrink-0 items-center gap-1 font-medium text-brand">
+          <span className="flex shrink-0 items-center gap-1 font-medium text-brand-text">
             <Users className="size-3.5" />
             {t(($) => $.intro.art.workspace_shared)}
           </span>

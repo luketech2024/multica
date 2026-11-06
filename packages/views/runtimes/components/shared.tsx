@@ -229,7 +229,7 @@ export function KpiCard({
 }) {
   const valueClass =
     accent === "brand"
-      ? "text-brand"
+      ? "text-brand-text"
       : accent === "success"
         ? "text-success"
         : "";

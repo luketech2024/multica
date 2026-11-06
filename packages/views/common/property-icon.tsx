@@ -166,7 +166,7 @@ export function PropertyIconPicker({
                   aria-pressed={selected}
                   className={cn(
                     "flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-                    selected && "bg-brand/10 text-brand ring-1 ring-inset ring-brand/25",
+                    selected && "bg-brand/10 text-brand-text ring-1 ring-inset ring-brand/25",
                   )}
                   onClick={() => onSelect(option.value)}
                 >

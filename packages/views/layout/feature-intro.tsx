@@ -87,7 +87,7 @@ export function FeatureIntro({
           )}
         >
           <div className="flex max-w-md flex-col items-start">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-caption font-medium text-brand">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-caption font-medium text-brand-text">
               <Icon aria-hidden="true" className="size-3.5" />
               {label}
             </span>
@@ -333,7 +333,7 @@ export function IntroArtConnector({ label }: { label?: ReactNode }) {
       <span className={cn("w-0 flex-1 border-l-[1.5px]", WIRE)} />
       <IntroArtArrowhead />
       {label && (
-        <span className="absolute top-1/2 left-1/2 ml-2.5 -translate-y-1/2 rounded-sm bg-brand/10 px-1.5 py-0.5 text-micro font-medium whitespace-nowrap text-brand">
+        <span className="absolute top-1/2 left-1/2 ml-2.5 -translate-y-1/2 rounded-sm bg-brand/10 px-1.5 py-0.5 text-micro font-medium whitespace-nowrap text-brand-text">
           {label}
         </span>
       )}
