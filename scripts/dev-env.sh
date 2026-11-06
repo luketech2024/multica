@@ -204,6 +204,10 @@ EOF
 # a function aborts the script under `set -e` when fn's last command fails, and
 # "no process is listening" is the normal answer here, not an error.
 port_listener_pid() {
+  if [ "$(uname -s)" = Linux ]; then
+    ss -H -lptn "sport = :$1" 2>/dev/null | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1 || true
+    return
+  fi
   lsof -nP -iTCP:"$1" -sTCP:LISTEN -t 2>/dev/null | head -1 || true
 }
 
@@ -1131,6 +1135,7 @@ cmd_up() {
 
   step "Prerequisites"
   local missing=() tool needed="node go curl"
+  if [ "$(uname -s)" = Linux ]; then needed="$needed ss"; else needed="$needed lsof"; fi
   # pnpm is only required by the components that actually build JavaScript, so
   # `up C=api` works on a checkout that has never run an install.
   if component_selected web || component_selected desktop; then needed="$needed pnpm"; fi

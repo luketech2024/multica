@@ -71,6 +71,18 @@ EOF
 
 out="$tmp_dir/out"
 
+(
+  source "$root_dir/scripts/dev-env.sh"
+  uname() { printf 'Linux\n'; }
+  ss() {
+    [ "$*" = '-H -lptn sport = :13962' ] || exit 1
+    printf 'LISTEN 0 511 *:13962 *:* users:(("next-server",pid=62467,fd=22))\n'
+  }
+  [ "$(port_listener_pid 13962)" = 62467 ] || fail "Linux IPv6 listener was missed"
+  ss() { return 0; }
+  [ -z "$(port_listener_pid 13962)" ] || fail "free port returned a listener"
+) || fail "Linux listener discovery"
+
 assert_listener_ownership() {
   local case_name=$1 expected=$2 launcher=$3 listener=$4 listener_pgid=$5 recorded=${6:-}
   (

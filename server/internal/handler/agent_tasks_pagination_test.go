@@ -157,7 +157,7 @@ func TestListAgentTasksPageBoundaries(t *testing.T) {
 			expected := make([]string, count)
 			for i := 0; i < count; i++ {
 				expected[i] = dbfx.Task(t, agentID, testutil.Cols{
-					"id":         fmt.Sprintf("00000000-0000-0000-0000-%012d", i+1),
+					"id":         fmt.Sprintf("%s%012d", agentID[:24], i+1),
 					"runtime_id": runtimeID, "status": "completed",
 					"created_at": now.Add(-time.Duration(i) * time.Microsecond),
 				})
