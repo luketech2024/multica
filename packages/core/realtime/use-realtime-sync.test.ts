@@ -790,6 +790,15 @@ describe("handleInboxNew", () => {
     return showNotification;
   }
 
+  it("keeps workbench delivery notices in the inbox without an OS banner", async () => {
+    const qc = createQueryClient();
+    const showNotification = stubDesktopAPI();
+    await handleInboxNew(qc, inboxItem({ details: { source: "workbench_delivery" } }));
+    await handleInboxNew(qc, inboxItem({ workbench: true }));
+    expect(showNotification).not.toHaveBeenCalled();
+    qc.clear();
+  });
+
   afterEach(() => {
     delete (globalThis as Record<string, unknown>).desktopAPI;
   });

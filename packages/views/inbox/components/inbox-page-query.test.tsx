@@ -32,9 +32,10 @@ vi.mock("../../issues/components/issue-detail", () => ({
   issueHighlightMementoKey: (issueId: string) => `highlight:${issueId}`,
 }));
 const replace = vi.fn();
+const push = vi.fn();
 let searchParams = new URLSearchParams();
 vi.mock("../../navigation", () => ({
-  useNavigation: () => ({ searchParams, replace }),
+  useNavigation: () => ({ searchParams, replace, push }),
   useReportNavigating: () => {},
 }));
 vi.mock("@multica/ui/hooks/use-mobile", () => ({ useIsCompact: () => false }));
@@ -79,6 +80,7 @@ beforeEach(() => {
   } });
   searchParams = new URLSearchParams();
   replace.mockClear();
+  push.mockClear();
   detailUnmounted.mockClear();
   useInboxFilterStore.setState({ filtersByWorkspace: {} });
   useInboxFilterStore.getState().toggleUnreadOnly("workspace-1");
@@ -136,6 +138,15 @@ async function openArchived(fixture: ReturnType<typeof archivedFixture>, viaUrl 
   await waitFor(() => expect(fixture.listArchivedInboxPage.mock.calls.some((call) => call[1].groupId === "issue-a")).toBe(true));
   return detail;
 }
+
+it("keeps a read pending task visible and opens its workspace with the comment anchor", async () => {
+  searchParams = new URLSearchParams("category=pending");
+  setApiInstance({ listInbox: async () => [item({ read: true, workbench: true, workbench_action: "delivery", details: { comment_id: "comment-1" } })], getInboxUnreadSummary: async () => [] } as unknown as ApiClient);
+  renderPage();
+  fireEvent.click(await screen.findByText("inbox-a"));
+  expect(push).toHaveBeenCalledWith("/acme/issues/issue-a#comment-comment-1");
+  expect(screen.queryByTestId("detail")).not.toBeInTheDocument();
+});
 
 it("keeps the active read selection until moving to another notification", async () => {
   let rows = [item(), item({ id: "inbox-b", issue_id: "issue-b" })];

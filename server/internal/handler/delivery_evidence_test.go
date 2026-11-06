@@ -105,9 +105,24 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 	dbfx.Exec(t, `UPDATE issue SET assignee_type=NULL,assignee_id=NULL WHERE id=$1`, parent)
 	review("accept", "", saved.Revision, http.StatusForbidden)
 	dbfx.Exec(t, `UPDATE issue SET assignee_type='member',assignee_id=$1 WHERE id=$2`, testUserID, parent)
+	notice := dbfx.Insert(t, "inbox_item", testutil.Cols{
+		"workspace_id": testWorkspaceID, "recipient_type": "member", "recipient_id": testUserID,
+		"issue_id": parent, "title": "Review export", "type": "review_requested", "severity": "action_required",
+		"details": `{"source":"workbench_delivery"}`,
+	})
+	mention := dbfx.Insert(t, "inbox_item", testutil.Cols{
+		"workspace_id": testWorkspaceID, "recipient_type": "member", "recipient_id": testUserID,
+		"issue_id": parent, "title": "Export mention", "type": "mentioned", "severity": "info",
+	})
 	accepted := review("accept", "", saved.Revision, http.StatusOK)
 	if accepted.Status != "done" {
 		t.Fatal("acceptance did not complete the task")
+	}
+	var noticeRead, mentionRead bool
+	dbfx.QueryRow(t, "SELECT read FROM inbox_item WHERE id=$1", notice).Scan(&noticeRead)
+	dbfx.QueryRow(t, "SELECT read FROM inbox_item WHERE id=$1", mention).Scan(&mentionRead)
+	if !noticeRead || mentionRead {
+		t.Fatal("acceptance must read its pending notification while preserving unrelated mentions")
 	}
 	review("accept", "", saved.Revision, http.StatusConflict)
 	undone := review("undo", "", accepted.Revision, http.StatusOK)

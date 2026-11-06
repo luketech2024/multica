@@ -217,6 +217,21 @@ describe("applyIssueChange", () => {
     expect(result.staleKeys).toEqual([]);
   });
 
+  it("refreshes workbench pending actions after reassignment without a status change", () => {
+    qc.setQueryData<InboxItem[]>(inboxKey, [{
+      id: "notice", workspace_id: WS_ID, recipient_type: "member", recipient_id: "me",
+      actor_type: "system", actor_id: null, type: "review_requested", severity: "action_required",
+      issue_id: "issue-1", title: "Review", body: null, issue_status: "in_review", read: true, archived: false,
+      created_at: "2026-11-07T00:00:00Z", details: null, workbench: true, workbench_action: "delivery",
+    }]);
+    const before = issue();
+    const patch = { assignee_id: "another-member" };
+    const result = applyIssueChange(qc, WS_ID, "issue-1", patch, {
+      changed: issueChangedDims(patch, before), baseIssue: before,
+    });
+    expect(result.staleKeys.map(hashKey)).toContain(hashKey(inboxKey));
+  });
+
   it("patches a loaded flat row without refetching an unrelated position window", () => {
     qc.setQueryData<IssueFlatCache>(flatKey, {
       pages: [{ issues: [issue()], total: 1 }],

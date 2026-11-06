@@ -7,6 +7,10 @@ LEFT JOIN issue iss ON iss.id = i.issue_id
 WHERE i.workspace_id = $1 AND i.recipient_type = $2 AND i.recipient_id = $3 AND i.archived = false
 ORDER BY i.created_at DESC;
 
+-- name: ListInboxWorkbenchIssues :many
+SELECT * FROM issue
+WHERE workspace_id = @workspace_id AND id = ANY(@issue_ids::uuid[]);
+
 -- name: ListArchivedInboxItems :many
 -- Archived counterpart of ListInboxItems, backing the inbox's "Archived"
 -- sub-view (MUL-3736).
@@ -194,6 +198,13 @@ WHERE workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND 
 UPDATE inbox_item SET read = true
 WHERE workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2
   AND issue_id = $3 AND archived = false AND read = false;
+
+-- name: MarkWorkbenchInboxHandled :many
+UPDATE inbox_item SET read = true
+WHERE workspace_id = @workspace_id AND recipient_type = 'member' AND recipient_id = @recipient_id
+  AND issue_id = @issue_id AND archived = false AND read = false
+  AND details->>'source' = 'workbench_delivery'
+RETURNING id;
 
 -- name: ArchiveAllInbox :execrows
 UPDATE inbox_item SET archived = true

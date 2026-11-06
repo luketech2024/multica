@@ -2881,6 +2881,8 @@ export const SubscribedIssueIdsSchema = z
 export const InboxItemListSchema = z.array(
   z
     .object({
+      workbench: z.boolean().optional().catch(false),
+      workbench_action: z.string().optional().catch(""),
       id: z.string(),
       workspace_id: z.string(),
       recipient_type: z.string(),

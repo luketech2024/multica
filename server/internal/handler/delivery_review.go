@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
 type deliveryReviewState struct {
@@ -138,11 +139,26 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to record delivery review audit")
 		return
 	}
+	var handled []pgtype.UUID
+	if input.Action != "undo" {
+		handled, err = q.MarkWorkbenchInboxHandled(r.Context(), db.MarkWorkbenchInboxHandledParams{
+			WorkspaceID: current.WorkspaceID, RecipientID: parseUUID(actorID), IssueID: current.ID,
+		})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to update handled delivery notifications")
+			return
+		}
+	}
 	if err := tx.Commit(r.Context()); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to commit delivery review")
 		return
 	}
 	h.publishRequirementsActivity(activity)
+	for _, id := range handled {
+		h.publish(protocol.EventInboxRead, uuidToString(current.WorkspaceID), actorType, actorID, map[string]any{
+			"item_id": uuidToString(id), "recipient_id": actorID,
+		})
+	}
 	h.publishIssueSnapshots(r.Context(), []db.Issue{after}, actorType, actorID)
 	response := issueToResponse(after, h.getIssuePrefix(r.Context(), after.WorkspaceID))
 	h.fillStatusCategory(r.Context(), after.WorkspaceID, &response)

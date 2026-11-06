@@ -13,6 +13,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { MulticaBleedMark } from "@multica/ui/components/common/multica-graphics";
 import { ApiError, errorCode } from "@multica/core/api";
 import { useWorkspacePaths } from "@multica/core/paths";
+import { inboxCategories, inboxCategory, inboxCategoryItems, type InboxCategory } from "@multica/core/inbox";
 import { useModalStore } from "@multica/core/modals";
 import {
   getShortcut,
@@ -26,7 +27,6 @@ import {
   inboxListOptions,
   archivedInboxPagesOptions,
   archivedInboxLookupOptions,
-  deduplicateInboxItems,
   deduplicateArchivedInboxItems,
   useInboxUnreadCount,
 } from "@multica/core/inbox/queries";
@@ -121,11 +121,18 @@ export function InboxPage() {
   const showAutopilotQuotaRecoveryPrompt = useIssueLimitUpgradePrompt(
     "autopilot_quota",
   );
-  const { searchParams, replace } = useNavigation();
+  const { searchParams, replace, push } = useNavigation();
   const urlIssue = searchParams.get("issue") ?? "";
   const urlView: InboxView =
     searchParams.get("view") === ARCHIVED_VIEW_PARAM ? "archived" : "inbox";
   const wsPaths = useWorkspacePaths();
+  const category = inboxCategory(searchParams.get("category"));
+  const selectCategory = (next: InboxCategory) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "all") params.delete("category");
+    else params.set("category", next);
+    replace(`${wsPaths.inbox()}${params.size ? `?${params}` : ""}`);
+  };
 
   const [selectedKey, setSelectedKeyState] = useState(() => urlIssue);
   const [view, setViewState] = useState<InboxView>(() => urlView);
@@ -154,7 +161,7 @@ export function InboxPage() {
   const { data: rawItems = [], isLoading: loading } = useQuery({
     ...inboxListOptions(wsId), enabled: !isArchivedView,
   });
-  const items = useMemo(() => deduplicateInboxItems(rawItems), [rawItems]);
+  const items = useMemo(() => inboxCategoryItems(rawItems, category), [rawItems, category]);
   const archiveQuery = useInfiniteQuery({
     ...archivedInboxPagesOptions(wsId, filters), enabled: isArchivedView,
   });
@@ -170,8 +177,8 @@ export function InboxPage() {
   const priorityFilterSupport = isArchivedView ? "supported" : inboxPriorityFilterSupport(rawItems);
   const effectiveFilters = useMemo(() => {
     const supported = inboxFiltersForPrioritySupport(filters, priorityFilterSupport);
-    return isArchivedView ? inboxFiltersForArchive(supported) : supported;
-  }, [filters, priorityFilterSupport, isArchivedView]);
+    return isArchivedView ? inboxFiltersForArchive(supported) : category === "pending" ? { ...supported, unreadOnly: false } : supported;
+  }, [filters, priorityFilterSupport, isArchivedView, category]);
   // "Active" is the same running-or-queued rule the row's activity badge uses.
   const { activityByIssueId } = useIssueSurfaceActivity();
   const activeIssueIds = useMemo(() => new Set(activityByIssueId.keys()), [activityByIssueId]);
@@ -198,7 +205,7 @@ export function InboxPage() {
     () => filterInboxItems(viewItems, effectiveFilters, filterContext),
     [viewItems, effectiveFilters, filterContext],
   );
-  const hasActiveFilters = inboxFilterCount(effectiveFilters) > 0;
+  const hasActiveFilters = inboxFilterCount(effectiveFilters) > 0 || (!isArchivedView && category !== "all");
   const selectedOnPage = viewItems.find((i) => (i.issue_id ?? i.id) === selectedKey);
   // A deep link can point beyond every loaded page. Resolve its group directly
   // without adding it to the cursor chain or mistaking a page miss for a 404.
@@ -264,12 +271,13 @@ export function InboxPage() {
     (nextView: InboxView, key: string) => {
       const params = new URLSearchParams();
       if (nextView === "archived") params.set("view", ARCHIVED_VIEW_PARAM);
+      if (nextView === "inbox" && category !== "all") params.set("category", category);
       if (key) params.set("issue", key);
       const query = params.toString();
       const inboxPath = wsPaths.inbox();
       return query ? `${inboxPath}?${query}` : inboxPath;
     },
-    [wsPaths],
+    [wsPaths, category],
   );
 
   const setSelectedKey = useCallback((key: string) => {
@@ -425,6 +433,11 @@ export function InboxPage() {
   // by issue) and a fresh mount with a cleared memento entry lands by itself.
   const [highlightRequestToken, setHighlightRequestToken] = useState(0);
   const handleSelect = (item: InboxItem) => {
+    if (item.workbench && item.issue_id) {
+      const comment = item.details?.comment_id;
+      push(`${wsPaths.issueDetail(item.issue_id)}${comment ? `#comment-${encodeURIComponent(comment)}` : ""}`);
+      return;
+    }
     const nextKey = item.issue_id ?? item.id;
     // Every click on a notification row is a fresh deep-link intent: clear
     // the "highlight already landed" memento entry so the comment jump runs
@@ -751,7 +764,7 @@ export function InboxPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => clearFilters(wsId)}
+              onClick={() => { clearFilters(wsId); selectCategory("all"); }}
             >
               {t(($) => $.filters.clear)}
             </Button>
@@ -764,6 +777,13 @@ export function InboxPage() {
   const listPanel = (
     <>
       {listHeader}
+      {!isArchivedView && <nav className="flex flex-wrap gap-1 border-b px-3 py-2" aria-label={t(($) => $.categories.title)}>
+        {inboxCategories.map((entry) => <Button key={entry} size="sm"
+          variant={category === entry ? "brandSubtle" : "ghost"}
+          aria-pressed={category === entry} onClick={() => selectCategory(entry)}>
+          {t(($) => $.categories[entry])} <span className="tabular-nums">{inboxCategoryItems(rawItems, entry).length}</span>
+        </Button>)}
+      </nav>}
       {lookupLoading && (
         <p role="status" className="shrink-0 border-b px-3 py-2 text-caption text-muted-foreground">
           {t(($) => $.list.loading_selection)}

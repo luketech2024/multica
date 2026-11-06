@@ -1,4 +1,11 @@
 {
+  "categories": {
+    "title": "Notification categories",
+    "all": "All",
+    "pending": "Needs you",
+    "mentions": "Mentions",
+    "unread": "Unread"
+  },
   "page": {
     "title": "Inbox",
     "back": "Inbox"

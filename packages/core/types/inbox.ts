@@ -45,6 +45,8 @@ export interface InboxWorkspaceUnread {
 }
 
 export interface InboxItem {
+  workbench?: boolean;
+  workbench_action?: string;
   id: string;
   workspace_id: string;
   recipient_type: "member" | "agent";

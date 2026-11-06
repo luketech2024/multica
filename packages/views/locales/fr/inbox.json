@@ -1,4 +1,11 @@
 {
+  "categories": {
+    "title": "Catégories de notifications",
+    "all": "Tout",
+    "pending": "À traiter",
+    "mentions": "Mentions",
+    "unread": "Non lues"
+  },
   "page": {
     "title": "Boîte de réception",
     "back": "Boîte de réception"

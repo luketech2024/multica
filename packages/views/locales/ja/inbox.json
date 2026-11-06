@@ -1,4 +1,11 @@
 {
+  "categories": {
+    "title": "通知の分類",
+    "all": "すべて",
+    "pending": "対応待ち",
+    "mentions": "メンション",
+    "unread": "未読"
+  },
   "page": {
     "title": "インボックス",
     "back": "インボックス"

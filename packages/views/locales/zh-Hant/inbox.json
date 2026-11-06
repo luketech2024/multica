@@ -1,4 +1,11 @@
 {
+  "categories": {
+    "title": "通知分類",
+    "all": "全部",
+    "pending": "待你處理",
+    "mentions": "@我",
+    "unread": "未讀"
+  },
   "page": {
     "title": "收件箱",
     "back": "收件箱"

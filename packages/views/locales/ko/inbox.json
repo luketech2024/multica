@@ -1,4 +1,11 @@
 {
+  "categories": {
+    "title": "알림 분류",
+    "all": "전체",
+    "pending": "처리 대기",
+    "mentions": "멘션",
+    "unread": "읽지 않음"
+  },
   "page": {
     "title": "인박스",
     "back": "인박스"

@@ -1525,6 +1525,15 @@ describe("InboxItemListSchema", () => {
     });
   });
 
+  it("preserves task action projections and safely ignores malformed new fields", () => {
+    const parsed = parseWithFallback(
+      [row({ workbench: true, workbench_action: "delivery" }), row({ workbench: "invalid", workbench_action: 42 })],
+      InboxItemListSchema, EMPTY_INBOX_ITEMS, ENDPOINT,
+    );
+    expect(parsed[0]).toMatchObject({ workbench: true, workbench_action: "delivery" });
+    expect(parsed[1]).toMatchObject({ workbench: false, workbench_action: "" });
+  });
+
   it("keeps a notification type this client doesn't know yet", () => {
     // Enums stay lenient on purpose: a backend that ships a new inbox type
     // must not blank the whole archived list on older clients.

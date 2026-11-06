@@ -162,6 +162,10 @@ func (h *Handler) ListArchivedInboxPage(w http.ResponseWriter, r *http.Request) 
 		}
 		resp.Items = append(resp.Items, item)
 	}
+	if err := h.enrichInboxWorkbench(r.Context(), p.WorkspaceID, resp.Items); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load archived inbox task actions")
+		return
+	}
 	if resp.HasMore {
 		last := rows[len(rows)-1].InboxItem
 		encoded, _ := json.Marshal(archivedInboxCursor{Time: last.CreatedAt.Time.Format(time.RFC3339Nano), ID: uuidToString(last.ID), Scope: scope})

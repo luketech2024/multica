@@ -14,23 +14,25 @@ import (
 )
 
 type InboxItemResponse struct {
-	ID            string          `json:"id"`
-	WorkspaceID   string          `json:"workspace_id"`
-	RecipientType string          `json:"recipient_type"`
-	RecipientID   string          `json:"recipient_id"`
-	Type          string          `json:"type"`
-	Severity      string          `json:"severity"`
-	IssueID       *string         `json:"issue_id"`
-	Title         string          `json:"title"`
-	Body          *string         `json:"body"`
-	Read          bool            `json:"read"`
-	Archived      bool            `json:"archived"`
-	CreatedAt     string          `json:"created_at"`
-	IssueStatus   *string         `json:"issue_status"`
-	IssuePriority *string         `json:"issue_priority"`
-	ActorType     *string         `json:"actor_type"`
-	ActorID       *string         `json:"actor_id"`
-	Details       json.RawMessage `json:"details"`
+	Workbench       bool            `json:"workbench"`
+	WorkbenchAction string          `json:"workbench_action"`
+	ID              string          `json:"id"`
+	WorkspaceID     string          `json:"workspace_id"`
+	RecipientType   string          `json:"recipient_type"`
+	RecipientID     string          `json:"recipient_id"`
+	Type            string          `json:"type"`
+	Severity        string          `json:"severity"`
+	IssueID         *string         `json:"issue_id"`
+	Title           string          `json:"title"`
+	Body            *string         `json:"body"`
+	Read            bool            `json:"read"`
+	Archived        bool            `json:"archived"`
+	CreatedAt       string          `json:"created_at"`
+	IssueStatus     *string         `json:"issue_status"`
+	IssuePriority   *string         `json:"issue_priority"`
+	ActorType       *string         `json:"actor_type"`
+	ActorID         *string         `json:"actor_id"`
+	Details         json.RawMessage `json:"details"`
 }
 
 func inboxToResponse(i db.InboxItem) InboxItemResponse {
@@ -145,6 +147,7 @@ func (h *Handler) enrichInboxResponse(ctx context.Context, resp InboxItemRespons
 	}
 	issue, err := h.Queries.GetIssue(ctx, issueID)
 	if err == nil {
+		applyInboxWorkbench(&resp, issue)
 		s := issue.Status
 		resp.IssueStatus = &s
 		p := issue.Priority
@@ -177,6 +180,10 @@ func (h *Handler) ListInbox(w http.ResponseWriter, r *http.Request) {
 	resp := make([]InboxItemResponse, len(items))
 	for i, item := range items {
 		resp[i] = inboxRowToResponse(item)
+	}
+	if err := h.enrichInboxWorkbench(r.Context(), wsUUID, resp); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load inbox task actions")
+		return
 	}
 
 	writeJSON(w, http.StatusOK, resp)
@@ -215,6 +222,10 @@ func (h *Handler) ListArchivedInbox(w http.ResponseWriter, r *http.Request) {
 	resp := make([]InboxItemResponse, len(items))
 	for i, item := range items {
 		resp[i] = archivedInboxRowToResponse(item)
+	}
+	if err := h.enrichInboxWorkbench(r.Context(), wsUUID, resp); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load archived inbox task actions")
+		return
 	}
 
 	writeJSON(w, http.StatusOK, resp)

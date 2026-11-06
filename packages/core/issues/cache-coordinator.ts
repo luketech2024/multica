@@ -557,6 +557,16 @@ export function applyIssueChange(
     });
   }
 
+  // Workbench actionability depends on requirements and assignment as well as
+  // status. Refresh the server projection after a committed change.
+  const workbenchIssue = patch.acceptance_criteria?.team || prevIssue?.acceptance_criteria?.team || patch.workbench_handoff || prevIssue?.workbench_handoff
+    || qc.getQueryData<InboxItem[]>(inboxKeys.list(wsId))?.some((item) => item.issue_id === id && item.workbench);
+  if (workbenchIssue && (patch.acceptance_criteria !== undefined || patch.assignee_id !== undefined || patch.assignee_type !== undefined || patch.status !== undefined)) {
+    staleKeys.push(...qc.getQueryCache().findAll({ queryKey: inboxKeys.all(wsId) })
+      .filter((query) => query.queryKey[2] !== "archived-facets")
+      .map((query) => query.queryKey));
+  }
+
   return {
     prevLists,
     prevFlatLists,
