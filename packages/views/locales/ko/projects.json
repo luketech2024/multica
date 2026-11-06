@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "설정 감사 내보내기 (90일)",
+    "exporting_audit": "감사 내보내는 중…",
     "targets": "배포 대상",
     "credentials": "자격 증명 및 키",
     "empty": "설정된 배포 대상이 없습니다",

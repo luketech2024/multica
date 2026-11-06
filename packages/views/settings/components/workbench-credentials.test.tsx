@@ -9,6 +9,8 @@ const mock = vi.hoisted(() => ({
   configured: false,
   savedSecret: "",
   save: vi.fn(),
+  exportAudit: vi.fn(),
+  download: vi.fn(),
 }));
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace-1" }));
 vi.mock("@multica/core/api", () => ({
@@ -18,12 +20,14 @@ vi.mock("@multica/core/api", () => ({
       encryption_configured: mock.configured,
     }),
     listProjects: async () => ({ projects: [] }),
+    exportWorkbenchAudit: () => mock.exportAudit(),
     saveWorkbenchCredential: (data: { secret: string }) => {
       mock.savedSecret = data.secret;
       return mock.save(data);
     },
   },
 }));
+vi.mock("../../editor/utils/mermaid-export", () => ({ downloadBlob: (...args: unknown[]) => mock.download(...args) }));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -41,6 +45,20 @@ function mount() {
   );
   return client;
 }
+
+it("downloads the authenticated audit response and keeps errors visible for retry", async () => {
+  const blob = new Blob(["id,action\r\n1,credential_created\r\n"], { type: "text/csv" });
+  mock.exportAudit.mockResolvedValueOnce(blob).mockRejectedValueOnce(new Error("Export unavailable"));
+  const client = mount();
+  const button = screen.getByRole("button", { name: "Export configuration audit (90 days)" });
+  fireEvent.click(button);
+  await waitFor(() => expect(mock.download).toHaveBeenCalledWith(blob, expect.stringMatching(/^workbench-audit-.*\.csv$/)));
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Export unavailable");
+  expect(button).toBeEnabled();
+  client.clear();
+});
 
 it("shows missing encryption configuration before accepting secrets", async () => {
   const client = mount();

@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "匯出設定稽核（近 90 天）",
+    "exporting_audit": "正在匯出稽核…",
     "targets": "部署目標",
     "credentials": "憑證與金鑰",
     "empty": "尚未設定部署目標",

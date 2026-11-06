@@ -4354,6 +4354,11 @@ export class ApiClient {
     return parseWorkbenchResponse(await this.fetch(endpoint), CredentialsSchema, endpoint);
   }
 
+  async exportWorkbenchAudit(): Promise<Blob> {
+    const response = await this.fetchRaw("/api/workbench/audit.csv");
+    return response.blob();
+  }
+
   async saveWorkbenchCredential(data: CredentialInput, id?: string) {
     const endpoint = `/api/workbench/credentials${id ? `/${id}` : ""}`;
     return parseWorkbenchResponse(await this.fetch(endpoint, { method: id ? "PUT" : "POST", body: JSON.stringify(data) }), CredentialSchema, endpoint);

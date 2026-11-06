@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "Export configuration audit (90 days)",
+    "exporting_audit": "Exporting audit…",
     "targets": "Deployment targets",
     "credentials": "Credentials and keys",
     "empty": "No deployment targets configured",

@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "Exporter l’audit de configuration (90 jours)",
+    "exporting_audit": "Export de l’audit…",
     "targets": "Cibles de déploiement",
     "credentials": "Identifiants et clés",
     "empty": "Aucune cible configurée",

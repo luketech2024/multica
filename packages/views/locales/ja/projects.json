@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "設定監査をエクスポート（90日間）",
+    "exporting_audit": "監査をエクスポート中…",
     "targets": "デプロイ先",
     "credentials": "認証情報とキー",
     "empty": "デプロイ先が未設定です",

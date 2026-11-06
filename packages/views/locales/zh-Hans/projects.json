@@ -205,6 +205,8 @@
     }
   },
   "workbench": {
+    "export_audit": "导出配置审计（近 90 天）",
+    "exporting_audit": "正在导出审计…",
     "targets": "部署目标",
     "credentials": "凭据与密钥",
     "empty": "尚未配置部署目标",

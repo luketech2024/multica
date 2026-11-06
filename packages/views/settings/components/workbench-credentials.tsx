@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { api } from "@multica/core/api";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { projectListOptions } from "@multica/core/projects";
 import {
@@ -18,6 +19,7 @@ import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { ConfigurationSelect } from "../../projects/components/configuration-select";
 import { useT } from "../../i18n";
 import { SettingsSection } from "./settings-layout";
+import { downloadBlob } from "../../editor/utils/mermaid-export";
 
 export function WorkbenchCredentials() {
   const { t } = useT("projects");
@@ -31,6 +33,18 @@ export function WorkbenchCredentials() {
   const [referenceId, setReferenceId] = useState("");
   const references = useQuery(credentialReferencesOptions(wsId, referenceId));
   const [error, setError] = useState<string>();
+  const [exporting, setExporting] = useState(false);
+  const exportAudit = async () => {
+    setExporting(true);
+    setError(undefined);
+    try {
+      downloadBlob(await api.exportWorkbenchAudit(), `workbench-audit-${new Date().toISOString().slice(0, 10)}.csv`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(($) => $.workbench.load_failed));
+    } finally {
+      setExporting(false);
+    }
+  };
   const usages = ["read-repo", "push-branch", "merge", "deploy"] as const;
   const change = (patch: Partial<CredentialInput>) =>
     setDraft(
@@ -115,6 +129,9 @@ export function WorkbenchCredentials() {
           onClick={() => start()}
         >
           {t(($) => $.workbench.add)}
+        </Button>
+        <Button variant="outline" disabled={exporting} onClick={() => void exportAudit()}>
+          {exporting ? t(($) => $.workbench.exporting_audit) : t(($) => $.workbench.export_audit)}
         </Button>
         {credentials.data?.credentials.map((credential) => (
           <div
