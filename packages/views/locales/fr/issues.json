@@ -26,7 +26,10 @@
     "save": "Enregistrer",
     "discard": "Abandonner les modifications",
     "confirm": "Confirmer les exigences",
-    "save_failed": "Échec de l’enregistrement."
+    "save_failed": "Échec de l’enregistrement.",
+    "team_snapshot": "Équipe de la tâche · configuration {{revision}}",
+    "role_enabled": "Activé",
+    "role_disabled": "Rôle désactivé · responsabilité utilisateur"
   },
   "inline_run": {
     "label": "Exécution de {{name}}",

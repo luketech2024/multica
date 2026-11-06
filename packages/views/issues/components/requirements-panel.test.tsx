@@ -6,6 +6,7 @@ import type { Issue, UpdateIssueRequest } from "@multica/core/types";
 import { issueKeys } from "@multica/core/issues/queries";
 import { renderWithI18n } from "../../test/i18n";
 import { RequirementsPanel } from "./requirements-panel";
+import { ProjectRolesSchema, projectRoleOrder } from "@multica/core/workbench/configuration";
 
 const updateIssue = vi.fn<(id: string, data: UpdateIssueRequest) => Promise<Issue>>();
 vi.mock("@multica/core/api", async (importOriginal) => ({
@@ -34,6 +35,13 @@ function mount(issue = initial) {
   return client;
 }
 describe("requirements panel", () => {
+  it("shows the saved team configuration for this task", () => {
+    const roles = ProjectRolesSchema.parse({ revision: 2, config: { v: 1, roles: Object.fromEntries(projectRoleOrder.map((role) => [role, { enabled: role !== "sec" }])) } });
+    mount({ ...initial, acceptance_criteria: { ...initial.acceptance_criteria!, team: { ...roles, project_id: "project" } } });
+    fireEvent.click(screen.getByText("Task team · configuration 2"));
+    expect(screen.getByText("Role disabled · user responsibility")).toBeInTheDocument();
+    expect(screen.getAllByText("Enabled")).toHaveLength(5);
+  });
   it("waits for the persisted check and locks only after successful confirmation", async () => {
     updateIssue.mockImplementation(async (_id, data) => ({ ...initial, revision: (data.expected_revision ?? 3) + 1,
       acceptance_criteria: { ...data.acceptance_criteria!, gate: { spec: data.confirm_requirements ? { passed_at: "now", passed_by: "user-1" } : null, accept: null } },

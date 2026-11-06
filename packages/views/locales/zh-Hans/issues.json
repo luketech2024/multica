@@ -26,7 +26,10 @@
     "save": "保存修改",
     "discard": "放弃编辑",
     "confirm": "确认需求",
-    "save_failed": "需求保存失败。"
+    "save_failed": "需求保存失败。",
+    "team_snapshot": "任务团队 · 配置第 {{revision}} 版",
+    "role_enabled": "已启用",
+    "role_disabled": "角色未启用 · 用户承担"
   },
   "inline_run": {
     "label": "{{name}} 的运行",

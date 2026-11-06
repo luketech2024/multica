@@ -26,7 +26,10 @@
     "save": "변경 저장",
     "discard": "편집 취소",
     "confirm": "요구사항 확인",
-    "save_failed": "요구사항을 저장하지 못했습니다."
+    "save_failed": "요구사항을 저장하지 못했습니다.",
+    "team_snapshot": "작업 팀 · 설정 {{revision}}",
+    "role_enabled": "활성화",
+    "role_disabled": "역할 비활성화 · 사용자 책임"
   },
   "inline_run": {
     "label": "{{name}} 실행",

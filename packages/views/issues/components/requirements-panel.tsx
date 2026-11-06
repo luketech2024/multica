@@ -5,11 +5,13 @@ import { useTranslation } from "react-i18next";
 import type { AcceptanceCriteria, Issue } from "@multica/core/types";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { issueStatusCategory } from "@multica/core/issues";
+import { projectRoleOrder } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 
 export function RequirementsPanel({ issue }: { issue: Issue }) {
   const { t } = useTranslation("issues");
+  const { t: projectT } = useTranslation("projects");
   const update = useUpdateIssue();
   const [draft, setDraft] = useState<{ value: AcceptanceCriteria; revision: number }>();
   const [error, setError] = useState<string>();
@@ -45,6 +47,15 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
         <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
       </div>
       {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
+      {criteria.team && <details className="text-caption">
+        <summary className="cursor-pointer">{t(($) => $.requirements.team_snapshot, { revision: criteria.team.revision })}</summary>
+        <ul className="mt-2 space-y-1">
+          {projectRoleOrder.map((role) => <li key={role} className="flex flex-wrap justify-between gap-2">
+            <span>{projectT(($) => $.roles[role])}</span>
+            <span className="text-muted-foreground">{criteria.team!.config.roles[role].enabled ? t(($) => $.requirements.role_enabled) : t(($) => $.requirements.role_disabled)}</span>
+          </li>)}
+        </ul>
+      </details>}
       {criteria.items.length === 0 && <p className="text-caption text-muted-foreground">{t(($) => $.requirements.empty)}</p>}
       {criteria.items.map((item, index) => (
         <div key={item.id || `new-${index}`} className="space-y-1">

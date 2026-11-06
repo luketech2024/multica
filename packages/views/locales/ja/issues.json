@@ -26,7 +26,10 @@
     "save": "変更を保存",
     "discard": "編集を破棄",
     "confirm": "要件を確認",
-    "save_failed": "要件を保存できませんでした。"
+    "save_failed": "要件を保存できませんでした。",
+    "team_snapshot": "タスクチーム · 設定 {{revision}}",
+    "role_enabled": "有効",
+    "role_disabled": "ロール無効 · ユーザー責任"
   },
   "inline_run": {
     "label": "{{name}} の実行",

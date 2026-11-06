@@ -334,6 +334,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 	// WorkspaceID — there is no path from this service to a row in a
 	// foreign workspace.
 	projectID := p.ProjectID
+	var parentTeam *workbench.ProjectTeamSnapshot
 	if p.ParentIssueID.Valid {
 		parent, err := qtx.GetIssueInWorkspace(ctx, db.GetIssueInWorkspaceParams{
 			ID:          p.ParentIssueID,
@@ -348,13 +349,43 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 		if !projectID.Valid {
 			projectID = parent.ProjectID
 		}
+		if len(p.AcceptanceCriteria) > 0 {
+			parentCriteria, err := workbench.ParseRequirements(parent.AcceptanceCriteria)
+			if err != nil {
+				return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
+			}
+			parentTeam = parentCriteria.Team
+		}
 	}
 	if projectID.Valid {
-		if _, err := qtx.GetProjectInWorkspace(ctx, db.GetProjectInWorkspaceParams{
+		project, err := qtx.GetProjectInWorkspace(ctx, db.GetProjectInWorkspaceParams{
 			ID:          projectID,
 			WorkspaceID: p.WorkspaceID,
-		}); err != nil {
+		})
+		if err != nil {
 			return IssueCreateResult{}, ErrProjectNotFound
+		}
+		if len(p.AcceptanceCriteria) > 0 {
+			criteria, err := workbench.ParseRequirements(p.AcceptanceCriteria)
+			if err != nil {
+				return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
+			}
+			if parentTeam != nil {
+				if parentTeam.ProjectID != util.UUIDToString(projectID) {
+					return IssueCreateResult{}, fmt.Errorf("%w: subtasks must use their parent's project", ErrIssueRequirements)
+				}
+				criteria.Team = parentTeam
+			} else {
+				roles, _, err := workbench.LoadProjectRoles(ctx, qtx, project)
+				if err != nil {
+					return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueRequirements, err)
+				}
+				criteria.Team = &workbench.ProjectTeamSnapshot{ProjectID: util.UUIDToString(projectID), ProjectRoleConfiguration: roles}
+			}
+			p.AcceptanceCriteria, err = json.Marshal(criteria)
+			if err != nil {
+				return IssueCreateResult{}, err
+			}
 		}
 	}
 

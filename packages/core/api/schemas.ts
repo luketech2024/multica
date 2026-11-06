@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ProjectRolesSchema } from "../workbench/schemas";
 import { normalizeIssueStatusCategory } from "../issues/config/status";
 import type {
   WorkflowHandoffPreview,
@@ -1452,6 +1453,7 @@ export const CommentSubIssueTaskResponseSchema = z.object({
 }).loose();
 
 export const AcceptanceCriteriaSchema = z.object({
+  team: ProjectRolesSchema.extend({ project_id: z.string().uuid() }).optional(),
   v: z.literal(1),
   version: z.number().int().positive().default(1),
   next_item_no: z.number().int().positive().default(1),

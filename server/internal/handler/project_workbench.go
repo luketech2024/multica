@@ -1,47 +1,24 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
-type ProjectRolesResponse struct {
-	Config   workbench.ProjectRoles `json:"config"`
-	Revision int64                  `json:"revision"`
-}
-
-func loadProjectRoles(ctx context.Context, q *db.Queries, project db.Project) (ProjectRolesResponse, db.ProjectResource, error) {
-	resource, err := q.GetProjectWorkbenchRoles(ctx, db.GetProjectWorkbenchRolesParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ProjectRolesResponse{Config: workbench.DefaultProjectRoles(), Revision: 1}, resource, nil
-	}
-	if err != nil {
-		return ProjectRolesResponse{}, resource, err
-	}
-	var response ProjectRolesResponse
-	if err = json.Unmarshal(resource.ResourceRef, &response); err != nil || response.Revision < 1 {
-		return response, resource, errors.New("invalid saved project roles")
-	}
-	raw, _ := json.Marshal(response.Config)
-	_, err = workbench.ParseProjectRoles(raw)
-	return response, resource, err
-}
+type ProjectRolesResponse = workbench.ProjectRoleConfiguration
 
 func (h *Handler) GetProjectWorkbenchRoles(w http.ResponseWriter, r *http.Request) {
 	project, ok := h.loadProjectForResource(w, r, chi.URLParam(r, "id"))
 	if !ok {
 		return
 	}
-	response, _, err := loadProjectRoles(r.Context(), h.Queries, project)
+	response, _, err := workbench.LoadProjectRoles(r.Context(), h.Queries, project)
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return
@@ -114,7 +91,7 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "project not found")
 		return
 	}
-	before, resource, err := loadProjectRoles(r.Context(), q, project)
+	before, resource, err := workbench.LoadProjectRoles(r.Context(), q, project)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load project roles")
 		return

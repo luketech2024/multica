@@ -1,12 +1,55 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
 )
+
+func TestProjectTeamSnapshotSurvivesConfigurationAndRequirementEdits(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database unavailable")
+	}
+	project := dbfx.Project(t, "Team snapshots")
+	config := workbench.DefaultProjectRoles()
+	config.Roles["sec"] = workbench.ProjectRole{Enabled: false}
+	save := func(revision int64) {
+		t.Helper()
+		request := testutil.WithURLParams(newRequest("PUT", "/api/projects/"+project+"/workbench-roles", map[string]any{"config": config, "expected_revision": revision}), "id", project)
+		testutil.Call(t, testHandler.SaveProjectWorkbenchRoles, request).Want(http.StatusOK)
+	}
+	save(1)
+	input := map[string]any{"v": 1, "items": []map[string]any{{"text": "Report export"}}}
+	first := createIssueWithPropertyBody(t, map[string]any{"title": "First team snapshot", "project_id": project, "acceptance_criteria": input})
+	config.Roles["sec"] = workbench.ProjectRole{Enabled: true}
+	save(2)
+	second := createIssueWithPropertyBody(t, map[string]any{"title": "Second team snapshot", "project_id": project, "acceptance_criteria": input})
+	child := createIssueWithPropertyBody(t, map[string]any{"title": "Inherited team snapshot", "parent_issue_id": first.ID, "acceptance_criteria": input})
+	assertTeam := func(issue IssueResponse, enabled bool, revision int64) workbench.Requirements {
+		t.Helper()
+		criteria, err := workbench.ParseRequirements(issue.AcceptanceCriteria)
+		if err != nil || criteria.Team == nil || criteria.Team.Config.Roles["sec"].Enabled != enabled || criteria.Team.Revision != revision || criteria.Team.ProjectID != project {
+			t.Fatalf("unexpected team snapshot: %s", issue.AcceptanceCriteria)
+		}
+		return criteria
+	}
+	criteria := assertTeam(first, false, 2)
+	assertTeam(second, true, 3)
+	assertTeam(child, false, 2)
+	criteria.Team.Config.Roles["sec"] = workbench.ProjectRole{Enabled: true}
+	criteria.Items[0].Text = "Updated export"
+	var updated IssueResponse
+	request := testutil.WithURLParams(newRequest("PUT", "/api/issues/"+first.ID, map[string]any{"acceptance_criteria": criteria, "expected_revision": first.Revision}), "id", first.ID)
+	testutil.Call(t, testHandler.UpdateIssue, request).Want(http.StatusOK).JSON(&updated)
+	assertTeam(updated, false, 2)
+	var persisted json.RawMessage
+	dbfx.QueryRow(t, `SELECT acceptance_criteria FROM issue WHERE id=$1`, first.ID).Scan(&persisted)
+	updated.AcceptanceCriteria = persisted
+	assertTeam(updated, false, 2)
+}
 
 func TestProjectRolesPersistenceRequiredRolesAndRevision(t *testing.T) {
 	if testHandler == nil {

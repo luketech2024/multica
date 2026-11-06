@@ -26,7 +26,10 @@
     "save": "Save changes",
     "discard": "Discard edits",
     "confirm": "Confirm requirements",
-    "save_failed": "Could not save requirements."
+    "save_failed": "Could not save requirements.",
+    "team_snapshot": "Task team · configuration {{revision}}",
+    "role_enabled": "Enabled",
+    "role_disabled": "Role disabled · user responsibility"
   },
   "inline_run": {
     "label": "{{name}} run",

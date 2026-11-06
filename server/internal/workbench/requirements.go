@@ -35,12 +35,13 @@ type Gates struct {
 }
 
 type Requirements struct {
-	V          int      `json:"v"`
-	Version    int      `json:"version"`
-	NextItemNo int      `json:"next_item_no"`
-	Items      []Item   `json:"items"`
-	Bounds     []string `json:"bounds"`
-	Gate       Gates    `json:"gate"`
+	Team       *ProjectTeamSnapshot `json:"team,omitempty"`
+	V          int                  `json:"v"`
+	Version    int                  `json:"version"`
+	NextItemNo int                  `json:"next_item_no"`
+	Items      []Item               `json:"items"`
+	Bounds     []string             `json:"bounds"`
+	Gate       Gates                `json:"gate"`
 }
 
 var itemID = regexp.MustCompile(`^A-([0-9]+)$`)
