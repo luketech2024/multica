@@ -38,6 +38,7 @@ vi.mock("@tanstack/react-query", () => ({
   // pickers, which expect a different shape.
   useQuery: (options: { queryKey?: unknown[] }) => {
     const key = options?.queryKey?.[0];
+    if (key === "repository-stacks") return { data: { templates: [{ id: "custom" }], tags: [], deliveries: ["none"] } };
     if (key === "workbench") return { data: { templates: [] } };
     if (key === "members" || key === "agents" || key === "projects") return { data: [] };
     return {

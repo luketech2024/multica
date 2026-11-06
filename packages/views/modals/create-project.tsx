@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { ProjectRolesSchema, projectRoleOrder } from "@multica/core/workbench/configuration";
+import { ProjectRolesSchema, projectRoleOrder, type RepositoryProfileInput } from "@multica/core/workbench/configuration";
+import { RepositoryProfileFields } from "../projects/components/repository-profile-fields";
 import { ProjectRolesFields } from "../projects/components/project-roles-fields";
 import { BusinessTemplatePicker } from "../projects/components/business-template-picker";
 import { CalendarClock, CalendarDays, ChevronRight, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, UserMinus } from "@multica/ui/icons";
@@ -167,6 +168,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const clearDraft = useProjectDraftStore((s) => s.clearDraft);
 
   const [step, setStep] = useState(0);
+  const [repositoryProfiles, setRepositoryProfiles] = useState<Record<string, RepositoryProfileInput>>(draft.repositoryProfiles ?? {});
   const [businessTemplate, setBusinessTemplate] = useState(draft.businessTemplate);
   const [team, setTeam] = useState(() => draft.workbenchRoles ?? ProjectRolesSchema.parse({
     revision: 1,
@@ -366,11 +368,14 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const hasRejectedRepoRef = selectedRepos.some((url) =>
     githubRefHasError(repoRefs[url] ?? ""),
   );
+  const selectedSources = sourceMode === "repos" ? selectedRepos : selectedLocalPath ? [selectedLocalPath] : [];
+  const hasInvalidProfile = selectedSources.some((source) => repositoryProfiles[source]?.delivery.length === 0);
 
   const handleSubmit = async () => {
     // Checked here as well as on the button: TitleEditor's onSubmit calls this
     // directly, so a disabled button alone leaves the keyboard path open.
     if (!validBasics || submitting) return;
+    if (step > 0 && hasInvalidProfile) return;
     if (sourceMode === "repos" && hasRejectedRepoRef) return;
     if (step < 2) {
       setStep(step + 1);
@@ -380,7 +385,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     // side is silently dropped, so repos picked then abandoned for local
     // mode don't leak into the project.
     let resources:
-      | Array<{ resource_type: "github_repo" | "local_directory"; resource_ref: Record<string, unknown> }>
+      | Array<{ resource_type: "github_repo" | "local_directory"; resource_ref: Record<string, unknown>; repository_profile?: RepositoryProfileInput }>
       | undefined;
     if (sourceMode === "repos" && selectedRepos.length > 0) {
       resources = selectedRepos.map((url) => {
@@ -390,6 +395,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
           // Omit the key entirely when empty: an absent ref is what "use the
           // default branch" looks like on the wire.
           resource_ref: ref ? { url, ref } : { url },
+          ...(repositoryProfiles[url] ? { repository_profile: repositoryProfiles[url] } : {}),
         };
       });
     } else if (
@@ -400,6 +406,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
       resources = [
         {
           resource_type: "local_directory" as const,
+          ...(repositoryProfiles[selectedLocalPath] ? { repository_profile: repositoryProfiles[selectedLocalPath] } : {}),
           resource_ref: buildLocalDirectoryResourceRef({
             localPath: selectedLocalPath,
             daemonId: daemonStatus.daemonId,
@@ -985,9 +992,24 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
           <h3 className="text-label font-medium">{tProjects(($) => $.wizard.code)}</h3>
           {repositoryPicker}
           <ul className="space-y-2 text-caption">
-            {sourceMode === "repos" ? selectedRepos.map((url) => (
-              <li key={url} className="break-all">{url}{repoRefs[url] ? ` · ${repoRefs[url]}` : ""}</li>
-            )) : <li className="break-all">{selectedLocalPath}</li>}
+            {selectedSources.map((source) => (
+              <li key={source} className="space-y-2 rounded-xl border p-3">
+                <p className="break-all">{source}{sourceMode === "repos" && repoRefs[source] ? ` · ${repoRefs[source]}` : ""}</p>
+                <details>
+                  <summary>{tProjects(($) => $.repository_profile.title)}</summary>
+                  <div className="space-y-3 pt-3">
+                    <RepositoryProfileFields
+                      value={repositoryProfiles[source] ?? { expected_revision: 0, template: "custom", tags: [], delivery: ["none"], overrides: {} }}
+                      onChange={(profile) => {
+                        const next = { ...repositoryProfiles, [source]: profile };
+                        setRepositoryProfiles(next);
+                        setDraft({ repositoryProfiles: next });
+                      }}
+                    />
+                  </div>
+                </details>
+              </li>
+            ))}
           </ul>
         </div>}
         {step === 2 && <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3">
@@ -1211,7 +1233,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             disabled={
               !validBasics ||
               submitting ||
-              (sourceMode === "repos" && hasRejectedRepoRef)
+              (sourceMode === "repos" && hasRejectedRepoRef) || (step > 0 && hasInvalidProfile)
             }
             className="shrink-0"
           >

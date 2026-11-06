@@ -1,5 +1,5 @@
 
-import type { ProjectRoles } from "../workbench/schemas";
+import type { ProjectRoles, RepositoryProfileInput } from "../workbench/schemas";
 
 export type ProjectStatus = "planned" | "in_progress" | "paused" | "completed" | "cancelled";
 
@@ -47,7 +47,7 @@ export interface CreateProjectRequest {
   workflow_id?: string | null;
   // Resources to attach in the same transaction as the project. Server returns
   // 4xx (and rolls back) if any one is invalid or duplicate.
-  resources?: CreateProjectResourceRequest[];
+  resources?: (CreateProjectResourceRequest & { repository_profile?: RepositoryProfileInput })[];
 }
 
 export interface UpdateProjectRequest {

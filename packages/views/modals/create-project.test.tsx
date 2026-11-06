@@ -12,7 +12,7 @@ const webRepoUrl = "https://github.com/multica-ai/web";
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown[] }) => ({
-    data: options.queryKey?.[0] === "workbench" ? { templates: [] } : options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
+    data: options.queryKey?.[0] === "repository-stacks" ? { templates: [{ id: "custom" }, { id: "java-backend" }], tags: [{ id: "java21" }], deliveries: ["none", "docker-image"] } : options.queryKey?.[0] === "workbench" ? { templates: [] } : options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
   }),
   // The modal now reads the runtime list to gate worktree mode, and
   // runtimeListOptions builds its descriptor with queryOptions.
@@ -214,6 +214,31 @@ vi.mock("sonner", () => ({
 import { CreateProjectModal } from "./create-project";
 
 describe("CreateProjectModal", () => {
+  it("keeps repository profiles through a failed create and sends each with its source", async () => {
+    createProjectMock.mockClear();
+    createProjectMock.mockRejectedValueOnce(new Error("Save failed"));
+    const user = userEvent.setup();
+    renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText(/project title/i), "Repository configuration");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: (name) => name.includes(apiRepoUrl) }));
+    await user.click(screen.getByText("Repository profiles"));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Stack template" }), "java-backend");
+    await user.click(screen.getByRole("checkbox", { name: "java21" }));
+    await user.click(screen.getByRole("checkbox", { name: "docker-image" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: /^create project$/i }));
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByText("Repository profiles"));
+    expect(screen.getByRole("checkbox", { name: "java21" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: /^create project$/i }));
+    expect(createProjectMock).toHaveBeenCalledTimes(2);
+    expect(createProjectMock.mock.calls[1]?.[0].resources).toEqual([{
+      resource_type: "github_repo", resource_ref: { url: apiRepoUrl },
+      repository_profile: { expected_revision: 0, template: "java-backend", tags: ["java21"], delivery: ["docker-image"], overrides: {} },
+    }]);
+  });
   it("blocks duplicate names and missing descriptions before advancing", async () => {
     const user = userEvent.setup();
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);

@@ -130,10 +130,11 @@ type CreateProjectRequest struct {
 // is embedded inside the project create payload. Kept as a separate type so a
 // future change to the standalone request can't silently break this surface.
 type CreateProjectResourceRequestPayload struct {
-	ResourceType string          `json:"resource_type"`
-	ResourceRef  json.RawMessage `json:"resource_ref"`
-	Label        *string         `json:"label"`
-	Position     *int32          `json:"position"`
+	RepositoryProfile *workbench.RepositoryProfileInput `json:"repository_profile,omitempty"`
+	ResourceType      string                            `json:"resource_type"`
+	ResourceRef       json.RawMessage                   `json:"resource_ref"`
+	Label             *string                           `json:"label"`
+	Position          *int32                            `json:"position"`
 }
 
 type UpdateProjectRequest struct {
@@ -375,6 +376,22 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		normalizedRefs[i] = ref
+		if res.RepositoryProfile != nil {
+			if res.RepositoryProfile.ExpectedRevision != 0 {
+				writeError(w, http.StatusBadRequest, "initial repository profile revision must be zero")
+				return
+			}
+			profile, err := workbench.BuildRepositoryProfile(*res.RepositoryProfile, workbench.RepositoryProfile{})
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "resources["+strconv.Itoa(i)+"]: "+err.Error())
+				return
+			}
+			normalizedRefs[i], err = workbench.WriteRepositoryProfile(ref, profile)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to encode initial repository profile")
+				return
+			}
+		}
 		if res.ResourceType == "local_directory" {
 			var ld localDirectoryRef
 			if err := json.Unmarshal(ref, &ld); err != nil {
@@ -513,6 +530,16 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resourceRows = append(resourceRows, row)
+		if res.RepositoryProfile != nil {
+			profile, err := workbench.ReadRepositoryProfile(row.ResourceRef)
+			if err == nil {
+				err = writeWorkbenchAudit(r.Context(), qtx, project.WorkspaceID, creator, "repository_profile_created", map[string]any{"project_id": uuidToString(project.ID), "repo_id": uuidToString(row.ID), "after": profile})
+			}
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to record initial repository profile audit")
+				return
+			}
+		}
 	}
 	if team != nil {
 		raw, _ := json.Marshal(team)

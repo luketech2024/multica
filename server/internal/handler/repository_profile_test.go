@@ -96,3 +96,56 @@ func TestRepositoryProfilePersistsWithRevisionAndSurvivesRepositoryEdits(t *test
 		t.Fatal("repository source was lost")
 	}
 }
+
+func TestCreateProjectRepositoryProfilesAreAtomicAndIndependent(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database unavailable")
+	}
+	input := workbench.RepositoryProfileInput{Template: "java-backend", Tags: []string{"java21"}, Delivery: []string{"docker-image"}}
+	resources := []map[string]any{
+		{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/api.git"}, "repository_profile": input},
+		{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/web.git"}, "repository_profile": workbench.RepositoryProfileInput{Template: "web-frontend", Tags: []string{"ts"}, Delivery: []string{"static-site"}}},
+	}
+	body := map[string]any{"title": "Atomic repository profiles", "resources": resources}
+	var created struct {
+		ProjectResponse
+		Resources []ProjectResourceResponse `json:"resources"`
+	}
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusCreated).JSON(&created)
+	t.Cleanup(func() {
+		testutil.Call(t, testHandler.DeleteProject, testutil.WithURLParams(newRequest("DELETE", "/api/projects/"+created.ID, nil), "id", created.ID)).Want(http.StatusNoContent)
+	})
+	if len(created.Resources) != 2 {
+		t.Fatal("expected two independently configured repositories")
+	}
+	for i, template := range []string{"java-backend", "web-frontend"} {
+		profile, err := workbench.ReadRepositoryProfile(created.Resources[i].ResourceRef)
+		if err != nil || profile.Revision != 1 || profile.Stack.Template != template {
+			t.Fatalf("repository %d profile: %+v, %v", i, profile, err)
+		}
+	}
+	var audits int
+	dbfx.QueryRow(t, `SELECT count(*) FROM activity_log WHERE action='repository_profile_created' AND details->>'project_id'=$1`, created.ID).Scan(&audits)
+	if audits != 2 {
+		t.Fatalf("expected two profile audits, got %d", audits)
+	}
+	body["title"] = "Invalid repository profiles"
+	input.Template = "invalid"
+	resources[1]["repository_profile"] = input
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusBadRequest)
+	input.Template, input.ExpectedRevision = "java-backend", 1
+	resources[1]["repository_profile"] = input
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusBadRequest)
+	var partial int
+	dbfx.QueryRow(t, `SELECT count(*) FROM project WHERE workspace_id=$1 AND title=$2`, testWorkspaceID, body["title"]).Scan(&partial)
+	if partial != 0 {
+		t.Fatal("invalid repository profile left a partial project")
+	}
+	input.ExpectedRevision = 0
+	resources[1] = map[string]any{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/api.git"}, "repository_profile": input}
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusConflict)
+	dbfx.QueryRow(t, `SELECT count(*) FROM project WHERE workspace_id=$1 AND title=$2`, testWorkspaceID, body["title"]).Scan(&partial)
+	if partial != 0 {
+		t.Fatal("duplicate repository left a partial project")
+	}
+}

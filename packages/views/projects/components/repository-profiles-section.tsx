@@ -14,6 +14,7 @@ import {
 import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 import { useT } from "../../i18n";
+import { RepositoryProfileFields } from "./repository-profile-fields";
 
 export function RepositoryProfilesSection({
   projectId,
@@ -209,73 +210,7 @@ function RepositoryProfileEditor({
     );
   return (
     <fieldset disabled={save.isPending} className="space-y-3 text-caption">
-      <label className="block">
-        {t(($) => $.repository_profile.template)}
-        <select
-          className="block w-full rounded-md border bg-surface p-2"
-          value={draft.template}
-          onChange={(event) =>
-            setDraft({ ...draft, template: event.target.value })
-          }
-        >
-          {catalog.data.templates.map((template) => (
-            <option key={template.id} value={template.id}>
-              {templateNames[template.id] ?? template.id}
-            </option>
-          ))}
-        </select>
-      </label>
-      <fieldset>
-        <legend>{t(($) => $.repository_profile.tags)}</legend>
-        <div className="flex flex-wrap gap-2">
-          {catalog.data.tags.map((tag) => (
-            <label key={tag.id} className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={draft.tags.includes(tag.id)}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    tags: event.target.checked
-                      ? [...draft.tags, tag.id]
-                      : draft.tags.filter((id) => id !== tag.id),
-                  })
-                }
-              />
-              {tag.id}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>{t(($) => $.repository_profile.delivery)}</legend>
-        <div className="flex flex-wrap gap-2">
-          {catalog.data.deliveries.map((delivery) => (
-            <label key={delivery} className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={draft.delivery.includes(delivery)}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    delivery: event.target.checked
-                      ? delivery === "none"
-                        ? ["none"]
-                        : [
-                            ...draft.delivery.filter(
-                              (value) => value !== "none",
-                            ),
-                            delivery,
-                          ]
-                      : draft.delivery.filter((value) => value !== delivery),
-                  })
-                }
-              />
-              {delivery}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <RepositoryProfileFields value={draft} onChange={setDraft} />
       <details>
         <summary>{t(($) => $.repository_profile.manual)}</summary>
         <div className="space-y-2 py-2">

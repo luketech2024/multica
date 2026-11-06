@@ -1,8 +1,12 @@
 import type { ProjectStatus, ProjectPriority } from "../types";
-import type { ProjectRoles } from "../workbench/schemas";
+import type {
+  ProjectRoles,
+  RepositoryProfileInput,
+} from "../workbench/schemas";
 import { createDraftStore } from "../drafts/create-draft-store";
 
 interface ProjectDraft {
+  repositoryProfiles?: Record<string, RepositoryProfileInput>;
   businessTemplate?: { id: string; revision: number };
   workbenchRoles?: ProjectRoles["config"];
   title: string;
