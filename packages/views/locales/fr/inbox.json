@@ -85,6 +85,8 @@
     "autopilot_quota_exceeded": "Limite d'exécutions d'automatisation atteinte"
   },
   "labels": {
+    "delivery_ready": "Les preuves de livraison sont prêtes pour votre validation",
+    "test_security_conflict": "Les conclusions des tests et de sécurité sont contradictoires",
     "set_status_to": "Statut défini sur",
     "set_priority_to": "Priorité définie sur",
     "assigned_to": "Assigné à {{name}}",

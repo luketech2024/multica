@@ -54,6 +54,14 @@ vi.mock("../../i18n", () => ({
   }),
 }));
 
+it("explains workbench review readiness and conflicting conclusions", () => {
+  const ready = render(<InboxDetailLabel item={item({ type: "review_requested", details: { source: "workbench_delivery", reason: "delivery_ready" } })} />);
+  expect(ready.container.textContent).toBe("Delivery evidence is ready for your review");
+  ready.unmount();
+  const conflict = render(<InboxDetailLabel item={item({ type: "agent_blocked", details: { source: "workbench_delivery", reason: "test_security_conflict" } })} />);
+  expect(conflict.container.textContent).toBe("Testing and security conclusions conflict");
+});
+
 function item(overrides: Partial<InboxItem> = {}): InboxItem {
   return {
     id: "inbox-1",

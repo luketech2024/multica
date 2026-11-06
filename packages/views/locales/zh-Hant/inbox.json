@@ -83,6 +83,8 @@
     "autopilot_quota_exceeded": "自動化執行次數已用完"
   },
   "labels": {
+    "delivery_ready": "交付證據已齊備，等待你驗收",
+    "test_security_conflict": "測試與安全結論衝突",
     "set_status_to": "狀態設為",
     "set_priority_to": "優先順序設為",
     "assigned_to": "分配給 {{name}}",

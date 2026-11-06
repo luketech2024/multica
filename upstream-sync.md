@@ -47,3 +47,5 @@ Validation and incomplete scope are tracked in D:\vibe-coding工作台\开发任
 - Workbench tasks and planned children keep immutable UUID URLs. Identifier links resolve before editable content mounts, preserving comment anchors. Native task identifier canonicalization remains supported. This prevents route replacement from discarding open delivery forms.
 
 - The shared standalone issue pipeline is wired into web and desktop issue UUID routes. Preserve stage/task query selection, current-plan filtering, snapshot roles, delivery evidence scoping, PR/log views and retry/empty/loading states. Detailed test/security/deployment output schemas and automatic collection remain pending.
+
+- The persisted-plan scheduler also reconciles parent execution and delivery review. Current child progress starts the parent, complete fresh evidence advances it to review, and conflicting enabled testing/security conclusions block it. Preserve member ownership or transfer to the requirement-confirming member, transactional status/assignment/audit/inbox writes, and repeat/concurrency suppression. Missing permissions, stale evidence, pauses and requirement changes must not advance acceptance.

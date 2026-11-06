@@ -59,6 +59,11 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
   const statusLabelOf = useStatusLabel(item.workspace_id);
   const details = item.details ?? {};
 
+  if (details.source === "workbench_delivery") {
+    if (details.reason === "delivery_ready") return <span>{t(($) => $.labels.delivery_ready)}</span>;
+    if (details.reason === "test_security_conflict") return <span>{t(($) => $.labels.test_security_conflict)}</span>;
+  }
+
   switch (item.type) {
     case "status_changed": {
       if (!details.to) return <span>{typeLabels[item.type]}</span>;

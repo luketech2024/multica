@@ -83,6 +83,8 @@
     "autopilot_quota_exceeded": "自動化の実行上限に達しました"
   },
   "labels": {
+    "delivery_ready": "成果の証跡が揃い、レビューを待っています",
+    "test_security_conflict": "テストとセキュリティの判定が一致していません",
     "set_status_to": "ステータスを変更:",
     "set_priority_to": "優先度を変更:",
     "assigned_to": "{{name}} に割り当て",

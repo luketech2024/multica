@@ -83,6 +83,8 @@
     "autopilot_quota_exceeded": "자동화 실행 한도 도달"
   },
   "labels": {
+    "delivery_ready": "검토할 납품 증빙이 준비되었습니다",
+    "test_security_conflict": "테스트와 보안 결론이 서로 다릅니다",
     "set_status_to": "상태 변경:",
     "set_priority_to": "우선순위 변경:",
     "assigned_to": "{{name}}님에게 할당",

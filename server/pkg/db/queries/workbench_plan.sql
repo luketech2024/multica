@@ -49,6 +49,15 @@ ORDER BY child.id LIMIT 100;
 -- name: WorkbenchIssueHasRun :one
 SELECT EXISTS (SELECT 1 FROM agent_task_queue WHERE issue_id = @issue_id);
 
+-- name: ListWorkbenchReviewCandidates :many
+SELECT * FROM issue
+WHERE id > @after_id AND parent_issue_id IS NULL AND project_id IS NOT NULL
+  AND status IN ('todo', 'in_progress', 'in_review')
+  AND acceptance_criteria->'team' IS NOT NULL
+  AND acceptance_criteria->'plan' IS NOT NULL
+  AND properties->'workbench_pause' IS NULL
+ORDER BY id LIMIT 100;
+
 -- name: ListWorkbenchDependencyIssues :many
 WITH RECURSIVE dependencies(id) AS (
     SELECT root.id FROM issue root WHERE root.workspace_id = @workspace_id AND root.id = ANY(@issue_ids::uuid[])

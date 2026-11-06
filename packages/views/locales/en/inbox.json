@@ -85,6 +85,8 @@
     "autopilot_quota_exceeded": "Autopilot run limit reached"
   },
   "labels": {
+    "delivery_ready": "Delivery evidence is ready for your review",
+    "test_security_conflict": "Testing and security conclusions conflict",
     "set_status_to": "Set status to",
     "set_priority_to": "Set priority to",
     "assigned_to": "Assigned to {{name}}",

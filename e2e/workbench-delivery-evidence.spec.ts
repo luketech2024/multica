@@ -30,12 +30,12 @@ test.describe("Workbench delivery evidence", () => {
     });
     const childId = parent.acceptance_criteria.plan.issues[0];
     await api.updateIssue(childId, { status: "done" });
-    parent = await api.updateIssue(parent.id, { status: "in_review", expected_revision: parent.revision });
     const slug = await loginAsDefault(page);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/${slug}/issues/${parent.id}`);
     const evidence = page.getByRole("region", { name: "Delivery evidence", exact: true });
+    await expect(evidence.getByRole("button", { name: "Record evidence" })).toBeEnabled({ timeout: 20000 });
     await evidence.getByRole("button", { name: "Record evidence" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Conclusion" }).fill("Export report verified against all expected rows.");
@@ -69,6 +69,7 @@ test.describe("Workbench delivery evidence", () => {
     }
     await page.goto(`/${slug}/issues/${parent.id}`);
     const acceptance = page.getByRole("region", { name: "Delivery acceptance", exact: true });
+    await expect(acceptance.getByRole("button", { name: "Accept delivery", exact: true })).toBeEnabled({ timeout: 20000 });
     const acceptedResponse = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith("/delivery-review"));
     await acceptance.getByRole("button", { name: "Accept delivery", exact: true }).click();
     const accepted = await acceptedResponse;
