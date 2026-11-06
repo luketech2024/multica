@@ -99,8 +99,8 @@ func TestEnsureIsIdempotent(t *testing.T) {
 			systemByKey[e.Key] = e
 		}
 	}
-	if len(systemByKey) != 7 {
-		t.Fatalf("expected exactly 7 built-in rows after double seeding, got %d", len(systemByKey))
+	if len(systemByKey) != 8 {
+		t.Fatalf("expected exactly 8 built-in rows after double seeding, got %d", len(systemByKey))
 	}
 	// Every built-in must be its own category's canonical — the invariant that
 	// makes Effective an identity function on built-in keys.
@@ -129,7 +129,7 @@ func TestCatalogOrderMatchesLifecycleGroups(t *testing.T) {
 			gotSystem = append(gotSystem, e.Key)
 		}
 	}
-	want := []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"}
+	want := []string{"backlog", "todo", "in_progress", "in_review", "blocked", "paused", "done", "cancelled"}
 	for i := range want {
 		if i >= len(gotSystem) || gotSystem[i] != want[i] {
 			t.Fatalf("built-in order = %v, want %v (frontend STATUS_ORDER)", gotSystem, want)
@@ -152,14 +152,14 @@ func TestListIssueStatusesPreservesLegacyWireCategories(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	wantCategories := issuestatus.Canonical()
+	wantCategories := issuestatus.WireCategories()
 	if !slices.Equal(resp.Categories, wantCategories) {
 		t.Fatalf("categories = %v, want %v", resp.Categories, wantCategories)
 	}
 
 	wantSystemCategories := map[string]string{
 		"backlog": "backlog", "todo": "todo",
-		"in_progress": "in_progress", "in_review": "in_review", "blocked": "blocked",
+		"in_progress": "in_progress", "in_review": "in_review", "blocked": "blocked", "paused": "in_progress",
 		"done": "done", "cancelled": "cancelled",
 	}
 	gotSystemCategories := make(map[string]string, len(wantSystemCategories))
@@ -169,7 +169,7 @@ func TestListIssueStatusesPreservesLegacyWireCategories(t *testing.T) {
 		}
 	}
 	if len(gotSystemCategories) != len(wantSystemCategories) {
-		t.Fatalf("system statuses = %v, want exactly seven", gotSystemCategories)
+		t.Fatalf("system statuses = %v, want exactly eight", gotSystemCategories)
 	}
 	for key, want := range wantSystemCategories {
 		if got := gotSystemCategories[key]; got != want {
@@ -211,8 +211,8 @@ func TestUnseededWorkspaceStillAcceptsBuiltInStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ActiveKeys: %v", err)
 	}
-	if len(keys) != 7 {
-		t.Errorf("ActiveKeys on an unseeded workspace = %v, want the 7 built-ins", keys)
+	if len(keys) != 8 {
+		t.Errorf("ActiveKeys on an unseeded workspace = %v, want the 8 built-ins", keys)
 	}
 }
 

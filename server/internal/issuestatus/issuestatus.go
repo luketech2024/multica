@@ -1,6 +1,6 @@
 // Package issuestatus owns the per-workspace issue status catalog (MUL-6243).
 //
-// MODEL. Seven fixed built-in statuses belong to four stored lifecycle
+// MODEL. Eight fixed built-in statuses belong to four stored lifecycle
 // categories: unstarted, started, done, closed. Custom statuses inherit only
 // lifecycle, not built-in parking, review, failure, or recovery behavior.
 //
@@ -23,7 +23,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
-// The 7 canonical status keys. They remain the stored behavior vocabulary.
+// The 8 canonical status keys. They remain the stored behavior vocabulary.
 const (
 	Backlog    = "backlog"
 	Todo       = "todo"
@@ -31,6 +31,7 @@ const (
 	InReview   = "in_review"
 	Done       = "done"
 	Blocked    = "blocked"
+	Paused     = "paused"
 	Cancelled  = "cancelled"
 )
 
@@ -51,6 +52,7 @@ var canonicalOrder = []string{
 	InProgress,
 	InReview,
 	Blocked,
+	Paused,
 	Done,
 	Cancelled,
 }
@@ -95,14 +97,14 @@ type Querier interface {
 	ListIssueStatusKeysByCategories(ctx context.Context, arg db.ListIssueStatusKeysByCategoriesParams) ([]string, error)
 }
 
-// Canonical returns the 7 canonical status keys in display order.
+// Canonical returns the 8 canonical status keys in display order.
 func Canonical() []string {
 	out := make([]string, len(canonicalOrder))
 	copy(out, canonicalOrder)
 	return out
 }
 
-// IsBuiltIn reports whether key is one of the 7 canonical, platform-owned
+// IsBuiltIn reports whether key is one of the 8 canonical, platform-owned
 // statuses. None of them can be reused as a custom key.
 func IsBuiltIn(key string) bool {
 	_, ok := canonicalRank[key]
@@ -114,6 +116,11 @@ func Categories() []string {
 	out := make([]string, len(categoryOrder))
 	copy(out, categoryOrder)
 	return out
+}
+
+// WireCategories preserves the category enum supported by installed clients.
+func WireCategories() []string {
+	return []string{Backlog, Todo, InProgress, InReview, Blocked, Done, Cancelled}
 }
 
 // IsCategory reports whether value names a public lifecycle category.
@@ -137,7 +144,7 @@ func CategoryForBehavior(behavior string) (string, bool) {
 	switch behavior {
 	case Backlog, Todo:
 		return CategoryUnstarted, true
-	case InProgress, InReview, Blocked:
+	case InProgress, InReview, Blocked, Paused:
 		return CategoryStarted, true
 	case Done:
 		return CategoryDone, true
@@ -155,7 +162,7 @@ func BehaviorsForCategory(category string) []string {
 	case CategoryUnstarted:
 		return []string{Backlog, Todo}
 	case CategoryStarted:
-		return []string{InProgress, InReview, Blocked}
+		return []string{InProgress, InReview, Blocked, Paused}
 	case CategoryDone:
 		return []string{Done}
 	case CategoryClosed:
@@ -184,6 +191,9 @@ func ParseCategory(value string) (string, bool) {
 // clients. This is a presentation adapter, NEVER an execution policy. New clients
 // normalize it into four lifecycle categories. No legacy behavior is persisted.
 func WireCategory(status, category string) string {
+	if status == Paused {
+		return InProgress
+	}
 	if normalized, ok := ParseCategory(category); ok {
 		category = normalized
 	}
@@ -316,7 +326,7 @@ func DeriveKey(name, category string, taken map[string]bool) (string, error) {
 // base_<n> that is. n starts at 2 so the series reads as "the second one".
 //
 // The scan is bounded by the CATALOG, not by a policy number. Every candidate
-// it tests is distinct, and only len(taken) plus the reserved names (the 7
+// it tests is distinct, and only len(taken) plus the reserved names (the 8
 // canonical keys and the 4 category names) can be occupied, so by the
 // pigeonhole principle a free one has to turn up within that many attempts
 // plus one.
@@ -363,7 +373,7 @@ func truncateForSuffix(base string, suffixLen int) string {
 	return strings.TrimRight(base[:limit], "_")
 }
 
-// Ensure idempotently seeds a workspace's 7 built-in statuses. Safe to call
+// Ensure idempotently seeds a workspace's 8 built-in statuses. Safe to call
 // concurrently — the unique (workspace_id, key) index turns a losing racer into
 // a no-op, which matters during a rolling deploy where an old pod may create a
 // workspace while a new pod seeds it.
@@ -463,9 +473,9 @@ func categoryAndName(ctx context.Context, q Querier, workspaceID pgtype.UUID, st
 // catalog entry. Write paths use this; it is the application-layer replacement
 // for the enum CHECK that migration 337 dropped.
 //
-// The 7 built-in keys resolve even when the workspace has no catalog row for
+// The 8 built-in keys resolve even when the workspace has no catalog row for
 // them. The catalog EXTENDS the built-in statuses; it does not define them, and
-// a workspace has always been able to use all 7. Requiring a row would mean a
+// a workspace has always been able to use all 8. Requiring a row would mean a
 // workspace whose seed has not landed yet — created by a pod that predates this
 // feature, or mid-rollout before migration 339 runs — could not create or
 // update an issue at all. Failing open here is limited precisely to the set
@@ -511,7 +521,7 @@ func builtInEntry(workspaceID pgtype.UUID, key string) db.IssueStatus {
 }
 
 // ActiveKeys returns the workspace's usable status keys in display order, for
-// error messages and CLI validation. An unseeded workspace still reports the 7
+// error messages and CLI validation. An unseeded workspace still reports the 8
 // built-ins, so an error message can never omit a key that Resolve accepts.
 func ActiveKeys(ctx context.Context, q Querier, workspaceID pgtype.UUID) ([]string, error) {
 	entries, err := q.ListIssueStatusEntries(ctx, db.ListIssueStatusEntriesParams{

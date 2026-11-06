@@ -438,6 +438,7 @@ VALUES
     ($1::uuid, 'in_review', 'In Review', 'Work delivered, waiting on human review. Finalizes the autopilot run.', 'started', '#22c55e', TRUE, 0),
     ($1::uuid, 'done', 'Done', 'Completed.', 'done', '#3b82f6', TRUE, 0),
     ($1::uuid, 'blocked', 'Blocked', 'Stalled on an external dependency.', 'started', '#ef4444', TRUE, 0),
+    ($1::uuid, 'paused', 'Paused', 'Execution is paused while requirements change.', 'started', '#6b7280', TRUE, 0),
     ($1::uuid, 'cancelled', 'Cancelled', 'Decided not to do.', 'closed', '#6b7280', TRUE, 0)
 ON CONFLICT DO NOTHING
 `

@@ -171,7 +171,8 @@
     "in_review": "審查中",
     "done": "已完成",
     "blocked": "已阻塞",
-    "cancelled": "已取消"
+    "cancelled": "已取消",
+    "paused": "已暫停"
   },
   "status_category": {
     "unstarted": "未開始",
@@ -1840,5 +1841,34 @@
     "updated": "修改了外部工單號",
     "duplicate": "已有任務使用此工單號",
     "save_failed": "外部工單號儲存失敗。"
+  },
+  "requirements_change": {
+    "start": "變更需求",
+    "reason": "變更理由",
+    "request_stop": "請求停止",
+    "stopping": "停止中",
+    "paused": "已暫停",
+    "editing": "需求變更中",
+    "unknown": "停止結果未知",
+    "reconcile": "檢查執行者停止確認",
+    "edit": "更新需求",
+    "cancel": "撤銷變更",
+    "resume": "重試恢復執行"
+  },
+  "execution_plan": {
+    "open": "拆分任務",
+    "saved": "v{{version}} · 已拆分 {{count}} 條子任務",
+    "loading": "正在載入儲存庫…",
+    "retry": "重試載入儲存庫",
+    "title": "子任務標題",
+    "role": "執行角色",
+    "repo": "目標儲存庫",
+    "no_repo": "無儲存庫（澄清或文件任務）",
+    "covers": "涵蓋驗收條目",
+    "dependencies": "前置子任務",
+    "serial_group": "序列群組（選填）",
+    "expected": "交接物（逗號分隔）",
+    "add": "新增子任務",
+    "save": "儲存拆單"
   }
 }

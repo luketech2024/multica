@@ -231,13 +231,14 @@ func TestResolveRejectsUnknownAndArchived(t *testing.T) {
 }
 
 func TestCategoriesCollapseBuiltInsIntoFourLifecycleGroups(t *testing.T) {
-	if len(Canonical()) != 7 {
-		t.Fatalf("expected 7 canonical statuses, got %d", len(Canonical()))
+	if len(Canonical()) != 8 {
+		t.Fatalf("expected 8 canonical statuses, got %d", len(Canonical()))
 	}
 	want := map[string]string{
 		Backlog: CategoryUnstarted, Todo: CategoryUnstarted,
 		InProgress: CategoryStarted, InReview: CategoryStarted, Blocked: CategoryStarted,
-		Done: CategoryDone, Cancelled: CategoryClosed,
+		Paused: CategoryStarted,
+		Done:   CategoryDone, Cancelled: CategoryClosed,
 	}
 	for status, category := range want {
 		if got, ok := CategoryForBehavior(status); !ok || got != category {
@@ -638,7 +639,7 @@ func TestExpandCategories(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expand: %v", err)
 		}
-		if strings.Join(got, ",") != "in_progress,in_review,blocked" {
+		if strings.Join(got, ",") != "in_progress,in_review,blocked,paused" {
 			t.Errorf("expand(started) on an empty catalog = %v", got)
 		}
 	})
@@ -649,8 +650,8 @@ func TestExpandCategories(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expand: %v", err)
 		}
-		if len(got) != 4 {
-			t.Fatalf("expand(started) = %v, want 3 built-ins plus custom with no duplicate", got)
+		if len(got) != 5 {
+			t.Fatalf("expand(started) = %v, want 4 built-ins plus custom with no duplicate", got)
 		}
 	})
 

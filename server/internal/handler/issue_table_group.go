@@ -140,7 +140,7 @@ func (h *Handler) resolveStatusCategoryMaps(
 	categoryKeys = make(map[string][]string, len(validIssueStatusCategories))
 	categories := validIssueStatusCategories
 	if legacy {
-		categories = validIssueStatuses
+		categories = issuestatus.WireCategories()
 	}
 	for _, category := range categories {
 		// Every category contains its built-in behaviors even for an unseeded
@@ -149,6 +149,9 @@ func (h *Handler) resolveStatusCategoryMaps(
 		if legacy {
 			categoryKeys[category] = []string{category}
 		}
+	}
+	if legacy {
+		categoryKeys[issuestatus.InProgress] = append(categoryKeys[issuestatus.InProgress], issuestatus.Paused)
 	}
 	// Sorted so the expansion — and therefore the query's argument list — is
 	// deterministic for the same catalog.
@@ -458,7 +461,7 @@ func issueTableStatusOrder(entries []db.IssueStatus) []string {
 	for _, row := range rows {
 		seen[row.Key] = true
 	}
-	builtIns := []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"}
+	builtIns := issuestatus.Canonical()
 	builtInRank := make(map[string]int)
 	for i, key := range builtIns {
 		builtInRank[key] = i
@@ -1177,7 +1180,7 @@ func (h *Handler) issueStatusCatalog() issuestatus.Querier {
 // built-in identity. Lifecycle grouping is an explicit request capability.
 func (group resolvedIssueTableGroup) categoryValues() []string {
 	if group.legacyCategories {
-		return validIssueStatuses
+		return issuestatus.WireCategories()
 	}
 	return validIssueStatusCategories
 }
@@ -1191,7 +1194,8 @@ func (group resolvedIssueTableGroup) categoryExpression(addArg func(any) string)
 		keys[key] = category
 	}
 	for _, key := range validIssueStatuses {
-		keys[key] = key
+		category, _ := issuestatus.CategoryForBehavior(key)
+		keys[key] = issuestatus.WireCategory(key, category)
 	}
 	// Explicit built-in entries override the lifecycle defaults in the helper.
 	return statusCategoryExpr(keys, addArg)

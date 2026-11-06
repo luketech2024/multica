@@ -15,7 +15,7 @@ func TestIssueTableStatusOrder(t *testing.T) {
 		{Key: "in_review", Category: "started", Position: 0, IsSystem: true},
 		{Key: "shipped", Category: "done", Position: -100},
 	}
-	want := []string{"backlog", "todo", "qa", "in_review", "blocked", "in_progress", "shipped", "done", "cancelled"}
+	want := []string{"backlog", "todo", "qa", "in_review", "paused", "blocked", "in_progress", "shipped", "done", "cancelled"}
 	got := issueTableStatusOrder(entries)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("order = %v, want %v", got, want)
@@ -31,7 +31,7 @@ func TestIssueTableStatusOrder(t *testing.T) {
 }
 
 func TestIssueTableStatusSeedOrder(t *testing.T) {
-	want := []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"}
+	want := []string{"backlog", "todo", "in_progress", "in_review", "blocked", "paused", "done", "cancelled"}
 	if got := issueTableStatusOrder(nil); !reflect.DeepEqual(got, want) {
 		t.Fatalf("unseeded order = %v", got)
 	}

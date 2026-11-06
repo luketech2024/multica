@@ -171,7 +171,8 @@
     "in_review": "리뷰 중",
     "done": "완료",
     "blocked": "막힘",
-    "cancelled": "취소됨"
+    "cancelled": "취소됨",
+    "paused": "일시 중지"
   },
   "status_category": {
     "unstarted": "시작 전",
@@ -1840,5 +1841,34 @@
     "updated": "외부 티켓 번호를 업데이트했습니다",
     "duplicate": "다른 이슈에서 이 티켓 번호를 사용 중입니다",
     "save_failed": "외부 티켓 번호를 저장할 수 없습니다."
+  },
+  "requirements_change": {
+    "start": "요구사항 변경",
+    "reason": "변경 이유",
+    "request_stop": "중지 요청",
+    "stopping": "중지 중",
+    "paused": "일시 중지",
+    "editing": "요구사항 편집 중",
+    "unknown": "중지 결과 알 수 없음",
+    "reconcile": "실행자의 중지 확인 조회",
+    "edit": "요구사항 업데이트",
+    "cancel": "변경 취소",
+    "resume": "실행 재개 다시 시도"
+  },
+  "execution_plan": {
+    "open": "하위 작업 계획",
+    "saved": "v{{version}} · 하위 작업 {{count}}개 계획됨",
+    "loading": "저장소 로드 중…",
+    "retry": "저장소 다시 로드",
+    "title": "하위 작업 제목",
+    "role": "실행 역할",
+    "repo": "대상 저장소",
+    "no_repo": "저장소 없음 (요구 사항 정리 또는 문서 작업)",
+    "covers": "충족할 승인 항목",
+    "dependencies": "선행 하위 작업",
+    "serial_group": "순차 실행 그룹 (선택)",
+    "expected": "결과물 (쉼표로 구분)",
+    "add": "하위 작업 추가",
+    "save": "계획 저장"
   }
 }

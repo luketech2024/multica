@@ -173,7 +173,8 @@
     "in_review": "In Review",
     "done": "Done",
     "blocked": "Blocked",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "paused": "Paused"
   },
   "status_category": {
     "unstarted": "Unstarted",
@@ -1909,5 +1910,34 @@
     "updated": "External ticket number updated",
     "duplicate": "Another issue uses this ticket number",
     "save_failed": "Could not save the external ticket number."
+  },
+  "requirements_change": {
+    "start": "Change requirements",
+    "reason": "Reason for change",
+    "request_stop": "Request stop",
+    "stopping": "Stopping",
+    "paused": "Paused",
+    "editing": "Editing requirements",
+    "unknown": "Stop result unknown",
+    "reconcile": "Check stop acknowledgements",
+    "edit": "Update requirements",
+    "cancel": "Cancel change",
+    "resume": "Retry resuming execution"
+  },
+  "execution_plan": {
+    "open": "Plan subtasks",
+    "saved": "Version {{version}} · {{count}} subtasks planned",
+    "loading": "Loading repositories…",
+    "retry": "Retry repositories",
+    "title": "Subtask title",
+    "role": "Executor role",
+    "repo": "Repository",
+    "no_repo": "No repository (clarification or documentation)",
+    "covers": "Acceptance coverage",
+    "dependencies": "Depends on",
+    "serial_group": "Serial group (optional)",
+    "expected": "Expected deliverables, separated by commas",
+    "add": "Add subtask",
+    "save": "Save plan"
   }
 }

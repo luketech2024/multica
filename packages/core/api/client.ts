@@ -1612,6 +1612,24 @@ export class ApiClient {
     });
   }
 
+  async saveExecutionPlan(id: string, data: import("../workbench/execution-plan").ExecutionPlanInput): Promise<Issue> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/execution-plan`;
+    const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {
+      method: "POST", body: JSON.stringify(data),
+    }), IssueSchema, null, { endpoint });
+    if (!issue) throw new Error("Invalid execution plan response");
+    return issue;
+  }
+
+  async changeIssueRequirements(id: string, action: "start" | "reconcile" | "edit" | "cancel" | "resume", revision: number, reason?: string): Promise<Issue> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/requirements-change`;
+    const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {
+      method: "POST", body: JSON.stringify({ action, reason, expected_revision: revision }),
+    }), IssueSchema, null, { endpoint });
+    if (!issue) throw new Error("Invalid requirements change response");
+    return issue;
+  }
+
   async moveIssue(id: string, data: MoveIssueRequest): Promise<Issue> {
     return this.fetch(`/api/issues/${id}/move`, {
       method: "POST",

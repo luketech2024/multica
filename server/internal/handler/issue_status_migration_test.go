@@ -33,7 +33,7 @@ func TestIssueStatusLifecycleMigrationPreservesIdentity(t *testing.T) {
 	if _, err := tx.Exec(ctx, string(old)); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range issuestatus.Canonical() {
+	for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 		for _, system := range []bool{false, true} {
 			storedKey := key
 			if !system {
@@ -69,7 +69,7 @@ func TestIssueStatusLifecycleMigrationPreservesIdentity(t *testing.T) {
 	if changed != 0 {
 		t.Fatalf("migration changed %d identities or non-category fields", changed)
 	}
-	for _, key := range issuestatus.Canonical() {
+	for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 		wantCategory, _ := issuestatus.CategoryForBehavior(key)
 		for _, system := range []bool{false, true} {
 			storedKey, wantBehavior := key, key

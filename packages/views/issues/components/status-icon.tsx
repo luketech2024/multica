@@ -7,6 +7,7 @@ import type {
   IssueStatusIcon,
 } from "@multica/core/types";
 import { STATUS_CONFIG } from "@multica/core/issues/config";
+import { CirclePause } from "@multica/ui/icons";
 
 // Geometry constants (viewBox 0 0 14 14, center 7,7)
 
@@ -147,6 +148,7 @@ const STATUS_RENDERERS: Record<BuiltInIssueStatus, () => React.ReactNode> = {
   in_review: InReviewIcon,
   done: DoneIcon,
   blocked: BlockedIcon,
+  paused: () => <CirclePause className="h-full w-full" />,
   cancelled: CancelledIcon,
 };
 
@@ -174,6 +176,7 @@ const BUILT_IN_ICON_COLOR: Record<BuiltInIssueStatus, string> = {
   in_review: "text-warning",
   done: "text-success",
   blocked: "text-destructive",
+  paused: "text-muted-foreground",
   cancelled: "text-muted-foreground",
 };
 

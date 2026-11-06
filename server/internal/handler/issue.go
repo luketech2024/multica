@@ -483,7 +483,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 	// status is filled by endpoints that resolve the workspace catalog.
 	statusCategory := ""
 	if issuestatus.IsBuiltIn(i.Status) {
-		statusCategory = i.Status
+		statusCategory = issuestatus.WireCategory(i.Status, "")
 	}
 	return IssueResponse{
 		ExternalTicketNo:   i.ExternalTicketNo,
@@ -522,7 +522,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 	// Same pure built-in resolution as issueToResponse. (MUL-6243)
 	statusCategory := ""
 	if issuestatus.IsBuiltIn(i.Status) {
-		statusCategory = i.Status
+		statusCategory = issuestatus.WireCategory(i.Status, "")
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
@@ -594,7 +594,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 	// Same pure built-in resolution as issueToResponse. (MUL-6243)
 	statusCategory := ""
 	if issuestatus.IsBuiltIn(i.Status) {
-		statusCategory = i.Status
+		statusCategory = issuestatus.WireCategory(i.Status, "")
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
@@ -3980,7 +3980,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		}
 		state := issueToResponse(prevIssue, "")
 		h.fillStatusCategory(r.Context(), prevIssue.WorkspaceID, &state)
-		if state.StatusCategory != "todo" && state.StatusCategory != "backlog" && state.StatusCategory != "unstarted" {
+		if prevIssue.Status != "paused" && state.StatusCategory != "todo" && state.StatusCategory != "backlog" && state.StatusCategory != "unstarted" {
 			writeError(w, http.StatusConflict, "requirements can only be edited before execution")
 			return
 		}
@@ -3991,6 +3991,11 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		params.AcceptanceCriteria = criteria
+		if req.ConfirmRequirements && prevIssue.Status == "paused" {
+			replanned := "backlog"
+			req.Status = &replanned
+			req.SuppressRun = true
+		}
 	}
 	if req.Title != nil {
 		params.Title = pgtype.Text{String: *req.Title, Valid: true}

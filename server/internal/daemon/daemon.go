@@ -5986,7 +5986,7 @@ func (e *environmentSetupError) Unwrap() error { return e.err }
 // except taskRunFailureReason.
 func asEnvironmentSetupFailure(err error) error { return &environmentSetupError{err: err} }
 
-func taskCancelAcknowledgement(result TaskResult, runErr error, provider string) TaskCancelAck {
+func taskCancelAcknowledgement(result TaskResult, runErr error, _ string) TaskCancelAck {
 	ack := TaskCancelAck{BranchName: result.BranchName, DurableWorkDir: result.DurableWorkDir, RetiredSessionID: result.RetiredSessionID}
 	var preserved *worktreePreservedError
 	if errors.As(runErr, &preserved) {
@@ -5994,9 +5994,7 @@ func taskCancelAcknowledgement(result TaskResult, runErr error, provider string)
 		ack.FailureReason = "local_directory_error"
 	}
 	confirmed := result.FailureReason != taskfailure.ReasonProcessCleanupUnconfirmed.String()
-	if provider == "pi" || provider == "omp" {
-		ack.ProcessCleanupConfirmed = &confirmed
-	}
+	ack.ProcessCleanupConfirmed = &confirmed
 	if !confirmed {
 		ack.ErrorMessage = result.Comment
 		if preserved != nil {

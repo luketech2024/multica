@@ -3263,7 +3263,7 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 			}
 		}
 
-		projectCtx, projectErr := h.resolveClaimProjectContext(r.Context(), issue.ProjectID, issue.WorkspaceID)
+		projectCtx, projectErr := h.resolveIssueClaimProjectContext(r.Context(), issue)
 		if projectErr != nil {
 			slog.Error("issue claim: load project context failed; preserving task for redelivery",
 				"task_id", uuidToString(task.ID),
@@ -6054,6 +6054,12 @@ func (h *Handler) AckTaskCancelled(w http.ResponseWriter, r *http.Request) {
 		h.TaskService.RebroadcastCancelledTask(r.Context(), task.ID)
 	}
 	h.TaskService.FinalizeDeferredCancelledChat(r.Context(), task.ID)
+	if err := h.Queries.AcknowledgeWorkbenchStop(r.Context(), db.AcknowledgeWorkbenchStopParams{
+		ID: task.ID, Confirmed: req.ProcessCleanupConfirmed != nil && *req.ProcessCleanupConfirmed && req.FailureReason != taskfailure.ReasonProcessCleanupUnconfirmed.String(),
+	}); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to record workbench stop acknowledgement")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

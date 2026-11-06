@@ -17,6 +17,7 @@ export type BuiltInIssueStatus =
   | "in_review"
   | "done"
   | "blocked"
+  | "paused"
   | "cancelled";
 
 /**
@@ -185,6 +186,19 @@ export interface IssueDuplicateOf {
 }
 
 export interface AcceptanceCriteria {
+  resume_runs?: string[];
+  needs_resplit?: boolean;
+  plan?: { version: number; key: string; digest: string; issues: string[] };
+  resume_error?: string;
+  change?: {
+    phase: "stopping" | "paused" | "editing" | "unknown";
+    reason: string;
+    requested_at: string;
+    requested_by: string;
+    previous_status: string;
+    run_ids: string[];
+    baseline: Pick<AcceptanceCriteria, "version" | "items" | "bounds" | "gate">;
+  };
   template?: ProjectTemplate;
   team?: ProjectRoles & { project_id: string };
   v: 1;

@@ -35,14 +35,19 @@ type Gates struct {
 }
 
 type Requirements struct {
-	Template   *ProjectTemplate     `json:"template,omitempty"`
-	Team       *ProjectTeamSnapshot `json:"team,omitempty"`
-	V          int                  `json:"v"`
-	Version    int                  `json:"version"`
-	NextItemNo int                  `json:"next_item_no"`
-	Items      []Item               `json:"items"`
-	Bounds     []string             `json:"bounds"`
-	Gate       Gates                `json:"gate"`
+	Plan         *ExecutionPlan       `json:"plan,omitempty"`
+	NeedsResplit bool                 `json:"needs_resplit,omitempty"`
+	ResumeRuns   []string             `json:"resume_runs,omitempty"`
+	ResumeError  string               `json:"resume_error,omitempty"`
+	Change       *RequirementChange   `json:"change,omitempty"`
+	Template     *ProjectTemplate     `json:"template,omitempty"`
+	Team         *ProjectTeamSnapshot `json:"team,omitempty"`
+	V            int                  `json:"v"`
+	Version      int                  `json:"version"`
+	NextItemNo   int                  `json:"next_item_no"`
+	Items        []Item               `json:"items"`
+	Bounds       []string             `json:"bounds"`
+	Gate         Gates                `json:"gate"`
 }
 
 var itemID = regexp.MustCompile(`^A-([0-9]+)$`)
@@ -79,6 +84,9 @@ func EditRequirements(currentJSON, incomingJSON []byte, confirm bool, actorID, a
 	}
 	if current.Gate.Spec != nil {
 		return nil, errors.New("confirmed requirements are read-only; request a requirements change first")
+	}
+	if current.Change != nil && current.Change.Phase != "editing" {
+		return nil, errors.New("requirements cannot be edited until execution has stopped")
 	}
 	if confirm && actorType != "member" {
 		return nil, errors.New("only a member can confirm requirements")
@@ -141,6 +149,10 @@ func EditRequirements(currentJSON, incomingJSON []byte, confirm bool, actorID, a
 			}
 		}
 		current.Gate.Spec = &GateCheck{PassedAt: stamp, PassedBy: actorID}
+		if current.Change != nil {
+			current.NeedsResplit = true
+			current.Change = nil
+		}
 	}
 	current.Items = input.Items
 	current.Bounds = input.Bounds

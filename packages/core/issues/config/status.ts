@@ -28,6 +28,7 @@ export const BUILT_IN_STATUS_ORDER: BuiltInIssueStatus[] = [
   "in_progress",
   "in_review",
   "blocked",
+  "paused",
   "done",
   "cancelled",
 ];
@@ -38,6 +39,7 @@ export const BUILT_IN_STATUS_CATEGORY: Record<BuiltInIssueStatus, IssueStatusCat
   in_progress: "started",
   in_review: "started",
   blocked: "started",
+  paused: "started",
   done: "done",
   cancelled: "closed",
 };
@@ -48,6 +50,7 @@ export const BUILT_IN_STATUS_LABEL: Record<BuiltInIssueStatus, string> = {
   in_progress: "In Progress",
   in_review: "In Review",
   blocked: "Blocked",
+  paused: "Paused",
   done: "Done",
   cancelled: "Cancelled",
 };

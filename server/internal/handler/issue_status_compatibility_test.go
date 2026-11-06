@@ -46,6 +46,9 @@ func TestStatusCompatibilityContractedStorageGroupsAndPagination(t *testing.T) {
 				}
 			}
 			query := statusCategoryQuery(project)
+			dbfx.Issue(t, "Paused work", testutil.Cols{"status": "paused", "project_id": project})
+			expectedWire["paused"] = "in_progress"
+			expectedLifecycle["paused"] = "started"
 			for _, spec := range []issueTableGroupSpec{
 				{Kind: "status_category"},
 				{Kind: "compound", Primary: "project", Secondary: "status_category"},
@@ -58,8 +61,8 @@ func TestStatusCompatibilityContractedStorageGroupsAndPagination(t *testing.T) {
 					testutil.Call(t, testHandler.ListIssueTableGroups, newRequest(http.MethodPost, "/api/issues/table/groups", issueTableGroupsRequest{
 						Query: query, Group: spec, Page: issueTablePageRequest{Limit: 100},
 					})).Want(http.StatusOK).JSON(&groups)
-					if groups.Total != 14 {
-						t.Fatalf("total=%d, want 14", groups.Total)
+					if groups.Total != 15 {
+						t.Fatalf("total=%d, want 15", groups.Total)
 					}
 					cells := groups.Groups
 					if spec.Kind == "compound" {
@@ -113,8 +116,8 @@ func TestStatusCompatibilityContractedStorageGroupsAndPagination(t *testing.T) {
 							t.Fatalf("bucket %s: header=%d rows=%d", cell.Value.Status, cell.Count, count)
 						}
 					}
-					if len(seen) != 14 {
-						t.Fatalf("visible cards=%d, want 14", len(seen))
+					if len(seen) != 15 {
+						t.Fatalf("visible cards=%d, want 15", len(seen))
 					}
 				})
 			}

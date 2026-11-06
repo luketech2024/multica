@@ -1452,7 +1452,7 @@ export const CommentSubIssueTaskResponseSchema = z.object({
   task_id: z.string().min(1),
 }).loose();
 
-export const AcceptanceCriteriaSchema = z.object({
+const AcceptanceCriteriaBaseSchema = z.object({
   team: ProjectRolesSchema.extend({ project_id: z.string().uuid() }).optional(),
   template: ProjectTemplateSchema.optional(),
   v: z.literal(1),
@@ -1471,6 +1471,19 @@ export const AcceptanceCriteriaSchema = z.object({
     spec: z.object({ passed_at: z.string(), passed_by: z.string() }).nullable(),
     accept: z.object({ passed_at: z.string(), passed_by: z.string() }).nullable(),
   }).default({ spec: null, accept: null }),
+});
+
+export const AcceptanceCriteriaSchema = AcceptanceCriteriaBaseSchema.extend({
+  plan: z.object({ version: z.number().int().positive(), key: z.string(), digest: z.string(), issues: z.array(z.string().uuid()) }).optional(),
+  needs_resplit: z.boolean().optional(),
+  resume_runs: z.array(z.string().uuid()).optional(),
+  resume_error: z.string().optional(),
+  change: z.object({
+    phase: z.enum(["stopping", "paused", "editing", "unknown"]),
+    reason: z.string(), requested_at: z.string(), requested_by: z.string(),
+    previous_status: z.string(), run_ids: z.array(z.string().uuid()),
+    baseline: AcceptanceCriteriaBaseSchema.pick({ version: true, items: true, bounds: true, gate: true }),
+  }).optional(),
 });
 
 const EmptyAcceptanceCriteriaSchema = z.union([z.null(), z.array(z.never()).length(0)])

@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "../api";
+import { issueKeys } from "../issues/queries";
 import type {
   DeployTargetInput,
   CredentialInput,
@@ -12,6 +13,35 @@ import type {
 } from "./schemas";
 export * from "./schemas";
 export { prefillTaskTemplate } from "./template-prefill";
+export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
+
+export function useSaveExecutionPlan(wsId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: import("./execution-plan").ExecutionPlanInput) =>
+      api.saveExecutionPlan(issueId, input),
+    onSettled: () => qc.invalidateQueries({ queryKey: issueKeys.all(wsId) }),
+  });
+}
+
+export function useChangeIssueRequirements(wsId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      action,
+      revision,
+      reason,
+    }: {
+      action: "start" | "reconcile" | "edit" | "cancel" | "resume";
+      revision: number;
+      reason?: string;
+    }) => api.changeIssueRequirements(issueId, action, revision, reason),
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: issueKeys.all(wsId) });
+      await qc.invalidateQueries({ queryKey: issueKeys.tasks(issueId) });
+    },
+  });
+}
 
 export function businessTemplatesOptions(wsId: string) {
   return queryOptions({

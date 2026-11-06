@@ -12,6 +12,7 @@ const statusVariants = {
   in_progress: "brand",
   in_review: "warning",
   blocked: "destructive",
+  paused: "neutral",
   done: "success",
   cancelled: "neutral",
 } as const satisfies Record<BuiltInIssueStatus, string>;

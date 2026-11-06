@@ -173,7 +173,8 @@
     "in_review": "En relecture",
     "done": "Terminé",
     "blocked": "Bloqué",
-    "cancelled": "Annulé"
+    "cancelled": "Annulé",
+    "paused": "En pause"
   },
   "status_category": {
     "unstarted": "Non démarré",
@@ -1909,5 +1910,34 @@
     "updated": "Numéro de ticket externe modifié",
     "duplicate": "Une autre tâche utilise ce numéro de ticket",
     "save_failed": "Impossible d’enregistrer le numéro du ticket externe."
+  },
+  "requirements_change": {
+    "start": "Modifier les exigences",
+    "reason": "Motif du changement",
+    "request_stop": "Demander un arrêt",
+    "stopping": "Arrêt en cours",
+    "paused": "En pause",
+    "editing": "Modification des exigences",
+    "unknown": "Résultat inconnu",
+    "reconcile": "Vérifier les confirmations",
+    "edit": "Mettre à jour les exigences",
+    "cancel": "Annuler le changement",
+    "resume": "Réessayer la reprise"
+  },
+  "execution_plan": {
+    "open": "Planifier les sous-tâches",
+    "saved": "v{{version}} · {{count}} sous-tâches planifiées",
+    "loading": "Chargement des dépôts…",
+    "retry": "Recharger les dépôts",
+    "title": "Titre de la sous-tâche",
+    "role": "Rôle responsable",
+    "repo": "Dépôt",
+    "no_repo": "Sans dépôt (clarification ou documentation)",
+    "covers": "Critères couverts",
+    "dependencies": "Dépendances",
+    "serial_group": "Groupe séquentiel (facultatif)",
+    "expected": "Livrables séparés par des virgules",
+    "add": "Ajouter une sous-tâche",
+    "save": "Enregistrer le plan"
   }
 }

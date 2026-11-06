@@ -171,7 +171,8 @@
     "in_review": "レビュー中",
     "done": "完了",
     "blocked": "ブロック中",
-    "cancelled": "キャンセル済み"
+    "cancelled": "キャンセル済み",
+    "paused": "一時停止"
   },
   "status_category": {
     "unstarted": "未着手",
@@ -1840,5 +1841,34 @@
     "updated": "外部チケット番号を更新しました",
     "duplicate": "このチケット番号は別の課題で使用されています",
     "save_failed": "外部チケット番号を保存できませんでした。"
+  },
+  "requirements_change": {
+    "start": "要件を変更",
+    "reason": "変更理由",
+    "request_stop": "停止を要求",
+    "stopping": "停止中",
+    "paused": "一時停止",
+    "editing": "要件を編集中",
+    "unknown": "停止結果不明",
+    "reconcile": "実行者の停止確認を確認",
+    "edit": "要件を更新",
+    "cancel": "変更を取り消す",
+    "resume": "実行の再開を再試行"
+  },
+  "execution_plan": {
+    "open": "サブタスクを計画",
+    "saved": "v{{version}} · {{count}} 件のサブタスクを計画済み",
+    "loading": "リポジトリを読み込み中…",
+    "retry": "リポジトリを再読み込み",
+    "title": "サブタスク名",
+    "role": "実行ロール",
+    "repo": "リポジトリ",
+    "no_repo": "リポジトリなし（要件整理・文書作成）",
+    "covers": "対応する受け入れ項目",
+    "dependencies": "先行サブタスク",
+    "serial_group": "直列実行グループ（任意）",
+    "expected": "成果物（カンマ区切り）",
+    "add": "サブタスクを追加",
+    "save": "計画を保存"
   }
 }

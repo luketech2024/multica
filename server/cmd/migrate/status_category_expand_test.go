@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/multica-ai/multica/server/internal/issuestatus"
 )
 
 func TestStatusCategoryExpandUpgradePaths(t *testing.T) {
@@ -33,7 +31,7 @@ func TestStatusCategoryExpandUpgradePaths(t *testing.T) {
 				}
 			}
 			execFile("332_issue_status")
-			for _, key := range issuestatus.Canonical() {
+			for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 				_, err := pool.Exec(ctx, `INSERT INTO issue_status(workspace_id,key,name,category,color,is_system,archived_at)
       VALUES ('00000000-0000-0000-0000-000000000001',$1,'System',$1,'#123456',true,NULL),
              ('00000000-0000-0000-0000-000000000001','custom_' || $1,'Custom',$1,'#123456',false,now())`, key)
@@ -90,7 +88,7 @@ func TestStatusCategoryExpandUpgradePaths(t *testing.T) {
 			if after != before {
 				t.Fatal("expand rewrote catalog rows, identity or archived data")
 			}
-			for _, key := range issuestatus.Canonical() {
+			for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 				want := "custom_" + key
 				if key == "done" || key == "cancelled" {
 					want = key

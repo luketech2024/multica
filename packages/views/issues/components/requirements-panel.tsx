@@ -9,6 +9,8 @@ import { projectRoleOrder } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 import { BusinessTemplateContent } from "../../projects/components/business-template-content";
+import { RequirementsChangeControls } from "./requirements-change-controls";
+import { ExecutionPlanEditor } from "./execution-plan-editor";
 
 export function RequirementsPanel({ issue }: { issue: Issue }) {
   const { t } = useTranslation("issues");
@@ -21,7 +23,8 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
 
   const category = issueStatusCategory(issue);
   const locked = !!issue.acceptance_criteria?.gate.spec;
-  const readOnly = locked || !["todo", "backlog", "unstarted"].includes(category ?? "");
+  const editingChange = issue.status === "paused" && criteria.change?.phase === "editing";
+  const readOnly = locked || (!editingChange && !["todo", "backlog", "unstarted"].includes(category ?? ""));
   const disabled = readOnly || update.isPending;
   const edit = (value: AcceptanceCriteria) => {
     setDraft({ value, revision: draft?.revision ?? issue.revision! });
@@ -48,6 +51,8 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
         <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
       </div>
       {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
+      {locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
+      {(criteria.change || issue.status === "in_progress") && <RequirementsChangeControls issue={issue} />}
       {criteria.template && <details className="text-caption">
         <summary className="cursor-pointer">{criteria.template.content.name} · {t(($) => $.requirements.version, { version: criteria.template.revision })}</summary>
         <div className="mt-2"><BusinessTemplateContent template={criteria.template.content} /></div>

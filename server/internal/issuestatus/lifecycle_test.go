@@ -59,7 +59,11 @@ func TestCategoryBoundaryAcceptsOldAndCurrentEnums(t *testing.T) {
 	}
 	for _, key := range Canonical() {
 		category, _ := CategoryForBehavior(key)
-		if WireCategory(key, category) != key {
+		want := key
+		if key == Paused {
+			want = InProgress
+		}
+		if WireCategory(key, category) != want {
 			t.Fatalf("built-in wire changed: %s", key)
 		}
 	}

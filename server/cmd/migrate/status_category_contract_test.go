@@ -36,7 +36,7 @@ func TestStatusCategoryContractUpgradePaths(t *testing.T) {
 			}
 			execFile("332_issue_status")
 			if path != "fresh" {
-				for _, key := range issuestatus.Canonical() {
+				for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 					if _, err := pool.Exec(ctx, `INSERT INTO issue_status(workspace_id,key,name,category,color,is_system,position,archived_at)
       VALUES ('00000000-0000-0000-0000-000000000001',$1,'System',$1,'#123456',true,42,NULL),
       ('00000000-0000-0000-0000-000000000001','custom_' || $1,'Custom',$1,'#123456',false,17,now())`, key); err != nil {
@@ -136,7 +136,7 @@ func TestStatusCategoryContractUpgradePaths(t *testing.T) {
     AND conname IN ('issue_status_category_check','issue_status_system_is_canonical') AND convalidated`).Scan(&validated); err != nil || validated != 2 {
 				t.Fatalf("validated=%d: %v", validated, err)
 			}
-			for _, key := range issuestatus.Canonical() {
+			for _, key := range []string{"backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"} {
 				category, _ := issuestatus.CategoryForBehavior(key)
 				if path != "fresh" {
 					var count int

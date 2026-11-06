@@ -131,7 +131,7 @@ func (h *Handler) ListIssueStatuses(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"statuses":   resp,
-		"categories": issuestatus.Canonical(),
+		"categories": issuestatus.WireCategories(),
 		"total":      len(resp),
 	})
 }
@@ -739,7 +739,7 @@ func (h *Handler) ReorderIssueStatuses(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"statuses":   resp,
-		"categories": issuestatus.Canonical(),
+		"categories": issuestatus.WireCategories(),
 		"total":      len(resp),
 	})
 }

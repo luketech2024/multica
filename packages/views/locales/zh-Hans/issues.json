@@ -171,7 +171,8 @@
     "in_review": "审核中",
     "done": "已完成",
     "blocked": "已阻塞",
-    "cancelled": "已取消"
+    "cancelled": "已取消",
+    "paused": "已暂停"
   },
   "status_category": {
     "unstarted": "未开始",
@@ -1840,5 +1841,34 @@
     "updated": "修改了外部工单号",
     "duplicate": "已有任务使用该工单号",
     "save_failed": "外部工单号保存失败。"
+  },
+  "requirements_change": {
+    "start": "变更需求",
+    "reason": "变更理由",
+    "request_stop": "请求停止",
+    "stopping": "停止中",
+    "paused": "已暂停",
+    "editing": "需求变更中",
+    "unknown": "停止结果未知",
+    "reconcile": "检查执行者停止确认",
+    "edit": "更新需求",
+    "cancel": "撤销变更",
+    "resume": "重试恢复执行"
+  },
+  "execution_plan": {
+    "open": "拆分任务",
+    "saved": "v{{version}} · 已拆分 {{count}} 条子任务",
+    "loading": "正在加载仓库…",
+    "retry": "重试加载仓库",
+    "title": "子任务标题",
+    "role": "执行角色",
+    "repo": "目标仓库",
+    "no_repo": "无仓库（澄清或文档任务）",
+    "covers": "覆盖验收条目",
+    "dependencies": "前置子任务",
+    "serial_group": "串行组（选填）",
+    "expected": "交接物（逗号分隔）",
+    "add": "添加子任务",
+    "save": "保存拆单"
   }
 }
