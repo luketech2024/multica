@@ -14,7 +14,7 @@ import type {
 export * from "./schemas";
 export { prefillTaskTemplate } from "./template-prefill";
 export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
-export { parseWorkbenchHandoff } from "./execution-plan";
+export { parseWorkbenchHandoff, analyzeExecutionPlan } from "./execution-plan";
 export type { WorkbenchHandoff } from "./execution-plan";
 export type { ExecutionControlAction, ExecutionPause } from "./execution-control";
 

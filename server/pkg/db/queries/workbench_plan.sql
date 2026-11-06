@@ -48,3 +48,17 @@ ORDER BY child.id LIMIT 100;
 
 -- name: WorkbenchIssueHasRun :one
 SELECT EXISTS (SELECT 1 FROM agent_task_queue WHERE issue_id = @issue_id);
+
+-- name: ListWorkbenchDependencyIssues :many
+WITH RECURSIVE dependencies(id) AS (
+    SELECT root.id FROM issue root WHERE root.workspace_id = @workspace_id AND root.id = ANY(@issue_ids::uuid[])
+    UNION
+    SELECT prior.id FROM dependencies
+    JOIN issue current_issue ON current_issue.id = dependencies.id
+    CROSS JOIN LATERAL jsonb_array_elements_text(
+        CASE WHEN jsonb_typeof(current_issue.properties #> '{workbench_handoff,depends_on}') = 'array'
+        THEN current_issue.properties #> '{workbench_handoff,depends_on}' ELSE '[]'::jsonb END
+    ) dependency(id)
+    JOIN issue prior ON prior.id::text = dependency.id AND prior.workspace_id = @workspace_id
+)
+SELECT issue.* FROM issue JOIN dependencies ON issue.id = dependencies.id;

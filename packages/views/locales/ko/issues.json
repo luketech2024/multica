@@ -1869,7 +1869,13 @@
     "serial_group": "순차 실행 그룹 (선택)",
     "expected": "결과물 (쉼표로 구분)",
     "add": "하위 작업 추가",
-    "save": "계획 저장"
+    "save": "계획 저장",
+    "coverage_count": "인수 항목 {{count}} / {{total}}개 포함",
+    "uncovered": "{{items}} 항목의 담당 작업을 추가하세요",
+    "missing_repositories": "{{tasks}}의 저장소를 선택하세요",
+    "dependency_cycle": "종속성 순환 {{path}}",
+    "add_existing_dependency": "기존 종속 작업 추가",
+    "existing_dependency_hint": "이 프로젝트의 작업을 선택하세요. 해당 작업이 완료된 후 실행합니다。"
   },
   "handoff": {
     "title": "하위 작업 인계",

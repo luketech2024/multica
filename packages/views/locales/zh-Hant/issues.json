@@ -1869,7 +1869,13 @@
     "serial_group": "序列群組（選填）",
     "expected": "交接物（逗號分隔）",
     "add": "新增子任務",
-    "save": "儲存拆單"
+    "save": "儲存拆單",
+    "coverage_count": "已覆蓋 {{count}} / {{total}} 條驗收條目",
+    "uncovered": "請補齊條目覆蓋 {{items}}",
+    "missing_repositories": "請為子任務選擇倉庫 {{tasks}}",
+    "dependency_cycle": "依賴形成循環 {{path}}",
+    "add_existing_dependency": "新增既有任務依賴",
+    "existing_dependency_hint": "選擇同專案任務，完成後才會開始執行。"
   },
   "handoff": {
     "title": "子任務交接",

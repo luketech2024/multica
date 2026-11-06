@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import { parseWorkbenchHandoff } from "./execution-plan";
+import {
+  analyzeExecutionPlan,
+  parseWorkbenchHandoff,
+  type ExecutionPlanTask,
+} from "./execution-plan";
 import { IssueSchema } from "../api/schemas";
 
 const handoff = {
@@ -14,6 +18,70 @@ const handoff = {
   max_retry: 2,
   expected: ["diff"],
 };
+
+it("requires complete coverage and available development repositories before saving", () => {
+  const task: ExecutionPlanTask = {
+    key: "T-01",
+    title: "Export",
+    description: "",
+    role: "dev",
+    repo_id: "api",
+    covers: ["A-01"],
+    depends_on: [],
+    serial_group: "",
+    expected: ["diff"],
+  };
+  expect(analyzeExecutionPlan([task], ["A-01", "A-02"], ["api"])).toMatchObject(
+    {
+      coveredCount: 1,
+      uncovered: ["A-02"],
+      canSave: false,
+    },
+  );
+  expect(
+    analyzeExecutionPlan([task], ["A-01"], []).missingRepositories,
+  ).toEqual(["T-01"]);
+  expect(analyzeExecutionPlan([task], ["A-01"], ["api"]).canSave).toBe(true);
+  expect(
+    analyzeExecutionPlan(
+      [{ ...task, role: "product", repo_id: "" }],
+      ["A-01"],
+      [],
+    ).canSave,
+  ).toBe(true);
+  expect(
+    analyzeExecutionPlan([{ ...task, title: " " }], ["A-01"], ["api"]).canSave,
+  ).toBe(false);
+});
+
+it("reports the cyclic segment and allows shared acyclic prerequisites", () => {
+  const makeTask = (key: string, depends_on: string[]): ExecutionPlanTask => ({
+    key,
+    depends_on,
+    title: key,
+    description: "",
+    role: "product",
+    repo_id: "",
+    covers: ["A-01"],
+    serial_group: "",
+    expected: ["spec"],
+  });
+  const tasks = [
+    makeTask("T-01", ["T-02"]),
+    makeTask("T-02", ["T-03"]),
+    makeTask("T-03", ["T-02"]),
+  ];
+  expect(analyzeExecutionPlan(tasks, ["A-01"], [])).toMatchObject({
+    cycle: ["T-02", "T-03", "T-02"],
+    canSave: false,
+  });
+  tasks[2]!.depends_on = [];
+  tasks[0]!.depends_on.push("T-03");
+  expect(analyzeExecutionPlan(tasks, ["A-01"], [])).toMatchObject({
+    cycle: [],
+    canSave: true,
+  });
+});
 it("retains versioned handoffs and safe defaults", () => {
   expect(parseWorkbenchHandoff(handoff)).toEqual({
     ...handoff,

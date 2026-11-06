@@ -37,17 +37,17 @@ vi.mock("@multica/core/api", () => ({
         { id: "other", label: "Other repository" },
       ],
     }),
-    getIssue: async () => parent,
-    listChildIssues: async () => ({
-      issues: [
-        {
-          id: dependencyId,
-          identifier: "WB-2",
-          title: "Prepare export",
-          status: "todo",
-        },
-      ],
-    }),
+    getIssue: async (id: string) =>
+      id === "parent"
+        ? parent
+        : {
+            id: dependencyId,
+            identifier: "WB-2",
+            title: "Prepare export",
+            status: "todo",
+            project_id: "project",
+            parent_issue_id: "another-parent",
+          },
   },
 }));
 const issue: Issue = {

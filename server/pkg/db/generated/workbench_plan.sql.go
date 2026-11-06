@@ -11,6 +11,78 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const listWorkbenchDependencyIssues = `-- name: ListWorkbenchDependencyIssues :many
+WITH RECURSIVE dependencies(id) AS (
+    SELECT root.id FROM issue root WHERE root.workspace_id = $1 AND root.id = ANY($2::uuid[])
+    UNION
+    SELECT prior.id FROM dependencies
+    JOIN issue current_issue ON current_issue.id = dependencies.id
+    CROSS JOIN LATERAL jsonb_array_elements_text(
+        CASE WHEN jsonb_typeof(current_issue.properties #> '{workbench_handoff,depends_on}') = 'array'
+        THEN current_issue.properties #> '{workbench_handoff,depends_on}' ELSE '[]'::jsonb END
+    ) dependency(id)
+    JOIN issue prior ON prior.id::text = dependency.id AND prior.workspace_id = $1
+)
+SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no FROM issue JOIN dependencies ON issue.id = dependencies.id
+`
+
+type ListWorkbenchDependencyIssuesParams struct {
+	WorkspaceID pgtype.UUID   `json:"workspace_id"`
+	IssueIds    []pgtype.UUID `json:"issue_ids"`
+}
+
+func (q *Queries) ListWorkbenchDependencyIssues(ctx context.Context, arg ListWorkbenchDependencyIssuesParams) ([]Issue, error) {
+	rows, err := q.db.Query(ctx, listWorkbenchDependencyIssues, arg.WorkspaceID, arg.IssueIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Issue{}
+	for rows.Next() {
+		var i Issue
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Title,
+			&i.Description,
+			&i.Status,
+			&i.Priority,
+			&i.AssigneeType,
+			&i.AssigneeID,
+			&i.CreatorType,
+			&i.CreatorID,
+			&i.ParentIssueID,
+			&i.AcceptanceCriteria,
+			&i.ContextRefs,
+			&i.Position,
+			&i.DueDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Number,
+			&i.ProjectID,
+			&i.OriginType,
+			&i.OriginID,
+			&i.FirstExecutedAt,
+			&i.StartDate,
+			&i.Metadata,
+			&i.Stage,
+			&i.Properties,
+			&i.Revision,
+			&i.LastActivityAt,
+			&i.TriageState,
+			&i.DuplicateOfIssueID,
+			&i.ExternalTicketNo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWorkbenchDispatchCandidates = `-- name: ListWorkbenchDispatchCandidates :many
 SELECT child.id, child.workspace_id, child.title, child.description, child.status, child.priority, child.assignee_type, child.assignee_id, child.creator_type, child.creator_id, child.parent_issue_id, child.acceptance_criteria, child.context_refs, child.position, child.due_date, child.created_at, child.updated_at, child.number, child.project_id, child.origin_type, child.origin_id, child.first_executed_at, child.start_date, child.metadata, child.stage, child.properties, child.revision, child.last_activity_at, child.triage_state, child.duplicate_of_issue_id, child.external_ticket_no FROM issue child
 JOIN issue parent ON parent.id = child.parent_issue_id AND parent.workspace_id = child.workspace_id

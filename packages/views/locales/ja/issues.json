@@ -1869,7 +1869,13 @@
     "serial_group": "直列実行グループ（任意）",
     "expected": "成果物（カンマ区切り）",
     "add": "サブタスクを追加",
-    "save": "計画を保存"
+    "save": "計画を保存",
+    "coverage_count": "受け入れ項目 {{count}} / {{total}} 件を網羅",
+    "uncovered": "項目 {{items}} の対応を追加してください",
+    "missing_repositories": "{{tasks}} のリポジトリを選択してください",
+    "dependency_cycle": "依存関係の循環 {{path}}",
+    "add_existing_dependency": "既存タスクを前提条件に追加",
+    "existing_dependency_hint": "このプロジェクトのタスクを選択してください。完了後に実行を開始します。"
   },
   "handoff": {
     "title": "サブタスクの引き継ぎ",

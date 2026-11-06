@@ -8,12 +8,14 @@ import { useCurrentMember } from "@multica/core/permissions";
 import { projectResourcesOptions } from "@multica/core/projects";
 import {
   projectRoleOrder,
+  analyzeExecutionPlan,
   useSaveExecutionPlan,
   type ExecutionPlanTask,
 } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Input } from "@multica/ui/components/ui/input";
 import { useT } from "../../i18n";
+import { IssuePickerModal } from "../../modals/issue-picker-modal";
 
 export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
   const { t } = useT("issues");
@@ -31,6 +33,10 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
     revision: number;
   }>();
   const [error, setError] = useState<string>();
+  const [dependencyTask, setDependencyTask] = useState<string>();
+  const [selectedDependencies, setSelectedDependencies] = useState<
+    Record<string, Issue>
+  >({});
   const criteria = issue.acceptance_criteria;
   if (
     !criteria?.gate.spec ||
@@ -57,6 +63,11 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
   const enabledRoles = projectRoleOrder.filter(
     (role) => criteria.team!.config.roles[role].enabled,
   );
+  const validation = analyzeExecutionPlan(
+    draft?.tasks ?? [],
+    criteria.items.map((item) => item.id),
+    resources.data?.map((repo) => repo.id) ?? [],
+  );
   const start = () => {
     setDraft({
       key: crypto.randomUUID(),
@@ -75,7 +86,7 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
     });
   };
   const save = async () => {
-    if (!draft) return;
+    if (!draft || !validation.canSave) return;
     setError(undefined);
     try {
       await mutation.mutateAsync({
@@ -116,8 +127,38 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
           {t(($) => $.execution_plan.retry)}
         </Button>
       )}
+      <p role="status" className="text-caption">
+        {t(($) => $.execution_plan.coverage_count, {
+          count: validation.coveredCount,
+          total: criteria.items.length,
+        })}
+      </p>
+      {validation.uncovered.length > 0 && (
+        <p className="text-caption text-destructive">
+          {t(($) => $.execution_plan.uncovered, {
+            items: validation.uncovered.join(", "),
+          })}
+        </p>
+      )}
+      {validation.missingRepositories.length > 0 && (
+        <p className="text-caption text-destructive">
+          {t(($) => $.execution_plan.missing_repositories, {
+            tasks: validation.missingRepositories.join(", "),
+          })}
+        </p>
+      )}
+      {validation.cycle.length > 0 && (
+        <p role="alert" className="text-caption text-destructive">
+          {t(($) => $.execution_plan.dependency_cycle, {
+            path: validation.cycle.join(" → "),
+          })}
+        </p>
+      )}
       {draft.tasks.map((task, index) => (
-        <div key={task.key} className="space-y-2 rounded-xl border p-3">
+        <div
+          key={task.key}
+          className={`space-y-2 rounded-xl border p-3 ${validation.cycle.includes(task.key) ? "border-destructive" : ""}`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-label">{task.key}</span>
             <Button
@@ -216,6 +257,36 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
                 </label>
               ))}
           </fieldset>
+          <div className="space-y-1 text-caption">
+            {(task.existing_dependencies ?? []).map((id) => (
+              <div key={id} className="flex items-center justify-between gap-2">
+                <span className="min-w-0 break-words">
+                  {selectedDependencies[id]?.identifier ?? id} ·{" "}
+                  {selectedDependencies[id]?.title}
+                </span>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={() =>
+                    change(index, {
+                      existing_dependencies: task.existing_dependencies?.filter(
+                        (value) => value !== id,
+                      ),
+                    })
+                  }
+                >
+                  {t(($) => $.requirements.remove)}
+                </Button>
+              </div>
+            ))}
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => setDependencyTask(task.key)}
+            >
+              {t(($) => $.execution_plan.add_existing_dependency)}
+            </Button>
+          </div>
           <label className="block text-caption">
             {t(($) => $.execution_plan.serial_group)}
             <Input
@@ -268,7 +339,7 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
         <Button
           size="sm"
           disabled={
-            !draft.tasks.length || resources.isPending || resources.isError
+            !validation.canSave || resources.isPending || resources.isError
           }
           aria-busy={mutation.isPending}
           onClick={() => void save()}
@@ -283,6 +354,45 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
         <p role="alert" className="text-caption text-destructive">
           {error}
         </p>
+      )}
+      {dependencyTask && (
+        <IssuePickerModal
+          open
+          onOpenChange={(open) => {
+            if (!open) setDependencyTask(undefined);
+          }}
+          title={t(($) => $.execution_plan.add_existing_dependency)}
+          description={t(($) => $.execution_plan.existing_dependency_hint)}
+          excludeIds={[
+            issue.id,
+            ...(draft.tasks.find((task) => task.key === dependencyTask)
+              ?.existing_dependencies ?? []),
+          ]}
+          isSelectable={(candidate) =>
+            candidate.project_id === issue.project_id &&
+            candidate.parent_issue_id !== issue.id &&
+            candidate.status !== "cancelled" &&
+            !candidate.workbench_handoff?.superseded
+          }
+          onSelect={(candidate) => {
+            const index = draft.tasks.findIndex(
+              (task) => task.key === dependencyTask,
+            );
+            const task = draft.tasks[index];
+            if (!task) return;
+            setSelectedDependencies((previous) => ({
+              ...previous,
+              [candidate.id]: candidate,
+            }));
+            change(index, {
+              existing_dependencies: [
+                ...(task.existing_dependencies ?? []),
+                candidate.id,
+              ],
+            });
+            setDependencyTask(undefined);
+          }}
+        />
       )}
     </fieldset>
   );

@@ -1,13 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type { Issue } from "@multica/core/types";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useWorkspacePaths } from "@multica/core/paths";
-import {
-  childIssuesOptions,
-  issueDetailOptions,
-} from "@multica/core/issues/queries";
+import { issueDetailOptions } from "@multica/core/issues/queries";
 import { projectResourcesOptions } from "@multica/core/projects";
 import type { WorkbenchHandoff } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
@@ -53,9 +50,8 @@ function HandoffContent({
     ...issueDetailOptions(wsId, issue.parent_issue_id ?? ""),
     enabled: !!issue.parent_issue_id,
   });
-  const siblings = useQuery({
-    ...childIssuesOptions(wsId, issue.parent_issue_id ?? ""),
-    enabled: !!issue.parent_issue_id && handoff.depends_on.length > 0,
+  const dependencies = useQueries({
+    queries: handoff.depends_on.map((id) => issueDetailOptions(wsId, id)),
   });
   const repository = resources.data?.find(
     (repo) => repo.id === handoff.repo_id,
@@ -65,12 +61,20 @@ function HandoffContent({
       handoff.requirement_version &&
     !parent.data.acceptance_criteria.change &&
     !parent.data.acceptance_criteria.needs_resplit;
-  const blockedBy = handoff.depends_on.filter(
-    (id) =>
-      siblings.data?.find((sibling) => sibling.id === id)?.status !== "done",
+  const blockedBy = dependencies.filter(
+    ({ data }) =>
+      data?.status !== "done" ||
+      data.project_id !== issue.project_id ||
+      data.workbench_handoff?.superseded,
   );
-  const loading = parent.isLoading || resources.isLoading || siblings.isLoading;
-  const failed = parent.isError || resources.isError || siblings.isError;
+  const loading =
+    parent.isLoading ||
+    resources.isLoading ||
+    dependencies.some((query) => query.isLoading);
+  const failed =
+    parent.isError ||
+    resources.isError ||
+    dependencies.some((query) => query.isError);
   return (
     <div className="space-y-3 text-caption">
       <p>
@@ -92,7 +96,9 @@ function HandoffContent({
           onClick={() => {
             if (parent.isError) void parent.refetch();
             if (resources.isError) void resources.refetch();
-            if (siblings.isError) void siblings.refetch();
+            dependencies.forEach((query) => {
+              if (query.isError) void query.refetch();
+            });
           }}
         >
           {t(($) => $.handoff.retry)}
@@ -141,20 +147,19 @@ function HandoffContent({
                   : t(($) => $.handoff.dependencies_ready)}
               </p>
             )}
-            {!siblings.isLoading && (
+            {!dependencies.some((query) => query.isLoading) && (
               <ul>
-                {handoff.depends_on.map((id) => {
-                  const sibling = siblings.data?.find(
-                    (entry) => entry.id === id,
-                  );
+                {handoff.depends_on.map((id, index) => {
+                  const dependency = dependencies[index]?.data;
                   return (
                     <li key={id}>
-                      {sibling ? (
+                      {dependency?.project_id === issue.project_id &&
+                      !dependency.workbench_handoff?.superseded ? (
                         <AppLink
-                          href={paths.issueDetail(sibling.id)}
+                          href={paths.issueDetail(dependency.id)}
                           className="text-foreground underline-offset-4 hover:underline"
                         >
-                          {sibling.identifier} · {sibling.title}
+                          {dependency.identifier} · {dependency.title}
                         </AppLink>
                       ) : (
                         t(($) => $.handoff.dependency_unavailable)

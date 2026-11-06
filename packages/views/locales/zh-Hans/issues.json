@@ -1869,7 +1869,13 @@
     "serial_group": "串行组（选填）",
     "expected": "交接物（逗号分隔）",
     "add": "添加子任务",
-    "save": "保存拆单"
+    "save": "保存拆单",
+    "coverage_count": "已覆盖 {{count}} / {{total}} 条验收条目",
+    "uncovered": "请补齐条目覆盖 {{items}}",
+    "missing_repositories": "请为子任务选择仓库 {{tasks}}",
+    "dependency_cycle": "依赖形成循环 {{path}}",
+    "add_existing_dependency": "添加已有任务依赖",
+    "existing_dependency_hint": "选择同项目任务，完成后才会开始执行。"
   },
   "handoff": {
     "title": "子任务交接",

@@ -90,7 +90,11 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	for _, resource := range resources {
 		repos[uuidToString(resource.ID)] = true
 	}
-	if err := workbench.ValidateExecutionPlan(input.Tasks, criteria, repos); err != nil {
+	existing, ok := h.executionPlanDependencies(w, r, q, current, input.Tasks)
+	if !ok {
+		return
+	}
+	if err := workbench.ValidateExecutionPlan(input.Tasks, criteria, repos, existing); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -137,7 +141,7 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	plan := &workbench.ExecutionPlan{Version: input.Version, Key: input.Key, Digest: digest, Issues: []string{}}
 	coverage := map[string][]string{}
 	for _, task := range input.Tasks {
-		dependencies := []string{}
+		dependencies := append([]string{}, task.ExistingDependencies...)
 		for _, key := range task.DependsOn {
 			dependencies = append(dependencies, uuidToString(ids[key]))
 		}

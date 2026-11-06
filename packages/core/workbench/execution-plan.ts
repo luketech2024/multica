@@ -32,6 +32,7 @@ export interface ExecutionPlanTask {
   repo_id: string;
   covers: string[];
   depends_on: string[];
+  existing_dependencies?: string[];
   serial_group: string;
   expected: string[];
 }
@@ -41,4 +42,60 @@ export interface ExecutionPlanInput {
   version: number;
   idempotency_key: string;
   tasks: ExecutionPlanTask[];
+}
+
+export function analyzeExecutionPlan(
+  tasks: ExecutionPlanTask[],
+  itemIds: string[],
+  repositoryIds: string[],
+) {
+  const covered = new Set(tasks.flatMap((task) => task.covers));
+  const uncovered = itemIds.filter((id) => !covered.has(id));
+  const missingRepositories = tasks
+    .filter((task) =>
+      task.repo_id
+        ? !repositoryIds.includes(task.repo_id)
+        : task.role === "dev",
+    )
+    .map((task) => task.key);
+  const graph = new Map(tasks.map((task) => [task.key, task.depends_on]));
+  const visited = new Set<string>();
+  const active = new Set<string>();
+  const path: string[] = [];
+  let cycle: string[] = [];
+  function visit(key: string): boolean {
+    if (active.has(key)) {
+      cycle = [...path.slice(path.indexOf(key)), key];
+      return true;
+    }
+    if (visited.has(key)) return false;
+    visited.add(key);
+    active.add(key);
+    path.push(key);
+    for (const dependency of graph.get(key) ?? []) {
+      if (visit(dependency)) return true;
+    }
+    path.pop();
+    active.delete(key);
+    return false;
+  }
+  tasks.some((task) => visit(task.key));
+  return {
+    coveredCount: itemIds.length - uncovered.length,
+    uncovered,
+    missingRepositories,
+    cycle,
+    canSave:
+      tasks.length > 0 &&
+      uncovered.length === 0 &&
+      missingRepositories.length === 0 &&
+      cycle.length === 0 &&
+      tasks.every(
+        (task) =>
+          task.title.trim() &&
+          task.covers.length > 0 &&
+          task.expected.length > 0 &&
+          task.expected.every((value) => value.trim()),
+      ),
+  };
 }

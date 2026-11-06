@@ -1938,7 +1938,13 @@
     "serial_group": "Serial group (optional)",
     "expected": "Expected deliverables, separated by commas",
     "add": "Add subtask",
-    "save": "Save plan"
+    "save": "Save plan",
+    "coverage_count": "{{count}} / {{total}} acceptance items covered",
+    "uncovered": "Add coverage for {{items}}",
+    "missing_repositories": "Select a repository for {{tasks}}",
+    "dependency_cycle": "Dependency cycle {{path}}",
+    "add_existing_dependency": "Add existing dependency",
+    "existing_dependency_hint": "Select a task in this project. Execution waits until it is completed."
   },
   "handoff": {
     "title": "Subtask handoff",

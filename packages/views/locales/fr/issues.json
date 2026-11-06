@@ -1938,7 +1938,13 @@
     "serial_group": "Groupe séquentiel (facultatif)",
     "expected": "Livrables séparés par des virgules",
     "add": "Ajouter une sous-tâche",
-    "save": "Enregistrer le plan"
+    "save": "Enregistrer le plan",
+    "coverage_count": "{{count}} / {{total}} critères couverts",
+    "uncovered": "Complétez la couverture de {{items}}",
+    "missing_repositories": "Sélectionnez un dépôt pour {{tasks}}",
+    "dependency_cycle": "Cycle de dépendances {{path}}",
+    "add_existing_dependency": "Ajouter une dépendance existante",
+    "existing_dependency_hint": "Sélectionnez une tâche de ce projet. Son achèvement est requis pour démarrer."
   },
   "handoff": {
     "title": "Transmission de la sous-tâche",

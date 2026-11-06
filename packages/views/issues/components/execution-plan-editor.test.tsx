@@ -22,6 +22,46 @@ vi.mock("@multica/core/api", () => ({
     saveExecutionPlan: (...args: unknown[]) => save(...args),
   },
 }));
+vi.mock("../../modals/issue-picker-modal", () => ({
+  IssuePickerModal: ({
+    isSelectable,
+    onSelect,
+  }: {
+    isSelectable: (candidate: Issue) => boolean;
+    onSelect: (candidate: Issue) => void;
+  }) => {
+    const candidates = [
+      {
+        ...issue,
+        id: "prior",
+        title: "Existing prerequisite",
+        identifier: "WB-2",
+      },
+      {
+        ...issue,
+        id: "foreign",
+        title: "Foreign prerequisite",
+        project_id: "other",
+      },
+      { ...issue, id: "child", title: "Old child", parent_issue_id: issue.id },
+      {
+        ...issue,
+        id: "cancelled",
+        title: "Cancelled prerequisite",
+        status: "cancelled" as const,
+      },
+    ];
+    return (
+      <div>
+        {candidates.filter(isSelectable).map((candidate) => (
+          <button key={candidate.id} onClick={() => onSelect(candidate)}>
+            {candidate.title}
+          </button>
+        ))}
+      </div>
+    );
+  },
+}));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -99,15 +139,38 @@ it("keeps the plan and its idempotency key when saving fails", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Plan subtasks" }));
   fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
   await screen.findByRole("option", { name: "API" });
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeDisabled();
+  expect(screen.getByText("Add coverage for A-01")).toBeInTheDocument();
   fireEvent.change(screen.getByRole("textbox", { name: "Subtask title" }), {
     target: { value: "Implement export" },
   });
   fireEvent.change(screen.getByRole("combobox", { name: "Repository" }), {
     target: { value: "repo" },
   });
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeDisabled();
   fireEvent.click(
     screen.getByRole("checkbox", { name: "A-01 · Export report" }),
   );
+  expect(
+    screen.getByText("1 / 1 acceptance items covered"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeEnabled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Add existing dependency" }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Foreign prerequisite" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Old child" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Cancelled prerequisite" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Existing prerequisite" }),
+  );
+  expect(screen.getByText("WB-2 · Existing prerequisite")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Save plan" }));
   await screen.findByText("Save unavailable");
   expect(screen.getByRole("textbox", { name: "Subtask title" })).toHaveValue(
@@ -119,6 +182,52 @@ it("keeps the plan and its idempotency key when saving fails", async () => {
   expect(save.mock.calls[0]?.[1]).toMatchObject({
     expected_revision: 7,
     version: 3,
-    tasks: [{ title: "Implement export", covers: ["A-01"], repo_id: "repo" }],
+    tasks: [
+      {
+        title: "Implement export",
+        covers: ["A-01"],
+        repo_id: "repo",
+        existing_dependencies: ["prior"],
+      },
+    ],
   });
+});
+
+it("blocks cyclic dependencies and recalculates after removing a subtask", async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  renderWithI18n(
+    <QueryClientProvider client={client}>
+      <ExecutionPlanEditor issue={issue} />
+    </QueryClientProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Plan subtasks" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+  await screen.findByRole("option", { name: "API" });
+  fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+  screen
+    .getAllByRole("textbox", { name: "Subtask title" })
+    .forEach((input, i) => {
+      fireEvent.change(input, {
+        target: { value: i === 0 ? "First" : "Second" },
+      });
+    });
+  screen.getAllByRole("combobox", { name: "Repository" }).forEach((input) => {
+    fireEvent.change(input, { target: { value: "repo" } });
+  });
+  screen
+    .getAllByRole("checkbox", { name: "A-01 · Export report" })
+    .forEach((input) => {
+      fireEvent.click(input);
+    });
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("checkbox", { name: / · First$/ }));
+  fireEvent.click(screen.getByRole("checkbox", { name: / · Second$/ }));
+  expect(screen.getByRole("alert")).toHaveTextContent("Dependency cycle");
+  expect(screen.getByRole("alert")).toHaveTextContent("→");
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeDisabled();
+  fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]!);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeEnabled();
 });
