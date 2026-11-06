@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
@@ -4237,6 +4238,16 @@ export class ApiClient {
     projectId: string,
   ): Promise<ListProjectResourcesResponse> {
     return this.fetch(`/api/projects/${projectId}/resources`);
+  }
+
+  async getProjectWorkbenchRoles(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/workbench-roles`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), ProjectRolesSchema, endpoint);
+  }
+
+  async saveProjectWorkbenchRoles(projectId: string, config: ProjectRoles["config"], revision: number) {
+    const endpoint = `/api/projects/${projectId}/workbench-roles`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PUT", body: JSON.stringify({ config, expected_revision: revision }) }), ProjectRolesSchema, endpoint);
   }
 
   async listDeployTargets(projectId: string) {

@@ -1,6 +1,36 @@
 import { z } from "zod";
 import { parseWithFallback } from "../api/schema";
 
+export const projectRoleOrder = [
+  "sched",
+  "product",
+  "dev",
+  "test",
+  "sec",
+  "ops",
+] as const;
+export type ProjectRoleKey = (typeof projectRoleOrder)[number];
+const ProjectRoleSchema = z.object({
+  enabled: z.boolean(),
+  agent_id: z.string().nullable().default(null),
+  runtime_id: z.string().nullable().default(null),
+});
+export const ProjectRolesSchema = z.object({
+  config: z.object({
+    v: z.literal(1),
+    roles: z.object({
+      sched: ProjectRoleSchema,
+      product: ProjectRoleSchema,
+      dev: ProjectRoleSchema,
+      test: ProjectRoleSchema,
+      sec: ProjectRoleSchema,
+      ops: ProjectRoleSchema,
+    }),
+  }),
+  revision: z.number().int().positive(),
+});
+export type ProjectRoles = z.infer<typeof ProjectRolesSchema>;
+
 export const DeployTargetSchema = z.object({
   id: z.string(),
   workspace_id: z.string(),

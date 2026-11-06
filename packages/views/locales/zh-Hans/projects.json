@@ -251,5 +251,16 @@
     "preview": "预览",
     "staging": "预发",
     "prod": "生产"
+  },
+  "roles": {
+    "title": "项目团队",
+    "sched": "调度",
+    "product": "产品",
+    "dev": "开发",
+    "test": "测试",
+    "sec": "安全",
+    "ops": "运维",
+    "agent": "智能体",
+    "unavailable": "不可用"
   }
 }

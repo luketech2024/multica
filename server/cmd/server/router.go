@@ -2252,6 +2252,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Delete("/", h.DeleteProject)
 					r.Post("/workflow", h.SetProjectWorkflow)
 					r.Get("/deploy-targets", h.ListDeployTargets)
+					r.Get("/workbench-roles", h.GetProjectWorkbenchRoles)
+					r.Put("/workbench-roles", h.SaveProjectWorkbenchRoles)
 					r.Post("/deploy-targets", h.SaveDeployTarget)
 					r.Put("/deploy-targets/{targetId}", h.SaveDeployTarget)
 					r.Delete("/deploy-targets/{targetId}", h.DeleteDeployTarget)

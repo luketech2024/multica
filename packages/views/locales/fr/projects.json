@@ -251,5 +251,16 @@
     "preview": "Aperçu",
     "staging": "Préproduction",
     "prod": "Production"
+  },
+  "roles": {
+    "title": "Équipe du projet",
+    "sched": "Planification",
+    "product": "Produit",
+    "dev": "Développement",
+    "test": "Tests",
+    "sec": "Sécurité",
+    "ops": "Exploitation",
+    "agent": "Agent",
+    "unavailable": "Indisponible"
   }
 }

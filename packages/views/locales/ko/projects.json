@@ -251,5 +251,16 @@
     "preview": "미리 보기",
     "staging": "스테이징",
     "prod": "운영"
+  },
+  "roles": {
+    "title": "프로젝트 팀",
+    "sched": "일정 관리",
+    "product": "제품",
+    "dev": "개발",
+    "test": "테스트",
+    "sec": "보안",
+    "ops": "운영",
+    "agent": "에이전트",
+    "unavailable": "사용 불가"
   }
 }

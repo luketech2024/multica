@@ -676,6 +676,10 @@ func (h *Handler) UpdateProjectResource(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "project resource not found")
 		return
 	}
+	if existing.ResourceType == "workbench_roles" {
+		writeError(w, http.StatusConflict, "use the project team configuration endpoint")
+		return
+	}
 
 	// Decode into a raw map first so we can tell "field omitted" from
 	// "field present with zero value" — the label clear case in particular
@@ -914,6 +918,10 @@ func (h *Handler) DeleteProjectResource(w http.ResponseWriter, r *http.Request) 
 	}
 	if uuidToString(resource.ProjectID) != uuidToString(project.ID) {
 		writeError(w, http.StatusNotFound, "project resource not found")
+		return
+	}
+	if resource.ResourceType == "workbench_roles" {
+		writeError(w, http.StatusConflict, "use the project team configuration endpoint")
 		return
 	}
 	tx, err := h.TxStarter.Begin(r.Context())

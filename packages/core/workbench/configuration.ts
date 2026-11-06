@@ -4,14 +4,37 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "../api";
-import type { DeployTargetInput, CredentialInput } from "./schemas";
+import type {
+  DeployTargetInput,
+  CredentialInput,
+  ProjectRoles,
+} from "./schemas";
 export * from "./schemas";
 
 export const workbenchKeys = {
+  roles: (wsId: string, projectId: string) =>
+    ["projects", wsId, "detail", projectId, "workbench-roles"] as const,
   targets: (wsId: string, projectId: string) =>
     ["workbench", wsId, "targets", projectId] as const,
   credentials: (wsId: string) => ["workbench", wsId, "credentials"] as const,
 };
+
+export function projectRolesOptions(wsId: string, projectId: string) {
+  return queryOptions({
+    queryKey: workbenchKeys.roles(wsId, projectId),
+    queryFn: () => api.getProjectWorkbenchRoles(projectId),
+  });
+}
+
+export function useSaveProjectRoles(wsId: string, projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ config, revision }: ProjectRoles) =>
+      api.saveProjectWorkbenchRoles(projectId, config, revision),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: workbenchKeys.roles(wsId, projectId) }),
+  });
+}
 export function deployTargetsOptions(wsId: string, projectId: string) {
   return queryOptions({
     queryKey: workbenchKeys.targets(wsId, projectId),

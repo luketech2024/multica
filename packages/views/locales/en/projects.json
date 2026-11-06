@@ -251,5 +251,16 @@
     "preview": "Preview",
     "staging": "Staging",
     "prod": "Production"
+  },
+  "roles": {
+    "title": "Project team",
+    "sched": "Scheduling",
+    "product": "Product",
+    "dev": "Development",
+    "test": "Testing",
+    "sec": "Security",
+    "ops": "Operations",
+    "agent": "Agent",
+    "unavailable": "Unavailable"
   }
 }

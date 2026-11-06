@@ -4,10 +4,35 @@ import {
   CredentialSchema,
   CredentialsSchema,
   DeployTargetsSchema,
+  ProjectRolesSchema,
+  projectRoleOrder,
   parseWorkbenchResponse,
 } from "./schemas";
 
 describe("workbench configuration responses", () => {
+  it("rejects incomplete roles and invalid revisions while defaulting optional bindings", () => {
+    const roles = Object.fromEntries(
+      projectRoleOrder.map((role) => [role, { enabled: true }]),
+    );
+    const input = { config: { v: 1, roles }, revision: 1 };
+    expect(
+      parseWorkbenchResponse(input, ProjectRolesSchema, "roles").config.roles
+        .dev,
+    ).toEqual({ enabled: true, agent_id: null, runtime_id: null });
+    for (const invalid of [
+      { ...input, revision: 0 },
+      { ...input, config: { v: 2, roles } },
+      { ...input, config: { v: 1, roles: { ...roles, sec: undefined } } },
+      {
+        ...input,
+        config: { v: 1, roles: { ...roles, dev: { enabled: "false" } } },
+      },
+    ]) {
+      expect(() =>
+        parseWorkbenchResponse(invalid, ProjectRolesSchema, "roles"),
+      ).toThrow();
+    }
+  });
   it("does not turn a malformed target list into an empty configured list", () => {
     expect(() =>
       parseWorkbenchResponse(

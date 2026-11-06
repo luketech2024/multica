@@ -251,5 +251,16 @@
     "preview": "預覽",
     "staging": "預備",
     "prod": "正式"
+  },
+  "roles": {
+    "title": "專案團隊",
+    "sched": "排程",
+    "product": "產品",
+    "dev": "開發",
+    "test": "測試",
+    "sec": "安全",
+    "ops": "維運",
+    "agent": "智能體",
+    "unavailable": "無法使用"
   }
 }
