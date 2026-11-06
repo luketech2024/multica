@@ -262,5 +262,13 @@
     "ops": "Operations",
     "agent": "Agent",
     "unavailable": "Unavailable"
+  },
+  "wizard": {
+    "basic": "Basic information",
+    "code": "Code and runtime",
+    "team": "Team",
+    "next": "Next",
+    "back": "Back",
+    "summary": "{{title}} · {{count}} repositories"
   }
 }

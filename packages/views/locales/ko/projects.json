@@ -262,5 +262,13 @@
     "ops": "운영",
     "agent": "에이전트",
     "unavailable": "사용 불가"
+  },
+  "wizard": {
+    "basic": "기본 정보",
+    "code": "코드 및 실행 환경",
+    "team": "팀 구성",
+    "next": "다음",
+    "back": "이전",
+    "summary": "{{title}} · 저장소 {{count}}개"
   }
 }

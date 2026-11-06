@@ -262,5 +262,13 @@
     "ops": "維運",
     "agent": "智能體",
     "unavailable": "無法使用"
+  },
+  "wizard": {
+    "basic": "基本資訊",
+    "code": "程式碼與執行",
+    "team": "團隊配置",
+    "next": "下一步",
+    "back": "上一步",
+    "summary": "{{title}} · {{count}} 個程式碼庫"
   }
 }

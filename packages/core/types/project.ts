@@ -1,4 +1,6 @@
 
+import type { ProjectRoles } from "../workbench/schemas";
+
 export type ProjectStatus = "planned" | "in_progress" | "paused" | "completed" | "cancelled";
 
 export type ProjectPriority = "urgent" | "high" | "medium" | "low" | "none";
@@ -30,6 +32,7 @@ export interface Project {
 }
 
 export interface CreateProjectRequest {
+  workbench_roles?: ProjectRoles["config"];
   title: string;
   description?: string;
   icon?: string;

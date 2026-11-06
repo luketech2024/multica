@@ -17,6 +17,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/issuestatus"
 	"github.com/multica-ai/multica/server/internal/logger"
 	"github.com/multica-ai/multica/server/internal/util"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
@@ -103,16 +104,17 @@ func (h *Handler) loadProjectResourceCount(ctx context.Context, projectID pgtype
 }
 
 type CreateProjectRequest struct {
-	Title       string                                `json:"title"`
-	Description *string                               `json:"description"`
-	Icon        *string                               `json:"icon"`
-	Status      string                                `json:"status"`
-	Priority    string                                `json:"priority"`
-	LeadType    *string                               `json:"lead_type"`
-	LeadID      *string                               `json:"lead_id"`
-	StartDate   *string                               `json:"start_date"`
-	DueDate     *string                               `json:"due_date"`
-	Resources   []CreateProjectResourceRequestPayload `json:"resources,omitempty"`
+	WorkbenchRoles json.RawMessage                       `json:"workbench_roles,omitempty"`
+	Title          string                                `json:"title"`
+	Description    *string                               `json:"description"`
+	Icon           *string                               `json:"icon"`
+	Status         string                                `json:"status"`
+	Priority       string                                `json:"priority"`
+	LeadType       *string                               `json:"lead_type"`
+	LeadID         *string                               `json:"lead_id"`
+	StartDate      *string                               `json:"start_date"`
+	DueDate        *string                               `json:"due_date"`
+	Resources      []CreateProjectResourceRequestPayload `json:"resources,omitempty"`
 	// WorkflowID picks the project's workflow at creation; omitted or null
 	// uses the workspace Default workflow. A new project has no issues, so no
 	// status mapping is involved. (MUL-7420)
@@ -404,8 +406,29 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		WorkflowID:  workflowID,
 	}
 
-	// Without resources, keep the simple non-tx path.
-	if len(req.Resources) == 0 {
+	var team *workbench.ProjectRoleConfiguration
+	if len(req.WorkbenchRoles) > 0 {
+		if _, ok := h.requireWorkspaceRole(w, r, workspaceID, "workspace not found", "owner", "admin", "member"); !ok {
+			return
+		}
+		actorType, _ := h.resolveActor(r, userID, workspaceID)
+		if actorType != "member" {
+			writeError(w, http.StatusForbidden, "only a member can configure project roles")
+			return
+		}
+		config, err := workbench.ParseProjectRoles(req.WorkbenchRoles)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if !h.validateProjectRoleBindings(w, r, wsUUID, config) {
+			return
+		}
+		team = &workbench.ProjectRoleConfiguration{Config: config, Revision: 1}
+	}
+
+	// Projects without bundled configuration retain the simple create path.
+	if len(req.Resources) == 0 && team == nil {
 		project, err := h.Queries.CreateProject(r.Context(), createParams)
 		if err != nil {
 			h.writeProjectWriteError(w, r, err, "create")
@@ -461,6 +484,18 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resourceRows = append(resourceRows, row)
+	}
+	if team != nil {
+		raw, _ := json.Marshal(team)
+		_, err = qtx.CreateProjectResource(r.Context(), db.CreateProjectResourceParams{ProjectID: project.ID, WorkspaceID: project.WorkspaceID, ResourceType: "workbench_roles", ResourceRef: raw, Label: pgtype.Text{String: "Project team", Valid: true}, CreatedBy: creator})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to save initial project roles")
+			return
+		}
+		if err = writeWorkbenchAudit(r.Context(), qtx, project.WorkspaceID, creator, "project_roles_created", map[string]any{"project_id": uuidToString(project.ID), "after": team.Config, "revision": team.Revision}); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to record initial role audit")
+			return
+		}
 	}
 	if err := tx.Commit(r.Context()); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to commit project create")

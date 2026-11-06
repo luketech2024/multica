@@ -9,6 +9,41 @@ import (
 	"github.com/multica-ai/multica/server/internal/workbench"
 )
 
+func TestCreateProjectWithTeamIsAtomic(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database unavailable")
+	}
+	config := workbench.DefaultProjectRoles()
+	config.Roles["sec"] = workbench.ProjectRole{Enabled: false}
+	var project ProjectResponse
+	body := map[string]any{"title": "Atomic project team", "workbench_roles": config, "resources": []map[string]any{{"resource_type": "github_repo", "resource_ref": map[string]string{"url": "https://example.test/review.git"}}}}
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusCreated).JSON(&project)
+	t.Cleanup(func() {
+		testutil.Call(t, testHandler.DeleteProject, testutil.WithURLParams(newRequest("DELETE", "/api/projects/"+project.ID, nil), "id", project.ID)).Want(http.StatusNoContent)
+	})
+	if project.ResourceCount != 1 {
+		t.Fatal("team configuration counted as a repository")
+	}
+	var roles ProjectRolesResponse
+	testutil.Call(t, testHandler.GetProjectWorkbenchRoles, testutil.WithURLParams(newRequest("GET", "/api/projects/"+project.ID+"/workbench-roles", nil), "id", project.ID)).Want(http.StatusOK).JSON(&roles)
+	if roles.Config.Roles["sec"].Enabled || roles.Revision != 1 {
+		t.Fatal("initial team configuration missing")
+	}
+	var audits int
+	dbfx.QueryRow(t, `SELECT count(*) FROM activity_log WHERE action='project_roles_created' AND details->>'project_id'=$1`, project.ID).Scan(&audits)
+	if audits != 1 {
+		t.Fatal("initial configuration audit missing")
+	}
+	config.Roles["product"] = workbench.ProjectRole{Enabled: false}
+	body["title"], body["workbench_roles"] = "Invalid atomic project team", config
+	testutil.Call(t, testHandler.CreateProject, newRequest("POST", "/api/projects", body)).Want(http.StatusBadRequest)
+	var count int
+	dbfx.QueryRow(t, `SELECT count(*) FROM project WHERE workspace_id=$1 AND title=$2`, testWorkspaceID, body["title"]).Scan(&count)
+	if count != 0 {
+		t.Fatal("invalid team left a partially created project")
+	}
+}
+
 func TestProjectTeamSnapshotSurvivesConfigurationAndRequirementEdits(t *testing.T) {
 	if testHandler == nil {
 		t.Skip("database unavailable")

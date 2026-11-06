@@ -171,9 +171,10 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import { CreateProjectModal, buildLocalDirectoryResourceRef } from "./create-project";
 
 async function pickLocalDirectory(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Next" }));
   await user.click(screen.getByRole("button", { name: /Local directory/i }));
   await user.click(screen.getByRole("button", { name: /Choose directory/i }));
-  await waitFor(() => expect(screen.getByText("/Users/dev/work/game-client")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getAllByText("/Users/dev/work/game-client").length).toBeGreaterThan(0));
 }
 
 describe("CreateProjectModal — local directory execution mode", () => {

@@ -53,32 +53,8 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	for _, role := range workbench.ProjectRoleOrder {
-		entry := config.Roles[role]
-		if !entry.Enabled {
-			continue
-		}
-		if entry.AgentID != nil {
-			id, valid := parseUUIDOrBadRequest(w, *entry.AgentID, "agent_id")
-			if !valid {
-				return
-			}
-			agent, err := h.Queries.GetAgentInWorkspace(r.Context(), db.GetAgentInWorkspaceParams{ID: id, WorkspaceID: project.WorkspaceID})
-			if err != nil || agent.ArchivedAt.Valid {
-				writeError(w, http.StatusBadRequest, "agent must be active in this workspace")
-				return
-			}
-		}
-		if entry.RuntimeID != nil {
-			id, valid := parseUUIDOrBadRequest(w, *entry.RuntimeID, "runtime_id")
-			if !valid {
-				return
-			}
-			if _, err := h.Queries.GetAgentRuntimeForWorkspace(r.Context(), db.GetAgentRuntimeForWorkspaceParams{ID: id, WorkspaceID: project.WorkspaceID}); err != nil {
-				writeError(w, http.StatusBadRequest, "runtime must belong to this workspace")
-				return
-			}
-		}
+	if !h.validateProjectRoleBindings(w, r, project.WorkspaceID, config) {
+		return
 	}
 	tx, err := h.TxStarter.Begin(r.Context())
 	if err != nil {
@@ -127,4 +103,35 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 		h.publish(protocol.EventProjectUpdated, uuidToString(project.WorkspaceID), "member", uuidToString(member.UserID), map[string]any{"project": response})
 	}
 	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) validateProjectRoleBindings(w http.ResponseWriter, r *http.Request, workspaceID pgtype.UUID, config workbench.ProjectRoles) bool {
+	for _, role := range workbench.ProjectRoleOrder {
+		entry := config.Roles[role]
+		if !entry.Enabled {
+			continue
+		}
+		if entry.AgentID != nil {
+			id, valid := parseUUIDOrBadRequest(w, *entry.AgentID, "agent_id")
+			if !valid {
+				return false
+			}
+			agent, err := h.Queries.GetAgentInWorkspace(r.Context(), db.GetAgentInWorkspaceParams{ID: id, WorkspaceID: workspaceID})
+			if err != nil || agent.ArchivedAt.Valid {
+				writeError(w, http.StatusBadRequest, "agent must be active in this workspace")
+				return false
+			}
+		}
+		if entry.RuntimeID != nil {
+			id, valid := parseUUIDOrBadRequest(w, *entry.RuntimeID, "runtime_id")
+			if !valid {
+				return false
+			}
+			if _, err := h.Queries.GetAgentRuntimeForWorkspace(r.Context(), db.GetAgentRuntimeForWorkspaceParams{ID: id, WorkspaceID: workspaceID}); err != nil {
+				writeError(w, http.StatusBadRequest, "runtime must belong to this workspace")
+				return false
+			}
+		}
+	}
+	return true
 }

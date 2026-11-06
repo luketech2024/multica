@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithI18n } from "../test/i18n";
 
@@ -212,8 +212,32 @@ vi.mock("sonner", () => ({
 import { CreateProjectModal } from "./create-project";
 
 describe("CreateProjectModal", () => {
+  it("retains the team and current step after creation fails, then retries atomically", async () => {
+    createProjectMock.mockClear();
+    createProjectMock.mockRejectedValueOnce(new Error("Save failed"));
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderWithI18n(<CreateProjectModal onClose={onClose} />);
+    await user.type(screen.getByPlaceholderText(/project title/i), "Team configuration");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("switch", { name: "Security" }));
+    await user.click(screen.getByRole("button", { name: /^create project$/i }));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("switch", { name: "Security" })).not.toBeChecked();
+    expect(screen.getByRole("switch", { name: "Product" })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /^create project$/i }));
+    expect(createProjectMock).toHaveBeenCalledTimes(2);
+    expect(createProjectMock.mock.calls[1]?.[0]).toMatchObject({
+      title: "Team configuration",
+      workbench_roles: { roles: { sec: { enabled: false }, product: { enabled: true } } },
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
   it("exposes full repository URLs in the repository picker", () => {
-    render(<CreateProjectModal onClose={vi.fn()} />);
+    renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText(/project title/i), { target: { value: "Repository review" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
     // The Tooltip is the single reveal mechanism. A native `title` carrying the
     // same URL would stack a browser tooltip on top of it (MUL-4836).
@@ -226,12 +250,13 @@ describe("CreateProjectModal", () => {
     const user = userEvent.setup();
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
-    expect(screen.getByText(apiRepoDescription)).toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText(/project title/i), "API delivery");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(
       screen.getByRole("button", { name: (name) => name.includes(apiRepoUrl) }),
     );
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByRole("button", { name: /^create project$/i }));
 
     expect(createProjectMock).toHaveBeenCalledTimes(1);
@@ -273,6 +298,7 @@ describe("CreateProjectModal", () => {
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText(/project title/i), "Release 2026-09");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.type(
       screen.getByPlaceholderText(/github\.com\/owner\/repo/i),
       apiRepoUrl,
@@ -282,6 +308,7 @@ describe("CreateProjectModal", () => {
       "release/2026-09",
     );
     await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByRole("button", { name: /^create project$/i }));
 
     expect(createProjectMock).toHaveBeenCalledTimes(1);
@@ -302,11 +329,13 @@ describe("CreateProjectModal", () => {
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText(/project title/i), "Plain project");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.type(
       screen.getByPlaceholderText(/github\.com\/owner\/repo/i),
       apiRepoUrl,
     );
     await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByRole("button", { name: /^create project$/i }));
 
     const payload = createProjectMock.mock.calls[0]?.[0] as {
@@ -325,6 +354,7 @@ describe("CreateProjectModal", () => {
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText(/project title/i), "Bad branch");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(
       screen.getByRole("button", { name: (name) => name.includes(apiRepoUrl) }),
     );
@@ -338,7 +368,7 @@ describe("CreateProjectModal", () => {
     expect(screen.getByText(/commit, not a branch/i)).toBeTruthy();
 
     const create = screen.getByRole("button", {
-      name: /^create project$/i,
+      name: "Next",
     }) as HTMLButtonElement;
     expect(create.disabled).toBe(true);
     await user.click(create);
@@ -353,6 +383,7 @@ describe("CreateProjectModal", () => {
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText(/project title/i), "Bad branch");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(
       screen.getByRole("button", { name: (name) => name.includes(apiRepoUrl) }),
     );
@@ -376,6 +407,7 @@ describe("CreateProjectModal", () => {
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText(/project title/i), "Second paste");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     const urlField = screen.getByPlaceholderText(/github\.com\/owner\/repo/i);
     await user.clear(urlField);
     await user.paste("https://github.com/multica-ai/one/tree/release/2026-09");
@@ -391,6 +423,7 @@ describe("CreateProjectModal", () => {
     expect((screen.getByLabelText(/starting branch/i) as HTMLInputElement).value).toBe("main");
 
     await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByRole("button", { name: /^create project$/i }));
 
     const payload = createProjectMock.mock.calls[0]?.[0] as {
@@ -407,6 +440,8 @@ describe("CreateProjectModal", () => {
 
     renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
 
+    await user.type(screen.getByPlaceholderText(/project title/i), "Search repositories");
+    await user.click(screen.getByRole("button", { name: "Next" }));
     const repoSearchInput = screen.getByRole("textbox", { name: "Search repositories..." });
 
     await user.type(repoSearchInput, "api");

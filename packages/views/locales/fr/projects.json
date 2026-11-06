@@ -262,5 +262,13 @@
     "ops": "Exploitation",
     "agent": "Agent",
     "unavailable": "Indisponible"
+  },
+  "wizard": {
+    "basic": "Informations générales",
+    "code": "Code et exécution",
+    "team": "Équipe",
+    "next": "Suivant",
+    "back": "Précédent",
+    "summary": "{{title}} · {{count}} dépôts"
   }
 }

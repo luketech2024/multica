@@ -262,5 +262,13 @@
     "ops": "運用",
     "agent": "エージェント",
     "unavailable": "利用不可"
+  },
+  "wizard": {
+    "basic": "基本情報",
+    "code": "コードと実行環境",
+    "team": "チーム",
+    "next": "次へ",
+    "back": "戻る",
+    "summary": "{{title}} · {{count}} リポジトリ"
   }
 }

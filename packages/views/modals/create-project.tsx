@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { ProjectRolesSchema, projectRoleOrder } from "@multica/core/workbench/configuration";
+import { ProjectRolesFields } from "../projects/components/project-roles-fields";
 import { CalendarClock, CalendarDays, ChevronRight, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, UserMinus } from "@multica/ui/icons";
 
 /**
@@ -161,6 +163,14 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const setDraft = useProjectDraftStore((s) => s.setDraft);
   const clearDraft = useProjectDraftStore((s) => s.clearDraft);
 
+  const [step, setStep] = useState(0);
+  const [team, setTeam] = useState(() => draft.workbenchRoles ?? ProjectRolesSchema.parse({
+    revision: 1,
+    config: {
+      v: 1,
+      roles: Object.fromEntries(projectRoleOrder.map((role) => [role, { enabled: true }])),
+    },
+  }).config);
   const [title, setTitle] = useState(draft.title);
   const descEditorRef = useRef<ContentEditorRef>(null);
   const [status, setStatus] = useState<ProjectStatus>(draft.status);
@@ -354,6 +364,10 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     // directly, so a disabled button alone leaves the keyboard path open.
     if (!title.trim() || submitting) return;
     if (sourceMode === "repos" && hasRejectedRepoRef) return;
+    if (step < 2) {
+      setStep(step + 1);
+      return;
+    }
     // `sourceMode` decides which side's stash gets persisted — the other
     // side is silently dropped, so repos picked then abandoned for local
     // mode don't leak into the project.
@@ -391,6 +405,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     try {
       const project = await createProject.mutateAsync({
         title: title.trim(),
+        workbench_roles: team,
         description: descEditorRef.current?.getMarkdown()?.trim() || undefined,
         icon,
         status,
@@ -469,276 +484,8 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     });
   };
 
-  return (
-    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent
-        showCloseButton={false}
-        className={cn(
-          "p-0 gap-0 flex flex-col overflow-hidden",
-          "!top-1/2 !left-1/2 !-translate-x-1/2",
-          "!transition-all !duration-300 !ease-out",
-          isExpanded
-            ? "!max-w-4xl !w-full !h-5/6 !-translate-y-1/2"
-            : "!max-w-2xl !w-full !h-96 !-translate-y-1/2",
-        )}
-      >
-        <DialogTitle className="sr-only">{t(($) => $.create_project.title)}</DialogTitle>
-
-        <div className="flex items-center justify-between px-5 pt-3 pb-2 shrink-0">
-          <div className="flex items-center gap-1.5 text-caption">
-            <span className="text-muted-foreground">{workspaceName}</span>
-            <ChevronRight className="size-3 text-faint-foreground" />
-            <span className="font-medium">{t(($) => $.create_project.title_breadcrumb)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="rounded-sm p-1.5 opacity-70 hover:opacity-100 hover:bg-accent/60 transition-all cursor-pointer"
-                  >
-                    {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-                  </button>
-                }
-              />
-              <TooltipContent side="bottom">
-                {isExpanded
-                  ? t(($) => $.common.collapse_tooltip)
-                  : t(($) => $.common.expand_tooltip)}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-sm p-1.5 opacity-70 hover:opacity-100 hover:bg-accent/60 transition-all cursor-pointer"
-                  >
-                    <XIcon className="size-4" />
-                  </button>
-                }
-              />
-              <TooltipContent side="bottom">{t(($) => $.common.close)}</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
-        <div className="px-5 pb-2 shrink-0">
-          <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-            <TooltipHint label={t(($) => $.create_project.icon_tooltip)}>
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className="text-display-sm cursor-pointer rounded-lg p-1 -ml-1 hover:bg-accent/60 transition-colors"
-                    aria-label={t(($) => $.create_project.icon_tooltip)}
-                  >
-                    {icon || "📁"}
-                  </button>
-                }
-              />
-            </TooltipHint>
-            <PopoverContent align="start" className="w-auto p-0">
-              <EmojiPicker
-                onSelect={(emoji) => {
-                  updateIcon(emoji);
-                  setIconPickerOpen(false);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-          <TitleEditor
-            autoFocus
-            defaultValue={draft.title}
-            placeholder={t(($) => $.create_project.title_placeholder)}
-            className="text-title font-semibold"
-            onChange={(v) => updateTitle(v)}
-            onSubmit={handleSubmit}
-          />
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-5">
-          <ContentEditor
-            ref={descEditorRef}
-            defaultValue={draft.description}
-            placeholder={t(($) => $.create_project.description_placeholder)}
-            onUpdate={(md) => setDraft({ description: md })}
-            debounceMs={500}
-          />
-          <p className="mt-1 text-caption text-muted-foreground">
-            {t(($) => $.create_project.description_hint)}
-          </p>
-        </div>
-
-        {/* Property toolbar — mirrors the create-issue footer: a wrapping pill
-            row whose low-frequency fields (start/due date) collapse into a ⋯
-            overflow, with the primary action in a separate bar below.
-            Repos lives here alongside the property pills for now. Once we
-            support more resource types (Linear / Notion / Figma / Slack), pull
-            them out into a dedicated Resources strip above this footer. */}
-        <div className="flex items-center gap-1.5 px-4 py-2 shrink-0 flex-wrap">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <PillButton>
-                  <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[status].dotColor)} />
-                  <span>{projectStatusLabels[status]}</span>
-                </PillButton>
-              }
-            />
-            <DropdownMenuContent align="start" className="w-44">
-              {PROJECT_STATUS_ORDER.map((s) => (
-                <DropdownMenuItem key={s} onClick={() => updateStatus(s)}>
-                  <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[s].dotColor)} />
-                  <span>{projectStatusLabels[s]}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <PillButton>
-                  <PriorityIcon priority={priority} />
-                  <span>{projectPriorityLabels[priority]}</span>
-                </PillButton>
-              }
-            />
-            <DropdownMenuContent align="start" className="w-44">
-              {PROJECT_PRIORITY_ORDER.map((pr) => (
-                <DropdownMenuItem key={pr} onClick={() => updatePriority(pr)}>
-                  <PriorityIcon priority={pr} />
-                  <span>{projectPriorityLabels[pr]}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <WorkflowPill value={workflowId} onChange={setWorkflowId} />
-
-          <Popover
-            open={leadOpen}
-            onOpenChange={(v) => {
-              setLeadOpen(v);
-              if (!v) setLeadFilter("");
-            }}
-          >
-            <PopoverTrigger
-              render={
-                <PillButton>
-                  {leadType && leadId ? (
-                    <>
-                      <ActorAvatar actorType={leadType} actorId={leadId} size="sm" showStatusDot />
-                      <span className="truncate">{leadLabel}</span>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">{t(($) => $.create_project.lead)}</span>
-                  )}
-                </PillButton>
-              }
-            />
-            <PopoverContent align="start" className="w-52 p-0">
-              <div className="px-2 py-1.5 border-b">
-                <input
-                  type="text"
-                  value={leadFilter}
-                  onChange={(e) => setLeadFilter(e.target.value)}
-                  placeholder={t(($) => $.create_project.lead_placeholder)}
-                  className="w-full bg-transparent text-body placeholder:text-muted-foreground outline-none"
-                />
-              </div>
-              <div className="p-1 max-h-60 overflow-y-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateLead(undefined, undefined);
-                    setLeadOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
-                >
-                  <UserMinus className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">{t(($) => $.create_project.no_lead)}</span>
-                </button>
-                {filteredMembers.length > 0 && (
-                  <>
-                    <div className="px-2 pt-2 pb-1 text-caption font-medium text-muted-foreground uppercase tracking-wider">
-                      {t(($) => $.create_project.members_group)}
-                    </div>
-                    {filteredMembers.map((m) => (
-                      <button
-                        type="button"
-                        key={m.user_id}
-                        onClick={() => {
-                          updateLead("member", m.user_id);
-                          setLeadOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
-                      >
-                        <ActorAvatar actorType="member" actorId={m.user_id} size="sm" />
-                        <span>{m.name}</span>
-                      </button>
-                    ))}
-                  </>
-                )}
-                {filteredAgents.length > 0 && (
-                  <>
-                    <div className="px-2 pt-2 pb-1 text-caption font-medium text-muted-foreground uppercase tracking-wider">
-                      {t(($) => $.create_project.agents_group)}
-                    </div>
-                    {filteredAgents.map((a) => (
-                      <button
-                        type="button"
-                        key={a.id}
-                        onClick={() => {
-                          updateLead("agent", a.id);
-                          setLeadOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
-                      >
-                        <ActorAvatar actorType="agent" actorId={a.id} size="sm" showStatusDot />
-                        <span>{a.name}</span>
-                      </button>
-                    ))}
-                  </>
-                )}
-                {filteredMembers.length === 0 &&
-                  filteredAgents.length === 0 &&
-                  leadFilter && (
-                    <div className="px-2 py-3 text-center text-body text-muted-foreground">
-                      {t(($) => $.create_project.no_results)}
-                    </div>
-                  )}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Start date — collapsed into ⋯ unless it has a value or was just
-              opened from the overflow (the calendar anchors on the inline pill). */}
-          {(startDate || startDatePickerOpen) && (
-            <ProjectStartDatePicker
-              startDate={startDate || null}
-              onUpdate={(u) => updateStartDate(u.start_date ?? "")}
-              triggerRender={<PillButton />}
-              open={startDatePickerOpen}
-              onOpenChange={setStartDatePickerOpen}
-            />
-          )}
-
-          {(dueDate || dueDatePickerOpen) && (
-            <ProjectDueDatePicker
-              dueDate={dueDate || null}
-              onUpdate={(u) => updateDueDate(u.due_date ?? "")}
-              triggerRender={<PillButton />}
-              open={dueDatePickerOpen}
-              onOpenChange={setDueDatePickerOpen}
-            />
-          )}
-
-          <Popover
+  const repositoryPicker = (
+<Popover
             open={repoPopoverOpen}
             onOpenChange={(v) => {
               setRepoPopoverOpen(v);
@@ -1080,6 +827,314 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
               )}
             </PopoverContent>
           </Popover>
+  );
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          "p-0 gap-0 flex flex-col overflow-hidden",
+          "!top-1/2 !left-1/2 !-translate-x-1/2",
+          "!transition-all !duration-300 !ease-out",
+          isExpanded
+            ? "!max-w-4xl !w-full !h-5/6 !-translate-y-1/2"
+            : "!max-w-2xl !w-full !h-[min(680px,85vh)] !-translate-y-1/2",
+        )}
+      >
+        <DialogTitle className="sr-only">{t(($) => $.create_project.title)}</DialogTitle>
+
+        <div className="flex items-center justify-between px-5 pt-3 pb-2 shrink-0">
+          <div className="flex items-center gap-1.5 text-caption">
+            <span className="text-muted-foreground">{workspaceName}</span>
+            <ChevronRight className="size-3 text-faint-foreground" />
+            <span className="font-medium">{t(($) => $.create_project.title_breadcrumb)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="rounded-sm p-1.5 opacity-70 hover:opacity-100 hover:bg-accent/60 transition-all cursor-pointer"
+                  >
+                    {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+                  </button>
+                }
+              />
+              <TooltipContent side="bottom">
+                {isExpanded
+                  ? t(($) => $.common.collapse_tooltip)
+                  : t(($) => $.common.expand_tooltip)}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-sm p-1.5 opacity-70 hover:opacity-100 hover:bg-accent/60 transition-all cursor-pointer"
+                  >
+                    <XIcon className="size-4" />
+                  </button>
+                }
+              />
+              <TooltipContent side="bottom">{t(($) => $.common.close)}</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        <ol className="flex gap-3 px-5 py-2 text-caption">
+          {[
+            tProjects(($) => $.wizard.basic),
+            tProjects(($) => $.wizard.code),
+            tProjects(($) => $.wizard.team),
+          ].map((label, index) => (
+            <li key={label} aria-current={step === index ? "step" : undefined}
+              className={cn("rounded-full px-2 py-1", step === index
+                ? "bg-brand/10 font-semibold text-brand-text"
+                : step > index ? "bg-brand/5 text-brand-text" : "text-muted-foreground")}
+            >
+              {index + 1} {label}
+            </li>
+          ))}
+        </ol>
+        <div className="px-5 pb-2 shrink-0">
+          <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+            <TooltipHint label={t(($) => $.create_project.icon_tooltip)}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="text-display-sm cursor-pointer rounded-lg p-1 -ml-1 hover:bg-accent/60 transition-colors"
+                    aria-label={t(($) => $.create_project.icon_tooltip)}
+                  >
+                    {icon || "📁"}
+                  </button>
+                }
+              />
+            </TooltipHint>
+            <PopoverContent align="start" className="w-auto p-0">
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  updateIcon(emoji);
+                  setIconPickerOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          <TitleEditor
+            autoFocus
+            defaultValue={draft.title}
+            placeholder={t(($) => $.create_project.title_placeholder)}
+            className="text-title font-semibold"
+            onChange={(v) => updateTitle(v)}
+            onSubmit={handleSubmit}
+          />
+        </div>
+
+        <div className={cn("flex-1 min-h-0 overflow-y-auto px-5", step !== 0 && "hidden")}>
+          <ContentEditor
+            ref={descEditorRef}
+            defaultValue={draft.description}
+            placeholder={t(($) => $.create_project.description_placeholder)}
+            onUpdate={(md) => setDraft({ description: md })}
+            debounceMs={500}
+          />
+          <p className="mt-1 text-caption text-muted-foreground">
+            {t(($) => $.create_project.description_hint)}
+          </p>
+        </div>
+
+        {step === 1 && <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3">
+          <h3 className="text-label font-medium">{tProjects(($) => $.wizard.code)}</h3>
+          {repositoryPicker}
+          <ul className="space-y-2 text-caption">
+            {sourceMode === "repos" ? selectedRepos.map((url) => (
+              <li key={url} className="break-all">{url}{repoRefs[url] ? ` · ${repoRefs[url]}` : ""}</li>
+            )) : <li className="break-all">{selectedLocalPath}</li>}
+          </ul>
+        </div>}
+        {step === 2 && <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3">
+          <h3 className="text-label font-medium">{tProjects(($) => $.wizard.team)}</h3>
+          <p className="text-caption text-muted-foreground">
+            {tProjects(($) => $.wizard.summary, {
+              title,
+              count: sourceMode === "repos" ? selectedRepos.length : Number(!!selectedLocalPath),
+            })}
+          </p>
+          <ProjectRolesFields config={team} disabled={submitting} onChange={(config) => {
+            setTeam(config);
+            setDraft({ workbenchRoles: config });
+          }} />
+        </div>}
+
+        {/* Property toolbar — mirrors the create-issue footer: a wrapping pill
+            row whose low-frequency fields (start/due date) collapse into a ⋯
+            overflow, with the primary action in a separate bar below.
+            Repos lives here alongside the property pills for now. Once we
+            support more resource types (Linear / Notion / Figma / Slack), pull
+            them out into a dedicated Resources strip above this footer. */}
+        <div className={step === 0 ? "flex items-center gap-1.5 px-4 py-2 shrink-0 flex-wrap" : "hidden"}>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <PillButton>
+                  <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[status].dotColor)} />
+                  <span>{projectStatusLabels[status]}</span>
+                </PillButton>
+              }
+            />
+            <DropdownMenuContent align="start" className="w-44">
+              {PROJECT_STATUS_ORDER.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => updateStatus(s)}>
+                  <span className={cn("size-2 rounded-full", PROJECT_STATUS_CONFIG[s].dotColor)} />
+                  <span>{projectStatusLabels[s]}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <PillButton>
+                  <PriorityIcon priority={priority} />
+                  <span>{projectPriorityLabels[priority]}</span>
+                </PillButton>
+              }
+            />
+            <DropdownMenuContent align="start" className="w-44">
+              {PROJECT_PRIORITY_ORDER.map((pr) => (
+                <DropdownMenuItem key={pr} onClick={() => updatePriority(pr)}>
+                  <PriorityIcon priority={pr} />
+                  <span>{projectPriorityLabels[pr]}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <WorkflowPill value={workflowId} onChange={setWorkflowId} />
+
+          <Popover
+            open={leadOpen}
+            onOpenChange={(v) => {
+              setLeadOpen(v);
+              if (!v) setLeadFilter("");
+            }}
+          >
+            <PopoverTrigger
+              render={
+                <PillButton>
+                  {leadType && leadId ? (
+                    <>
+                      <ActorAvatar actorType={leadType} actorId={leadId} size="sm" showStatusDot />
+                      <span className="truncate">{leadLabel}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">{t(($) => $.create_project.lead)}</span>
+                  )}
+                </PillButton>
+              }
+            />
+            <PopoverContent align="start" className="w-52 p-0">
+              <div className="px-2 py-1.5 border-b">
+                <input
+                  type="text"
+                  value={leadFilter}
+                  onChange={(e) => setLeadFilter(e.target.value)}
+                  placeholder={t(($) => $.create_project.lead_placeholder)}
+                  className="w-full bg-transparent text-body placeholder:text-muted-foreground outline-none"
+                />
+              </div>
+              <div className="p-1 max-h-60 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateLead(undefined, undefined);
+                    setLeadOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
+                >
+                  <UserMinus className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">{t(($) => $.create_project.no_lead)}</span>
+                </button>
+                {filteredMembers.length > 0 && (
+                  <>
+                    <div className="px-2 pt-2 pb-1 text-caption font-medium text-muted-foreground uppercase tracking-wider">
+                      {t(($) => $.create_project.members_group)}
+                    </div>
+                    {filteredMembers.map((m) => (
+                      <button
+                        type="button"
+                        key={m.user_id}
+                        onClick={() => {
+                          updateLead("member", m.user_id);
+                          setLeadOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
+                      >
+                        <ActorAvatar actorType="member" actorId={m.user_id} size="sm" />
+                        <span>{m.name}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {filteredAgents.length > 0 && (
+                  <>
+                    <div className="px-2 pt-2 pb-1 text-caption font-medium text-muted-foreground uppercase tracking-wider">
+                      {t(($) => $.create_project.agents_group)}
+                    </div>
+                    {filteredAgents.map((a) => (
+                      <button
+                        type="button"
+                        key={a.id}
+                        onClick={() => {
+                          updateLead("agent", a.id);
+                          setLeadOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-body hover:bg-accent transition-colors"
+                      >
+                        <ActorAvatar actorType="agent" actorId={a.id} size="sm" showStatusDot />
+                        <span>{a.name}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {filteredMembers.length === 0 &&
+                  filteredAgents.length === 0 &&
+                  leadFilter && (
+                    <div className="px-2 py-3 text-center text-body text-muted-foreground">
+                      {t(($) => $.create_project.no_results)}
+                    </div>
+                  )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Start date — collapsed into ⋯ unless it has a value or was just
+              opened from the overflow (the calendar anchors on the inline pill). */}
+          {(startDate || startDatePickerOpen) && (
+            <ProjectStartDatePicker
+              startDate={startDate || null}
+              onUpdate={(u) => updateStartDate(u.start_date ?? "")}
+              triggerRender={<PillButton />}
+              open={startDatePickerOpen}
+              onOpenChange={setStartDatePickerOpen}
+            />
+          )}
+
+          {(dueDate || dueDatePickerOpen) && (
+            <ProjectDueDatePicker
+              dueDate={dueDate || null}
+              onUpdate={(u) => updateDueDate(u.due_date ?? "")}
+              triggerRender={<PillButton />}
+              open={dueDatePickerOpen}
+              onOpenChange={setDueDatePickerOpen}
+            />
+          )}
 
           {/* Overflow — always the last child so it stays at the end of the
               wrap flow. Only rendered while a date is still collapsible; when
@@ -1113,7 +1168,10 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer action bar — primary action in its own strip, matching
             create-issue. */}
-        <div className="flex items-center justify-end border-t px-4 py-3 shrink-0">
+        <div className="flex items-center justify-end gap-2 border-t px-4 py-3 shrink-0">
+          {step > 0 && <Button variant="outline" size="sm" disabled={submitting} onClick={() => setStep(step - 1)}>
+            {tProjects(($) => $.wizard.back)}
+          </Button>}
           <Button
             size="sm"
             onClick={handleSubmit}
@@ -1124,7 +1182,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             }
             className="shrink-0"
           >
-            {submitting ? t(($) => $.create_project.submitting) : t(($) => $.create_project.submit)}
+            {submitting ? t(($) => $.create_project.submitting) : step < 2 ? tProjects(($) => $.wizard.next) : t(($) => $.create_project.submit)}
           </Button>
         </div>
       </DialogContent>

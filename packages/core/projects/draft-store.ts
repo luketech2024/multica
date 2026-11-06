@@ -1,7 +1,9 @@
 import type { ProjectStatus, ProjectPriority } from "../types";
+import type { ProjectRoles } from "../workbench/schemas";
 import { createDraftStore } from "../drafts/create-draft-store";
 
 interface ProjectDraft {
+  workbenchRoles?: ProjectRoles["config"];
   title: string;
   description: string;
   status: ProjectStatus;
