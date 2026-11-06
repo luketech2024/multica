@@ -19,6 +19,7 @@ WHERE child.id > $1 AND child.status = 'todo' AND child.assignee_type = 'agent'
   AND child.properties #>> '{workbench_handoff,superseded}' IS DISTINCT FROM 'true'
   AND parent.project_id = child.project_id
   AND parent.status IN ('todo', 'in_progress')
+  AND parent.properties->'workbench_pause' IS NULL
   AND parent.acceptance_criteria #>> '{gate,spec,passed_at}' IS NOT NULL
   AND COALESCE(parent.acceptance_criteria->'change', 'null'::jsonb) = 'null'::jsonb
   AND parent.acceptance_criteria->>'needs_resplit' IS DISTINCT FROM 'true'

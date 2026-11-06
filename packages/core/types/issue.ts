@@ -1,6 +1,7 @@
 import type { Label } from "./label";
 import type { IssuePropertyValues } from "./property";
 import type { WorkbenchHandoff } from "../workbench/execution-plan";
+import type { ExecutionPause } from "../workbench/execution-control";
 import type { ProjectRoles, ProjectTemplate } from "../workbench/schemas";
 
 /** Four lifecycle classifications. User-facing columns group by status key. */
@@ -273,6 +274,7 @@ export interface Issue {
   // in responses (empty object when unset), mirroring `metadata`.
   properties: IssuePropertyValues;
   workbench_handoff?: WorkbenchHandoff | null;
+  workbench_pause?: ExecutionPause | null;
   reactions?: IssueReaction[];
   labels?: Label[];
   created_at: string;

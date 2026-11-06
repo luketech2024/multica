@@ -1955,5 +1955,16 @@
     "serial": "Serial group {{group}}",
     "deliverables": "Expected deliverables",
     "retries": "Planned retry budget {{count}}"
+  },
+  "execution_control": {
+    "pause": "Pause execution",
+    "stopping": "Stopping execution",
+    "unknown": "Stop result unknown",
+    "paused": "Execution paused",
+    "resuming": "Resuming execution",
+    "reconcile": "Check stop acknowledgements",
+    "resume": "Resume execution",
+    "failed": "Execution action failed. Try again.",
+    "updated": "Updated execution control"
   }
 }

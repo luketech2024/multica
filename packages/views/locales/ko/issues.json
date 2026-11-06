@@ -1886,5 +1886,16 @@
     "serial": "순차 실행 그룹 {{group}}",
     "deliverables": "결과물 목록",
     "retries": "계획된 재시도 예산 {{count}}회"
+  },
+  "execution_control": {
+    "pause": "실행 일시 중지",
+    "stopping": "실행 중지 중",
+    "unknown": "중지 결과를 알 수 없음",
+    "paused": "실행 일시 중지됨",
+    "resuming": "실행 재개 중",
+    "reconcile": "중지 결과 확인",
+    "resume": "실행 재개",
+    "failed": "실행 작업에 실패했습니다. 다시 시도하세요.",
+    "updated": "실행 제어 업데이트됨"
   }
 }

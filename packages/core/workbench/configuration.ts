@@ -16,6 +16,19 @@ export { prefillTaskTemplate } from "./template-prefill";
 export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
 export { parseWorkbenchHandoff } from "./execution-plan";
 export type { WorkbenchHandoff } from "./execution-plan";
+export type { ExecutionControlAction, ExecutionPause } from "./execution-control";
+
+export function useControlIssueExecution(wsId: string, issueId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ action, revision }: { action: import("./execution-control").ExecutionControlAction; revision: number }) =>
+      api.controlIssueExecution(issueId, action, revision),
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: issueKeys.all(wsId) });
+      await qc.invalidateQueries({ queryKey: issueKeys.tasks(issueId) });
+    },
+  });
+}
 
 export function useSaveExecutionPlan(wsId: string, issueId: string) {
   const qc = useQueryClient();

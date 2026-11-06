@@ -48,3 +48,16 @@ SELECT resumed.id FROM agent_task_queue resumed
 JOIN agent_task_queue source ON source.id = resumed.rerun_of_task_id
 WHERE source.id = @source_id AND resumed.created_at >= source.completed_at
 ORDER BY resumed.created_at DESC, resumed.id DESC LIMIT 1;
+
+-- name: UpdateWorkbenchPause :one
+UPDATE issue AS target SET
+    properties = CASE WHEN @pause::jsonb = 'null'::jsonb THEN target.properties - 'workbench_pause'
+        ELSE jsonb_set(target.properties, '{workbench_pause}', @pause::jsonb) END,
+    status = @status,
+    position = CASE WHEN target.status IS DISTINCT FROM @status THEN (
+        SELECT COALESCE(MIN(other.position), 0) - 1 FROM issue other
+        WHERE other.workspace_id = @workspace_id AND other.status = @status
+    ) ELSE target.position END,
+    revision = target.revision + 1, updated_at = now(), last_activity_at = now()
+WHERE target.id = @id AND target.workspace_id = @workspace_id AND target.revision = @expected_revision
+RETURNING target.*;

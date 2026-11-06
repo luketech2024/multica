@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ProjectRolesSchema, ProjectTemplateSchema } from "../workbench/schemas";
 import { WorkbenchHandoffSchema } from "../workbench/execution-plan";
+import { ExecutionPauseSchema } from "../workbench/execution-control";
 import { normalizeIssueStatusCategory } from "../issues/config/status";
 import type {
   WorkflowHandoffPreview,
@@ -1494,6 +1495,7 @@ export const ExternalTicketCountSchema = z.object({ count: z.number().int().nonn
 
 export const IssueSchema = z.object({
   workbench_handoff: WorkbenchHandoffSchema.nullable().optional().catch(null),
+  workbench_pause: ExecutionPauseSchema.nullable().optional().catch(null),
   external_ticket_no: z.string().max(32).regex(/^[A-Za-z0-9-]*$/).optional().catch(undefined),
   // Invalid or unsupported criteria stay unavailable for editing.
   acceptance_criteria: z.union([AcceptanceCriteriaSchema, EmptyAcceptanceCriteriaSchema]).optional().catch(undefined),

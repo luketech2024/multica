@@ -1886,5 +1886,16 @@
     "serial": "序列群組 {{group}}",
     "deliverables": "交接物清單",
     "retries": "計畫重試預算 {{count}} 次"
+  },
+  "execution_control": {
+    "pause": "手動暫停",
+    "stopping": "正在停止執行",
+    "unknown": "停止結果未知",
+    "paused": "執行已暫停",
+    "resuming": "正在恢復執行",
+    "reconcile": "核對停止結果",
+    "resume": "恢復執行",
+    "failed": "執行操作失敗，請重試。",
+    "updated": "更新了執行控制"
   }
 }

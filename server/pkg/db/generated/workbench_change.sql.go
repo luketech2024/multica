@@ -156,6 +156,73 @@ func (q *Queries) LockWorkbenchResume(ctx context.Context, issueID string) error
 	return err
 }
 
+const updateWorkbenchPause = `-- name: UpdateWorkbenchPause :one
+UPDATE issue AS target SET
+    properties = CASE WHEN $1::jsonb = 'null'::jsonb THEN target.properties - 'workbench_pause'
+        ELSE jsonb_set(target.properties, '{workbench_pause}', $1::jsonb) END,
+    status = $2,
+    position = CASE WHEN target.status IS DISTINCT FROM $2 THEN (
+        SELECT COALESCE(MIN(other.position), 0) - 1 FROM issue other
+        WHERE other.workspace_id = $3 AND other.status = $2
+    ) ELSE target.position END,
+    revision = target.revision + 1, updated_at = now(), last_activity_at = now()
+WHERE target.id = $4 AND target.workspace_id = $3 AND target.revision = $5
+RETURNING target.id, target.workspace_id, target.title, target.description, target.status, target.priority, target.assignee_type, target.assignee_id, target.creator_type, target.creator_id, target.parent_issue_id, target.acceptance_criteria, target.context_refs, target.position, target.due_date, target.created_at, target.updated_at, target.number, target.project_id, target.origin_type, target.origin_id, target.first_executed_at, target.start_date, target.metadata, target.stage, target.properties, target.revision, target.last_activity_at, target.triage_state, target.duplicate_of_issue_id, target.external_ticket_no
+`
+
+type UpdateWorkbenchPauseParams struct {
+	Pause            []byte      `json:"pause"`
+	Status           string      `json:"status"`
+	WorkspaceID      pgtype.UUID `json:"workspace_id"`
+	ID               pgtype.UUID `json:"id"`
+	ExpectedRevision int64       `json:"expected_revision"`
+}
+
+func (q *Queries) UpdateWorkbenchPause(ctx context.Context, arg UpdateWorkbenchPauseParams) (Issue, error) {
+	row := q.db.QueryRow(ctx, updateWorkbenchPause,
+		arg.Pause,
+		arg.Status,
+		arg.WorkspaceID,
+		arg.ID,
+		arg.ExpectedRevision,
+	)
+	var i Issue
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeType,
+		&i.AssigneeID,
+		&i.CreatorType,
+		&i.CreatorID,
+		&i.ParentIssueID,
+		&i.AcceptanceCriteria,
+		&i.ContextRefs,
+		&i.Position,
+		&i.DueDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Number,
+		&i.ProjectID,
+		&i.OriginType,
+		&i.OriginID,
+		&i.FirstExecutedAt,
+		&i.StartDate,
+		&i.Metadata,
+		&i.Stage,
+		&i.Properties,
+		&i.Revision,
+		&i.LastActivityAt,
+		&i.TriageState,
+		&i.DuplicateOfIssueID,
+		&i.ExternalTicketNo,
+	)
+	return i, err
+}
+
 const workbenchRunsStopped = `-- name: WorkbenchRunsStopped :one
 SELECT NOT EXISTS (
     SELECT 1 FROM unnest($1::uuid[]) requested(id)

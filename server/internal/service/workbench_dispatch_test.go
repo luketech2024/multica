@@ -46,6 +46,7 @@ func TestWorkbenchDispatchRecoversWithoutDuplicateRuns(t *testing.T) {
 		{"paused parent", `UPDATE issue SET status='paused',acceptance_criteria=jsonb_set(acceptance_criteria,'{change}','{"phase":"paused"}') WHERE id=$1`},
 		{"new requirement awaiting replan", "UPDATE issue SET acceptance_criteria=jsonb_set(acceptance_criteria,'{needs_resplit}','true') WHERE id=$1"},
 		{"cancelled parent", "UPDATE issue SET status='cancelled' WHERE id=$1"},
+		{"resume still pending", `UPDATE issue SET properties=jsonb_set(properties,'{workbench_pause}','{"phase":"resuming"}') WHERE id=$1`},
 	} {
 		t.Run(suspended.name, func(t *testing.T) {
 			f.Exec(t, suspended.sql, parent)
@@ -57,7 +58,7 @@ func TestWorkbenchDispatchRecoversWithoutDuplicateRuns(t *testing.T) {
 			if count != 0 {
 				t.Fatal("non-executable plan was dispatched")
 			}
-			f.Exec(t, "UPDATE issue SET status='todo',acceptance_criteria=$1 WHERE id=$2", criteria, parent)
+			f.Exec(t, "UPDATE issue SET status='todo',acceptance_criteria=$1,properties=properties-'workbench_pause' WHERE id=$2", criteria, parent)
 		})
 	}
 	f.Exec(t, "DELETE FROM member WHERE workspace_id=$1 AND user_id=$2", f.WorkspaceID, owner)

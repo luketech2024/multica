@@ -1612,6 +1612,15 @@ export class ApiClient {
     });
   }
 
+  async controlIssueExecution(id: string, action: import("../workbench/execution-control").ExecutionControlAction, revision: number): Promise<Issue> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/execution-control`;
+    const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {
+      method: "POST", body: JSON.stringify({ action, expected_revision: revision }),
+    }), IssueSchema, null, { endpoint });
+    if (!issue) throw new Error("Invalid execution control response");
+    return issue;
+  }
+
   async saveExecutionPlan(id: string, data: import("../workbench/execution-plan").ExecutionPlanInput): Promise<Issue> {
     const endpoint = `/api/issues/${encodeURIComponent(id)}/execution-plan`;
     const issue = parseWithFallback<Issue | null>(await this.fetch(endpoint, {

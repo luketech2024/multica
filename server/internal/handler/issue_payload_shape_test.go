@@ -152,7 +152,7 @@ func fullyPopulatedIssue(t *testing.T) db.Issue {
 		UpdatedAt:          pgtype.Timestamptz{Time: utcDate(2026, time.January, 2), Valid: true},
 		LastActivityAt:     pgtype.Timestamptz{Time: utcDate(2026, time.January, 3), Valid: true},
 		Metadata:           []byte(`{"pr_url":"https://example.test/pr/1"}`),
-		Properties:         []byte(`{"77777777-7777-7777-7777-777777777777":"done","workbench_handoff":{"v":2,"role":"dev","requirement_version":1}}`),
+		Properties:         []byte(`{"77777777-7777-7777-7777-777777777777":"done","workbench_handoff":{"v":2,"role":"dev","requirement_version":1},"workbench_pause":{"v":1,"phase":"paused"}}`),
 	}
 }
 

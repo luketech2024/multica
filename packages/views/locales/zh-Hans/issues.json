@@ -1886,5 +1886,16 @@
     "serial": "串行组 {{group}}",
     "deliverables": "交接物清单",
     "retries": "计划重试预算 {{count}} 次"
+  },
+  "execution_control": {
+    "pause": "手动暂停",
+    "stopping": "正在停止执行",
+    "unknown": "停止结果未知",
+    "paused": "执行已暂停",
+    "resuming": "正在恢复执行",
+    "reconcile": "核对停止结果",
+    "resume": "恢复执行",
+    "failed": "执行操作失败，请重试。",
+    "updated": "更新了执行控制"
   }
 }

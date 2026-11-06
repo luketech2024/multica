@@ -41,6 +41,7 @@ import (
 // IssueResponse is the JSON response for an issue.
 type IssueResponse struct {
 	WorkbenchHandoff   json.RawMessage `json:"workbench_handoff,omitempty"`
+	WorkbenchPause     json.RawMessage `json:"workbench_pause,omitempty"`
 	ExternalTicketNo   string          `json:"external_ticket_no"`
 	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
 	ID                 string          `json:"id"`
@@ -490,6 +491,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		WorkbenchHandoff:   workbench.HandoffJSON(i.Properties),
+		WorkbenchPause:     workbench.ExecutionPauseJSON(i.Properties),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,
@@ -531,6 +533,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		WorkbenchHandoff:   workbench.HandoffJSON(i.Properties),
+		WorkbenchPause:     workbench.ExecutionPauseJSON(i.Properties),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,
@@ -604,6 +607,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		WorkbenchHandoff:   workbench.HandoffJSON(i.Properties),
+		WorkbenchPause:     workbench.ExecutionPauseJSON(i.Properties),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
 		Number:             i.Number,

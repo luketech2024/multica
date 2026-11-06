@@ -1886,5 +1886,16 @@
     "serial": "直列実行グループ {{group}}",
     "deliverables": "成果物一覧",
     "retries": "計画上の再試行回数 {{count}} 回"
+  },
+  "execution_control": {
+    "pause": "実行を一時停止",
+    "stopping": "実行を停止中",
+    "unknown": "停止結果が不明",
+    "paused": "実行を一時停止しました",
+    "resuming": "実行を再開中",
+    "reconcile": "停止結果を確認",
+    "resume": "実行を再開",
+    "failed": "実行操作に失敗しました。再試行してください。",
+    "updated": "実行制御を更新しました"
   }
 }

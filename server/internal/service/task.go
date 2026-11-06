@@ -8057,6 +8057,9 @@ func IssueToMap(issue db.Issue, issuePrefix string) map[string]any {
 	if handoff := workbench.HandoffJSON(issue.Properties); len(handoff) > 0 {
 		result["workbench_handoff"] = handoff
 	}
+	if pause := workbench.ExecutionPauseJSON(issue.Properties); len(pause) > 0 {
+		result["workbench_pause"] = pause
+	}
 	return result
 }
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
@@ -38,31 +37,11 @@ func (h *Handler) resumeWorkbenchRequirements(r *http.Request, issue db.Issue, m
 	if current.Status != "in_progress" || criteria.Change != nil {
 		return db.Issue{}, errors.New("this task is not ready to resume")
 	}
-	workspaceID, actorID := uuidToString(current.WorkspaceID), uuidToString(memberID)
-	canInvoke := func(agent db.Agent) bool {
-		return h.canInvokeAgent(r.Context(), agent, "member", actorID, actorID, workspaceID)
+	pending, message, err := h.resumeWorkbenchRuns(r, q, current, criteria.ResumeRuns, memberID)
+	if err != nil {
+		return db.Issue{}, err
 	}
-	pending := []string{}
-	criteria.ResumeError = ""
-	for _, id := range criteria.ResumeRuns {
-		sourceID := parseUUID(id)
-		_, findErr := q.FindWorkbenchResumedRun(r.Context(), sourceID)
-		if findErr == nil {
-			continue
-		}
-		if !errors.Is(findErr, pgx.ErrNoRows) {
-			return db.Issue{}, findErr
-		}
-		source, sourceErr := q.GetAgentTaskInWorkspace(r.Context(), db.GetAgentTaskInWorkspaceParams{ID: sourceID, WorkspaceID: current.WorkspaceID})
-		if sourceErr != nil {
-			return db.Issue{}, sourceErr
-		}
-		if _, runErr := h.TaskService.RerunIssue(r.Context(), source.IssueID, source.ID, pgtype.UUID{}, memberID, false, canInvoke); runErr != nil {
-			pending = append(pending, id)
-			criteria.ResumeError = runErr.Error()
-		}
-	}
-	criteria.ResumeRuns = pending
+	criteria.ResumeRuns, criteria.ResumeError = pending, message
 	raw, err := json.Marshal(criteria)
 	if err != nil {
 		return db.Issue{}, err

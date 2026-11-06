@@ -7,6 +7,7 @@ import {
 } from "@multica/core/issues";
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
+import { ExecutionControl } from "./execution-control";
 import { WorkbenchHandoffPanel } from "./workbench-handoff-panel";
 import { ExternalTicketEditor } from "./external-ticket-editor";
 import { useStatusLabel } from "../utils/status-label";
@@ -400,6 +401,8 @@ function formatActivity(
       return t(($) => $.activity.description_updated);
     case "requirements_updated":
       return t(($) => $.requirements.activity_updated);
+    case "execution_control":
+      return t(($) => $.execution_control.updated);
     case "external_ticket_updated":
       return t(($) => $.ticket.updated);
     case "duplicate_marked":
@@ -2914,6 +2917,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   const sidebarContent = (
     <IssueSidebarStack>
+      <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />
         : <RequirementsPanel key={issue.id} issue={issue} />}

@@ -1955,5 +1955,16 @@
     "serial": "Groupe séquentiel {{group}}",
     "deliverables": "Livrables attendus",
     "retries": "Budget prévu de {{count}} nouvelles tentatives"
+  },
+  "execution_control": {
+    "pause": "Suspendre l’exécution",
+    "stopping": "Arrêt de l’exécution",
+    "unknown": "Résultat de l’arrêt inconnu",
+    "paused": "Exécution suspendue",
+    "resuming": "Reprise de l’exécution",
+    "reconcile": "Vérifier les confirmations d’arrêt",
+    "resume": "Reprendre l’exécution",
+    "failed": "Échec de l’action. Réessayez.",
+    "updated": "Contrôle d’exécution mis à jour"
   }
 }
