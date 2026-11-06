@@ -5,6 +5,7 @@ import type { Project, ProjectStatus } from "./project";
 
 // Issue API
 export interface CreateIssueRequest {
+	use_project_assignee?: boolean;
   external_ticket_no?: string;
   acceptance_criteria?: Issue["acceptance_criteria"];
   title: string;

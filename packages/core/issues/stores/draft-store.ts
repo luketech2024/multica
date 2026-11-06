@@ -45,6 +45,7 @@ export interface IssueCreateShared {
 }
 
 export interface IssueCreateManual {
+	assigneeOrigin?: "project" | "manual";
   externalTicketNo?: string;
   requirementsText?: string;
   requirementsBoundsText?: string;

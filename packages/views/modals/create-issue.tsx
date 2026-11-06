@@ -1,6 +1,7 @@
 "use client";
 import { parseRequirementsInput } from "@multica/core/issues/requirements-input";
-import { projectTemplateOptions, prefillTaskTemplate } from "@multica/core/workbench/configuration";
+import { projectTemplateOptions, projectRolesOptions, prefillTaskTemplate } from "@multica/core/workbench/configuration";
+import { useAuthStore } from "@multica/core/auth";
 import { Input } from "@multica/ui/components/ui/input";
 import { ExternalTicketInput } from "../issues/components/external-ticket-input";
 import { Textarea } from "@multica/ui/components/ui/textarea";
@@ -106,6 +107,8 @@ import { IssuePickerModal } from "./issue-picker-modal";
 import { useT } from "../i18n";
 import { SourceContextPreviewCard, useSourceContextFailureMessage } from "./source-context-preview";
 import { useIssueLimitUpgradePrompt } from "./use-issue-limit-upgrade-prompt";
+
+const INITIAL_REQUIREMENTS_STATUSES = new Set<IssueStatus>(["todo", "backlog"]);
 
 // ManualCreatePanel — manual-mode body of the create-issue dialog. Renders
 // DialogContent + everything inside; the surrounding `<Dialog>` is owned by
@@ -300,6 +303,12 @@ export function ManualCreatePanel({
     }
     return draft.manual.assigneeId;
   });
+  const [assigneeOrigin, setAssigneeOrigin] = useState<"project" | "manual">(() =>
+    data && ("assignee_id" in data || "assignee_type" in data)
+      ? "manual"
+      : draft.manual.assigneeOrigin ?? (draft.manual.assigneeId ? "manual" : "project"),
+  );
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [startDate, setStartDate] = useState<string | null>(draft.manual.startDate);
   const [dueDate, setDueDate] = useState<string | null>(
     (data?.due_date as string | undefined) ?? draft.shared.dueDate,
@@ -352,6 +361,22 @@ export function ManualCreatePanel({
   // List cache usually has it already, so this resolves synchronously.
   const wsId = useWorkspaceId();
   const queryClient = useQueryClient();
+  const taskTeam = useQuery({
+    ...projectRolesOptions(wsId, projectId ?? ""),
+    enabled: !!projectId && !parentIssueId && !anchorCommentId,
+  });
+  useEffect(() => {
+    if (assigneeOrigin !== "project" || parentIssueId || anchorCommentId) return;
+    if (projectId && !taskTeam.isSuccess) return;
+    const roleName = parseRequirementsInput(draft.manual.requirementsText ?? "").criteria.items.length ? "sched" : "product";
+    const role = projectId ? taskTeam.data?.config.roles[roleName] : undefined;
+    const nextId = projectId ? role?.agent_id ?? currentUserId : undefined;
+    const nextType = nextId ? role?.agent_id ? "agent" : "member" : undefined;
+    if (nextId === assigneeId && nextType === assigneeType) return;
+    setAssigneeId(nextId);
+    setAssigneeType(nextType);
+    setManual({ assigneeId: nextId, assigneeType: nextType, assigneeOrigin: "project" });
+  }, [assigneeOrigin, assigneeId, assigneeType, projectId, parentIssueId, anchorCommentId, taskTeam.data, taskTeam.isSuccess, draft.manual.requirementsText, currentUserId, setManual]);
   const taskTemplate = useQuery({
     ...projectTemplateOptions(wsId, projectId ?? ""),
     enabled: !!projectId && !parentIssueId && !anchorCommentId,
@@ -423,8 +448,9 @@ export function ManualCreatePanel({
   const updateStatus = (v: IssueStatus) => { setStatus(v); setManual({ status: v }); };
   const updatePriority = (v: IssuePriority) => { setPriority(v); setShared({ priority: v }); };
   const updateAssignee = (type?: IssueAssigneeType, id?: string) => {
+    setAssigneeOrigin("manual");
     setAssigneeType(type); setAssigneeId(id);
-    setManual({ assigneeType: type, assigneeId: id });
+    setManual({ assigneeType: type, assigneeId: id, assigneeOrigin: "manual" });
   };
   const updateProject = (id?: string) => { setProjectId(id); setShared({ projectId: id }); };
   const updateParent = (id?: string) => {
@@ -436,11 +462,15 @@ export function ManualCreatePanel({
   // workflow keeps. (MUL-7420, MUL-8250)
   const { workflow: projectWorkflow, defaultWorkflow: workspaceDefault } = useProjectWithWorkflow(wsId, projectId);
   const createWorkflow = projectId ? projectWorkflow : workspaceDefault;
+  const hasRequirements = !!((projectId && !parentIssueId) || draft.manual.requirementsText?.trim()
+    || draft.manual.requirementsBoundsText?.trim() || taskTemplate.data?.template);
   useEffect(() => {
-    if (createWorkflow && !workflowAllowsStatus(createWorkflow, status)) {
+    if ((createWorkflow && !workflowAllowsStatus(createWorkflow, status))
+      || (hasRequirements && !INITIAL_REQUIREMENTS_STATUSES.has(status))) {
       setStatus("todo");
+      setManual({ status: "todo" });
     }
-  }, [createWorkflow, status]);
+  }, [createWorkflow, status, hasRequirements, setManual]);
   const updateStartDate = (v: string | null) => { setStartDate(v); setManual({ startDate: v }); };
   const updateDueDate = (v: string | null) => { setDueDate(v); setShared({ dueDate: v }); };
   const updateLabelIds = (ids: string[]) => { setLabelIds(ids); setManual({ labelIds: ids }); };
@@ -558,7 +588,7 @@ export function ManualCreatePanel({
       submittedDraftRef.current = useIssueDraftStore.getState().draft;
       try {
       const description = descEditorRef.current?.getMarkdown()?.trim() || undefined;
-      const acceptanceCriteria = draft.manual.requirementsText?.trim() || draft.manual.requirementsBoundsText?.trim() || taskTemplate.data?.template
+      const acceptanceCriteria = hasRequirements
         ? parseRequirementsInput(draft.manual.requirementsText ?? "").criteria
         : undefined;
       if (acceptanceCriteria) {
@@ -594,14 +624,15 @@ export function ManualCreatePanel({
         });
       } else {
         issue = await createIssueMutation.mutateAsync({
+          ...(projectId && !parentIssueId ? { use_project_assignee: assigneeOrigin === "project" } : {}),
           title: title.trim(),
           acceptance_criteria: acceptanceCriteria,
           external_ticket_no: parentIssueId ? undefined : draft.manual.externalTicketNo || undefined,
           description,
           status,
           priority,
-          assignee_type: assigneeType,
-          assignee_id: assigneeId,
+          assignee_type: projectId && !parentIssueId && assigneeOrigin === "project" ? undefined : assigneeType,
+          assignee_id: projectId && !parentIssueId && assigneeOrigin === "project" ? undefined : assigneeId,
           start_date: startDate || undefined,
           due_date: dueDate || undefined,
           attachment_ids: activeAttachmentIds.length > 0 ? activeAttachmentIds : undefined,
@@ -1107,6 +1138,7 @@ export function ManualCreatePanel({
               {showField.status && (
                 <StatusPicker
                   status={status}
+                  allowedStatuses={hasRequirements ? INITIAL_REQUIREMENTS_STATUSES : undefined}
                   projectId={projectId ?? null}
                   onUpdate={(u) => { if (u.status) updateStatus(u.status); }}
                   triggerRender={<PillButton />}

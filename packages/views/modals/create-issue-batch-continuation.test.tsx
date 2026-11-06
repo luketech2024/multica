@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+vi.mock("@multica/core/auth", () => {
+  const state = { user: { id: "current-user" } };
+  return { useAuthStore: Object.assign((selector: (state: { user: { id: string } }) => unknown) => selector(state), { getState: () => state }) };
+});
 import { I18nProvider } from "@multica/core/i18n/react";
 import enCommon from "../locales/en/common.json";
 import enModals from "../locales/en/modals.json";

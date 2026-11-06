@@ -3089,6 +3089,7 @@ func readRuntimeCLIVersion(metadata []byte) string {
 }
 
 type CreateIssueRequest struct {
+	UseProjectAssignee *bool           `json:"use_project_assignee,omitempty"`
 	ExternalTicketNo   string          `json:"external_ticket_no"`
 	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
 	Title              string          `json:"title"`
@@ -3518,6 +3519,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.IssueService.Create(r.Context(), service.IssueCreateParams{
+		UseProjectAssignee: req.UseProjectAssignee,
 		ExternalTicketNo:   req.ExternalTicketNo,
 		AcceptanceCriteria: req.AcceptanceCriteria,
 		WorkspaceID:        wsUUID,

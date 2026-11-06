@@ -63,6 +63,7 @@ func NewIssueService(q *db.Queries, tx TxStarter, bus *events.Bus, ac analytics.
 // to IssueService.Create. The handler owns the parsing step that turns its
 // request payload into this struct; the service stays transport-agnostic.
 type IssueCreateParams struct {
+	UseProjectAssignee *bool
 	ExternalTicketNo   string
 	AcceptanceCriteria []byte
 	WorkspaceID        pgtype.UUID
@@ -398,6 +399,12 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 			p.AcceptanceCriteria, err = json.Marshal(criteria)
 			if err != nil {
 				return IssueCreateResult{}, err
+			}
+			if err := assignInitialWorkbenchRole(ctx, qtx, &p, criteria); err != nil {
+				return IssueCreateResult{}, err
+			}
+			if opts.AnalyticsAgentID == "" && p.AssigneeType.String == "agent" {
+				opts.AnalyticsAgentID = util.UUIDToString(p.AssigneeID)
 			}
 		}
 	}

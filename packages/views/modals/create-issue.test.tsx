@@ -18,6 +18,12 @@ import enModals from "../locales/en/modals.json";
 import enEditor from "../locales/en/editor.json";
 import enIssues from "../locales/en/issues.json";
 
+vi.mock("@multica/core/auth", () => {
+  const state = { user: { id: "current-user" } };
+  return { useAuthStore: Object.assign((selector: (state: { user: { id: string } }) => unknown) => selector(state), { getState: () => state }) };
+});
+const mockProjectRoles = vi.hoisted(() => vi.fn());
+
 const TEST_RESOURCES = {
   // `editor` carries the shared upload-gate copy ("Uploading…").
   en: { common: enCommon, modals: enModals, editor: enEditor, issues: enIssues },
@@ -345,6 +351,7 @@ vi.mock("@multica/core/api", async () => {
   >("@multica/core/api/schemas");
   return {
     api: {
+      getProjectWorkbenchRoles: mockProjectRoles,
       createCommentSubIssue: mockCreateCommentSubIssue,
       listProperties: mockListProperties,
       setIssueProperty: mockSetIssueProperty,
@@ -467,14 +474,18 @@ vi.mock("../editor", async () => {
 
 vi.mock("../issues/components", () => ({
   StatusIcon: ({ status }: { status: string }) => <span data-testid="status-icon">{status}</span>,
-  StatusPicker: () => <div data-testid="status-picker" />,
+  StatusPicker: ({ status, allowedStatuses }: { status: string; allowedStatuses?: ReadonlySet<string> }) => (
+    <div data-testid="status-picker" data-status={status} data-allowed={allowedStatuses ? [...allowedStatuses].join(",") : "all"} />
+  ),
   // Surface onUpdate so tests can drive a field-only edit (priority is not
   // part of the draft's recoverable content).
   PriorityPicker: ({ onUpdate }: { onUpdate: (u: { priority: string }) => void }) => (
     <div data-testid="priority-picker" onClick={() => onUpdate({ priority: "high" })} />
   ),
   StagePicker: () => <div data-testid="stage-picker" />,
-  AssigneePicker: () => <div data-testid="assignee-picker" />,
+  AssigneePicker: ({ onUpdate }: { onUpdate: (update: { assignee_id: null; assignee_type: null }) => void }) => (
+    <button data-testid="assignee-picker" onClick={() => onUpdate({ assignee_id: null, assignee_type: null })}>Clear assignee</button>
+  ),
   // Surface open/onOpenChange so tests can assert progressive-disclosure
   // behavior (mounted only when the user has opted in or has a value).
   StartDatePicker: ({ open, onOpenChange }: { open?: boolean; onOpenChange?: (v: boolean) => void }) => (
@@ -657,6 +668,7 @@ function renderModal(element: React.ReactElement) {
 describe("CreateIssueModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProjectRoles.mockResolvedValue({ revision: 1, config: { roles: { product: { enabled: true }, sched: { enabled: true } } } });
     mockQuickCreateStore.keepOpen = false;
     mockCreateSettingsStore.manualCreateFields = DEFAULT_MANUAL_FIELDS;
     mockSetKeepOpen.mockImplementation((v: boolean) => {
@@ -788,6 +800,37 @@ describe("CreateIssueModal", () => {
     renderModal(<CreateIssueModal onClose={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Upload file" })).toHaveAttribute("data-size", "sm");
+  });
+
+  it("prefills the project role and submits automatic assignment for the server snapshot", async () => {
+    mockProjectRoles.mockResolvedValue({ revision: 2, config: { roles: {
+      product: { enabled: true, agent_id: "product-agent" },
+      sched: { enabled: true, agent_id: "scheduling-agent" },
+    } } });
+    renderModal(<CreateIssueModal onClose={vi.fn()} data={{ project_id: "proj-1" }} />);
+    await waitFor(() => expect(mockSetManual).toHaveBeenCalledWith(expect.objectContaining({ assigneeId: "product-agent", assigneeOrigin: "project" })));
+    fireEvent.change(screen.getByLabelText(enIssues.requirements.input), { target: { value: "Export a report" } });
+    fireEvent.change(screen.getByPlaceholderText("Issue title"), { target: { value: "Project assignment" } });
+    await waitFor(() => expect(mockSetManual).toHaveBeenCalledWith(expect.objectContaining({ assigneeId: "scheduling-agent" })));
+    await userEvent.click(screen.getByRole("button", { name: "Create Issue" }));
+    await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith(expect.objectContaining({ use_project_assignee: true, assignee_id: undefined, assignee_type: undefined })));
+  });
+
+  it("keeps explicit unassignment and starts empty project requirements before execution", async () => {
+    renderModal(<CreateIssueModal onClose={vi.fn()} data={{ project_id: "proj-1", status: "in_progress" }} />);
+    await waitFor(() => expect(mockSetManual).toHaveBeenCalledWith(expect.objectContaining({ assigneeId: "current-user" })));
+    expect(screen.getByTestId("status-picker")).toHaveAttribute("data-status", "todo");
+    expect(screen.getByTestId("status-picker")).toHaveAttribute("data-allowed", "todo,backlog");
+    await userEvent.click(screen.getByTestId("assignee-picker"));
+    fireEvent.change(screen.getByPlaceholderText("Issue title"), { target: { value: "Clarify this request" } });
+    await userEvent.click(screen.getByRole("button", { name: "Create Issue" }));
+    await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith(expect.objectContaining({
+      status: "todo",
+      use_project_assignee: false,
+      assignee_id: undefined,
+      assignee_type: undefined,
+      acceptance_criteria: expect.objectContaining({ items: [] }),
+    })));
   });
 
   it("shows success feedback with a direct path to the new issue", async () => {
