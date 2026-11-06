@@ -9,7 +9,7 @@ import { WorkbenchPipeline } from "./workbench-pipeline";
 
 const listChildren = vi.fn();
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace" }));
-vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({ issueDetail: (id: string) => `/workspace/issues/${id}` }) }));
+vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({ issueDetail: (id: string) => `/workspace/issues/${id}`, issuePipeline: (id: string) => `/workspace/issues/${id}/pipeline` }) }));
 vi.mock("../../navigation", () => ({ AppLink: ({ children, href }: { children: ReactNode; href: string }) => <a href={href}>{children}</a> }));
 vi.mock("@multica/core/api", () => ({ api: { listChildIssues: (...args: unknown[]) => listChildren(...args) } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });

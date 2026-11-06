@@ -21,12 +21,12 @@ import {
 } from "@multica/ui/components/ui/dialog";
 import { useT } from "../../i18n";
 
-export function DeliveryEvidence({ issue }: { issue: Issue }) {
+export function DeliveryEvidence({ issue, taskIds }: { issue: Issue; taskIds?: string[] }) {
   if (issue.parent_issue_id || !issue.acceptance_criteria?.plan) return null;
-  return <DeliveryEvidenceContent issue={issue} />;
+  return <DeliveryEvidenceContent issue={issue} taskIds={taskIds} />;
 }
 
-function DeliveryEvidenceContent({ issue }: { issue: Issue }) {
+function DeliveryEvidenceContent({ issue, taskIds }: { issue: Issue; taskIds?: string[] }) {
   const { t } = useT("issues");
   const { t: projectT } = useT("projects");
   const wsId = useWorkspaceId();
@@ -41,6 +41,7 @@ function DeliveryEvidenceContent({ issue }: { issue: Issue }) {
   const planned = (children.data ?? []).filter((child) =>
     criteria.plan!.issues.includes(child.id),
   );
+  const visibleTasks = taskIds ? planned.filter((child) => taskIds.includes(child.id)) : planned;
   const editable = ["owner", "admin", "member"].includes(member.role ?? "")
     && ["in_progress", "in_review", "blocked"].includes(issue.status)
     && !criteria.change && !criteria.needs_resplit && criteria.plan?.version === criteria.version;
@@ -59,7 +60,7 @@ function DeliveryEvidenceContent({ issue }: { issue: Issue }) {
     {!children.isPending && !children.isError && planned.length !== criteria.plan!.issues.length && (
       <p role="alert" className="text-caption text-destructive">{t(($) => $.delivery.missing_tasks)}</p>
     )}
-    {planned.map((child) => {
+    {visibleTasks.map((child) => {
       const evidence = criteria.delivery?.[child.id];
       const handoff = child.workbench_handoff;
       const current = !!evidence && evidence.issue_revision === child.revision && evidence.version === criteria.version

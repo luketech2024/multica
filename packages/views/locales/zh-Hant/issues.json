@@ -1,4 +1,17 @@
 {
+  "pipeline_page": {
+    "retry": "重試",
+    "open": "查看流水線",
+    "unavailable": "此任務尚無專案流水線。",
+    "open_task": "開啟任務",
+    "stages": "階段",
+    "outputs": "階段產出",
+    "handoff_json": "交接 JSON",
+    "no_task": "目前計畫尚未為此階段分配子任務。",
+    "next": "下一步",
+    "coverage": "由 {{count}} 個子任務覆蓋",
+    "bounds": "範圍邊界"
+  },
   "delivery_review": {
     "title": "成果驗收",
     "accepted": "成果驗收已通過",

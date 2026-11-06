@@ -8,7 +8,7 @@ test.describe("Workbench delivery evidence", () => {
   test.afterEach(async () => { await api?.cleanup(); });
 
   test("records reports, restores them after reload and marks changed tasks stale", async ({ page }) => {
-    test.setTimeout(90000);
+    test.setTimeout(150000);
     api = await createTestApi();
     const roles = Object.fromEntries(["sched", "product", "dev", "test", "sec", "ops"].map((role) => [role, {
       enabled: ["sched", "product", "test"].includes(role), agent_id: null, runtime_id: null,
@@ -53,6 +53,21 @@ test.describe("Workbench delivery evidence", () => {
     await expect(evidence.getByText("Reported as passed", { exact: true })).toBeVisible();
     await expect(evidence.getByRole("link", { name: "Export test report" })).toHaveAttribute("href", "https://example.test/reports/export");
     await page.screenshot({ path: ".preview/delivery-evidence.png", fullPage: true });
+    await page.getByRole("link", { name: "Open pipeline", exact: true }).click();
+    const stages = page.getByRole("navigation", { name: "Stages", exact: true });
+    await expect(stages).toBeVisible({ timeout: 30000 });
+    await expect(stages.getByRole("button", { name: /Security/ })).toHaveCount(0);
+    await stages.getByRole("button", { name: /Testing/ }).click();
+    await expect(page.getByRole("region", { name: "Stage outputs" }).getByText("Verify export report", { exact: true })).toBeVisible();
+    await expect(evidence.getByRole("link", { name: "Export test report" })).toHaveAttribute("href", "https://example.test/reports/export");
+    await page.reload();
+    await expect(stages.getByRole("button", { name: /Testing/ })).toHaveAttribute("aria-current", "step");
+    for (const width of [1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.screenshot({ path: `.preview/pipeline-${width}.png`, fullPage: true });
+    }
+    await page.goto(`/${slug}/issues/${parent.id}`);
     const acceptance = page.getByRole("region", { name: "Delivery acceptance", exact: true });
     const acceptedResponse = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith("/delivery-review"));
     await acceptance.getByRole("button", { name: "Accept delivery", exact: true }).click();

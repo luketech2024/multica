@@ -1,4 +1,17 @@
 {
+  "pipeline_page": {
+    "retry": "Réessayer",
+    "open": "Ouvrir le pipeline",
+    "unavailable": "Cette tâche n’a pas de pipeline de projet.",
+    "open_task": "Ouvrir la tâche",
+    "stages": "Étapes",
+    "outputs": "Livrables de l’étape",
+    "handoff_json": "JSON de transmission",
+    "no_task": "Aucune sous-tâche n’est affectée à cette étape dans le plan actuel.",
+    "next": "Étape suivante",
+    "coverage": "Couvert par {{count}} sous-tâches",
+    "bounds": "Limites du périmètre"
+  },
   "delivery_review": {
     "title": "Acceptation de la livraison",
     "accepted": "Livraison acceptée",

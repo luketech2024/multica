@@ -1,4 +1,17 @@
 {
+  "pipeline_page": {
+    "retry": "Retry",
+    "open": "Open pipeline",
+    "unavailable": "This task has no project pipeline.",
+    "open_task": "Open task",
+    "stages": "Stages",
+    "outputs": "Stage outputs",
+    "handoff_json": "Handoff JSON",
+    "no_task": "No subtask is assigned to this stage in the current plan.",
+    "next": "Next step",
+    "coverage": "Covered by {{count}} subtasks",
+    "bounds": "Boundaries"
+  },
   "delivery_review": {
     "title": "Delivery acceptance",
     "accepted": "Delivery accepted",

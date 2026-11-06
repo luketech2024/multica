@@ -32,11 +32,14 @@ function PipelineContent({ issue, criteria }: {
   return (
     <section className="space-y-3 rounded-xl border bg-surface p-3" aria-label={t(($) => $.pipeline.title)}>
       <h3 className="text-label font-medium">{t(($) => $.pipeline.title)}</h3>
+      <AppLink href={paths.issuePipeline(issue.id)} className="block text-caption text-primary hover:underline">
+        {t(($) => $.pipeline_page.open)}
+      </AppLink>
       {loading && <p role="status" className="text-caption">{t(($) => $.pipeline.loading)}</p>}
       {children.isError && (
         <div role="alert" className="space-y-2 text-caption">
           <p>{t(($) => $.pipeline.failed)}</p>
-          <Button size="sm" variant="outline" onClick={() => void children.refetch()}>{t(($) => $.execution_plan.retry)}</Button>
+          <Button size="sm" variant="outline" onClick={() => void children.refetch()}>{t(($) => $.pipeline_page.retry)}</Button>
         </div>
       )}
       {!loading && !children.isError && <>

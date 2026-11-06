@@ -1,4 +1,17 @@
 {
+  "pipeline_page": {
+    "retry": "다시 시도",
+    "open": "파이프라인 열기",
+    "unavailable": "이 작업에는 프로젝트 파이프라인이 없습니다.",
+    "open_task": "작업 열기",
+    "stages": "단계",
+    "outputs": "단계 산출물",
+    "handoff_json": "인계 JSON",
+    "no_task": "현재 계획에서 이 단계에 할당된 하위 작업이 없습니다.",
+    "next": "다음 단계",
+    "coverage": "하위 작업 {{count}}개가 담당",
+    "bounds": "범위 경계"
+  },
   "delivery_review": {
     "title": "성과 인수",
     "accepted": "성과 인수 완료",

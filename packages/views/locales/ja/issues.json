@@ -1,4 +1,17 @@
 {
+  "pipeline_page": {
+    "retry": "再試行",
+    "open": "パイプラインを開く",
+    "unavailable": "このタスクにはプロジェクトのパイプラインがありません。",
+    "open_task": "タスクを開く",
+    "stages": "ステージ",
+    "outputs": "ステージの成果物",
+    "handoff_json": "引き継ぎJSON",
+    "no_task": "現在の計画では、このステージにサブタスクが割り当てられていません。",
+    "next": "次のステップ",
+    "coverage": "{{count}} 件のサブタスクでカバー",
+    "bounds": "対象範囲"
+  },
   "delivery_review": {
     "title": "成果の受け入れ",
     "accepted": "成果を受け入れました",
