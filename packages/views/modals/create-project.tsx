@@ -846,7 +846,15 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog open onOpenChange={(v, details) => {
+      if (!v && details.reason === "escape-key" && repoPopoverOpen) {
+        details.cancel();
+        setRepoPopoverOpen(false);
+        setRepoSearch("");
+        return;
+      }
+      if (!v) onClose();
+    }}>
       <DialogContent
         showCloseButton={false}
         className={cn(
