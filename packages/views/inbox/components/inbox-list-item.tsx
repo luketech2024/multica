@@ -13,6 +13,7 @@ import type { InboxView } from "./inbox-view";
 import { InboxDetailLabel, useTypeLabels } from "./inbox-detail-label";
 import {
   getInboxDisplayTitle,
+  inboxDestination,
   isAutopilotQuotaNotice,
 } from "./inbox-display";
 import { useInboxContextMenu } from "./inbox-context-menu";
@@ -20,7 +21,7 @@ import { useStatusLabel } from "../../issues/utils/status-label";
 import { InboxRowMenu } from "./inbox-row-menu";
 import { handleRowActivationKey } from "../../common/row-actions-menu";
 import { useT } from "../../i18n";
-import { paths, useWorkspaceSlug } from "@multica/core/paths";
+import { useWorkspaceSlug } from "@multica/core/paths";
 import { resolveClickIntent, useIntentNavigate } from "../../navigation";
 
 // Hook returning a localized relative-time formatter — the i18n equivalent
@@ -68,10 +69,7 @@ export function InboxListItem({
   // tests and could render outside a workspace route; without a slug the
   // modifier-click affordance simply stays off.
   const slug = useWorkspaceSlug();
-  const issueHref =
-    slug && item.issue_id
-      ? paths.workspace(slug).issueDetail(item.issue_id)
-      : null;
+  const issueHref = inboxDestination(item, slug);
   const intentNavigate = useIntentNavigate();
   const displayTitle = isAutopilotQuotaNotice(item.type)
     ? typeLabels[item.type]

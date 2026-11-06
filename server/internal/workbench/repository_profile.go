@@ -219,6 +219,17 @@ func WriteRepositoryProfile(ref []byte, profile RepositoryProfile) ([]byte, erro
 }
 
 // Generic repository edits cannot remove or forge the profile owned by its endpoint.
+func RepositorySourceChanged(current, replacement []byte) bool {
+	type source struct {
+		URL       string `json:"url"`
+		Ref       string `json:"ref"`
+		LocalPath string `json:"local_path"`
+		DaemonID  string `json:"daemon_id"`
+	}
+	var before, after source
+	return json.Unmarshal(current, &before) != nil || json.Unmarshal(replacement, &after) != nil || before != after
+}
+
 func PreserveRepositoryProfile(current, replacement []byte) ([]byte, error) {
 	var saved, next map[string]json.RawMessage
 	if json.Unmarshal(current, &saved) != nil || json.Unmarshal(replacement, &next) != nil || next == nil {
@@ -230,25 +241,18 @@ func PreserveRepositoryProfile(current, replacement []byte) ([]byte, error) {
 			next[key] = value
 		}
 	}
-	if saved["stack"] != nil {
-		for _, key := range []string{"url", "ref", "local_path", "daemon_id"} {
-			var before, after string
-			_ = json.Unmarshal(saved[key], &before)
-			_ = json.Unmarshal(next[key], &after)
-			if before != after {
-				profile, err := ReadRepositoryProfile(current)
-				if err != nil {
-					return nil, err
-				}
-				profile.Stack.Detected, profile.Stack.Baseline = nil, nil
-				profile.Revision++
-				raw, err := json.Marshal(next)
-				if err != nil {
-					return nil, err
-				}
-				return WriteRepositoryProfile(raw, profile)
-			}
+	if saved["stack"] != nil && RepositorySourceChanged(current, replacement) {
+		profile, err := ReadRepositoryProfile(current)
+		if err != nil {
+			return nil, err
 		}
+		profile.Stack.Detected, profile.Stack.Baseline = nil, nil
+		profile.Revision++
+		raw, err := json.Marshal(next)
+		if err != nil {
+			return nil, err
+		}
+		return WriteRepositoryProfile(raw, profile)
 	}
 	return json.Marshal(next)
 }

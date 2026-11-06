@@ -3,12 +3,19 @@ import { describe, expect, it } from "vitest";
 import type { InboxItem } from "@multica/core/types";
 import {
   getInboxDisplayTitle,
+  inboxDestination,
   getQuickCreateOutcomeDetail,
   isAutopilotQuotaNotice,
   isQuickCreateOutcome,
   resolveDetailItem,
   stripQuickCreatePrefix,
 } from "./inbox-display";
+
+it("opens security reminders at the risk while preserving task destinations", () => {
+  expect(inboxDestination(item({ issue_id: null, details: { source: "workbench_security", check_id: "risk-1" } }), "acme")).toBe("/acme/security?check=risk-1");
+  expect(inboxDestination(item({ issue_id: "task-1" }), "acme")).toBe("/acme/issues/task-1");
+  expect(inboxDestination(item({ issue_id: "task-1" }), null)).toBeNull();
+});
 
 function item(overrides: Partial<InboxItem>): InboxItem {
   return {

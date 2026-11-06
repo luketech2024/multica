@@ -1,7 +1,8 @@
 "use client";
 
 import { Archive, ArchiveRestore, Check, CircleDot, ExternalLink } from "@multica/ui/icons";
-import { paths, useWorkspaceSlug } from "@multica/core/paths";
+import { useWorkspaceSlug } from "@multica/core/paths";
+import { inboxDestination } from "./inbox-display";
 import type { InboxItem } from "@multica/core/types";
 import type { RowActionItem } from "../../common/row-actions-menu";
 import { useIntentNavigate } from "../../navigation";
@@ -41,10 +42,7 @@ export function useInboxItemActions(
   const intentNavigate = useIntentNavigate();
   if (!actions) return [];
 
-  const issueHref =
-    slug && item.issue_id
-      ? paths.workspace(slug).issueDetail(item.issue_id)
-      : null;
+  const issueHref = inboxDestination(item, slug);
   const isArchivedView = view === "archived";
 
   const groups: RowActionItem[][] = [];

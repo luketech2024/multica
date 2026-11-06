@@ -704,6 +704,17 @@ func (h *Handler) UpdateProjectResource(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusConflict, "failed to preserve repository profile")
 			return
 		}
+		if workbench.RepositorySourceChanged(existing.ResourceRef, nextRef) {
+			count, err := qtx.CountSecurityScansForRepository(r.Context(), db.CountSecurityScansForRepositoryParams{WorkspaceID: project.WorkspaceID, RepoID: existing.ID})
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to check security references")
+				return
+			}
+			if count > 0 {
+				writeError(w, http.StatusConflict, "add a new repository binding to preserve existing security evidence")
+				return
+			}
+		}
 	}
 
 	// Both checks read through the transaction (qtx) rather than the handler's
@@ -947,6 +958,15 @@ func (h *Handler) DeleteProjectResource(w http.ResponseWriter, r *http.Request) 
 	}
 	if count > 0 {
 		writeError(w, http.StatusConflict, "remove deployment targets before removing this repository")
+		return
+	}
+	scans, err := qtx.CountSecurityScansForRepository(r.Context(), db.CountSecurityScansForRepositoryParams{WorkspaceID: project.WorkspaceID, RepoID: resource.ID})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to check security references")
+		return
+	}
+	if scans > 0 {
+		writeError(w, http.StatusConflict, "repository is referenced by security evidence")
 		return
 	}
 	if err := qtx.DeleteProjectResource(r.Context(), resource.ID); err != nil {

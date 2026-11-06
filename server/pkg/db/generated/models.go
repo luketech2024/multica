@@ -1498,6 +1498,53 @@ type SeatCapacityOutbox struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type SecurityCheck struct {
+	ID               pgtype.UUID        `json:"id"`
+	Number           int64              `json:"number"`
+	WorkspaceID      pgtype.UUID        `json:"workspace_id"`
+	ProjectID        pgtype.UUID        `json:"project_id"`
+	RepoID           pgtype.UUID        `json:"repo_id"`
+	IssueID          pgtype.UUID        `json:"issue_id"`
+	Fingerprint      string             `json:"fingerprint"`
+	Severity         string             `json:"severity"`
+	Category         string             `json:"category"`
+	Title            string             `json:"title"`
+	Cwe              string             `json:"cwe"`
+	Location         string             `json:"location"`
+	Recommendation   string             `json:"recommendation"`
+	Status           string             `json:"status"`
+	ArtifactVersion  string             `json:"artifact_version"`
+	FirstScanID      pgtype.UUID        `json:"first_scan_id"`
+	LastScanID       pgtype.UUID        `json:"last_scan_id"`
+	FixedScanID      pgtype.UUID        `json:"fixed_scan_id"`
+	FixVersion       string             `json:"fix_version"`
+	FixRequestedAt   pgtype.Timestamptz `json:"fix_requested_at"`
+	AcceptedUntil    pgtype.Timestamptz `json:"accepted_until"`
+	AcceptanceReason string             `json:"acceptance_reason"`
+	LastSeenAt       pgtype.Timestamptz `json:"last_seen_at"`
+	Revision         int64              `json:"revision"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SecurityScan struct {
+	ID              pgtype.UUID        `json:"id"`
+	WorkspaceID     pgtype.UUID        `json:"workspace_id"`
+	ProjectID       pgtype.UUID        `json:"project_id"`
+	RepoID          pgtype.UUID        `json:"repo_id"`
+	IssueID         pgtype.UUID        `json:"issue_id"`
+	RunID           string             `json:"run_id"`
+	ArtifactVersion string             `json:"artifact_version"`
+	SourceCommit    string             `json:"source_commit"`
+	Status          string             `json:"status"`
+	ScannedAt       pgtype.Timestamptz `json:"scanned_at"`
+	RecordedAt      pgtype.Timestamptz `json:"recorded_at"`
+	ActorType       string             `json:"actor_type"`
+	ActorID         pgtype.UUID        `json:"actor_id"`
+	Report          []byte             `json:"report"`
+	Digest          string             `json:"digest"`
+}
+
 type Skill struct {
 	ID                   pgtype.UUID        `json:"id"`
 	WorkspaceID          pgtype.UUID        `json:"workspace_id"`

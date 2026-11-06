@@ -29,6 +29,7 @@ import {
   isPathWithin,
 } from "../panel-nav";
 import { useTeamAgentStatus } from "./team-status";
+import { SecurityNav } from "../../security/security-nav";
 
 const EMPTY_TASKS: AgentTask[] = [];
 const MEMBER_AVATAR_LIMIT = 4;
@@ -271,6 +272,7 @@ export function TeamPanel() {
 
         <PanelSection label={t(($) => $.panels.team.resources)}>
           <PanelList>
+            <SecurityNav />
             <PanelLink
               href={p.skills()}
               icon={<BookOpenText />}

@@ -18,6 +18,7 @@ import { ExecutionPlanEditor } from "./execution-plan-editor";
 import { DeliveryEvidence } from "./delivery-evidence";
 import { ExecutionLogSection } from "./execution-log-section";
 import { PullRequestsSection } from "./pull-requests-section";
+import { ScanReportForm } from "../../security/scan-report-form";
 
 export function IssuePipelinePage({ routeId }: { routeId: string }) {
   const { t } = useT("issues");
@@ -166,6 +167,7 @@ function TaskOutput({ parent, task }: { parent: Issue; task: Issue }) {
   return <div className="space-y-4">
     <h3 className="break-words text-label font-medium">{task.title}</h3>
     <DeliveryEvidence issue={parent} taskIds={[task.id]} />
+    {task.workbench_handoff?.role === "sec" && <ScanReportForm task={task} />}
     {task.workbench_handoff?.role === "dev" && (
       <PullRequestsSection issueId={task.id} identifier={task.identifier} open={pullRequestsOpen} onOpenChange={setPullRequestsOpen} />
     )}

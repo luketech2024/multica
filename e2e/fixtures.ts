@@ -447,6 +447,26 @@ export class TestApiClient {
     return issue;
   }
 
+  async createProjectRepository(projectId: string, url: string) {
+    const response = await this.authedFetch(`/api/projects/${projectId}/resources`, {
+      method: "POST", body: JSON.stringify({ resource_type: "github_repo", resource_ref: { url, ref: "main" } }),
+    });
+    if (!response.ok) throw new Error(`create repository failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
+  async recordSecurityScan(input: Record<string, unknown>) {
+    const response = await this.authedFetch("/api/security/scans", { method: "POST", body: JSON.stringify(input) });
+    if (!response.ok) throw new Error(`record scan failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
+  async listSecurityChecks(projectId: string) {
+    const response = await this.authedFetch(`/api/security/checks?project_id=${encodeURIComponent(projectId)}`);
+    if (!response.ok) throw new Error(`list security checks failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
   /** Clean up all issues created during this test. */
   async cleanup() {
     if (this.seededIssueIds.length > 0 && this.workspaceId) {

@@ -848,6 +848,9 @@ func main() {
 	if err := schedulerMgr.Register(scheduler.WorkbenchInboxPruneJob(queries)); err != nil {
 		slog.Error("scheduler: register workbench inbox retention", "error", err)
 	}
+	if err := schedulerMgr.Register(scheduler.SecurityAcceptanceJob(taskSvc)); err != nil {
+		slog.Error("scheduler: register security acceptance expiry", "error", err)
+	}
 	if err := schedulerMgr.Register(scheduler.IssueWakeupJob(&service.IssueWakeupService{Tasks: taskSvc})); err != nil {
 		slog.Error("scheduler: register issue wakeups", "error", err)
 	}

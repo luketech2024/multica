@@ -2283,6 +2283,11 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 			})
 			r.Get("/api/workbench/business-templates", h.ListBusinessTemplates)
 			r.Get("/api/workbench/audit.csv", h.ExportWorkbenchAudit)
+			r.Get("/api/security/checks", h.ListSecurityChecks)
+			r.Get("/api/security/checks/{checkId}", h.GetSecurityCheck)
+			r.Patch("/api/security/checks/{checkId}", h.UpdateSecurityCheck)
+			r.Post("/api/security/scans", h.RecordSecurityScan)
+			r.Get("/api/security/scans/{scanId}", h.GetSecurityScan)
 			r.Get("/api/workbench/repository-stacks", h.ListRepositoryStacks)
 
 			// Squads

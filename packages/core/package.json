@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "exports": {
+    "./workbench/security": "./workbench/security.ts",
     ".": "./index.ts",
     "./markdown": "./markdown/index.ts",
     "./types": "./types/index.ts",

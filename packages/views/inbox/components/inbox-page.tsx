@@ -433,6 +433,11 @@ export function InboxPage() {
   // by issue) and a fresh mount with a cleared memento entry lands by itself.
   const [highlightRequestToken, setHighlightRequestToken] = useState(0);
   const handleSelect = (item: InboxItem) => {
+    if (item.details?.source === "workbench_security" && item.details.check_id) {
+      if (!item.read) markReadMutation.mutate(item.id);
+      push(`${wsPaths.security()}?check=${encodeURIComponent(item.details.check_id)}`);
+      return;
+    }
     if (item.workbench && item.issue_id) {
       const comment = item.details?.comment_id;
       push(`${wsPaths.issueDetail(item.issue_id)}${comment ? `#comment-${encodeURIComponent(comment)}` : ""}`);

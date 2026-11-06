@@ -107,7 +107,8 @@
     "created_with_agent": "Created with agent: {{identifier}}",
     "failed_with_detail": "Failed: {{detail}}",
     "autopilot_quota_blocked": "Run blocked because the limit was reached",
-    "children_done_stage": "Stage {{stage}}'s sub-issues finished"
+    "children_done_stage": "Stage {{stage}}'s sub-issues finished",
+    "security_expiring": "Risk acceptance expires within 3 days"
   },
   "toasts": {
     "source_context_retry_started": "Retry started with the original context",

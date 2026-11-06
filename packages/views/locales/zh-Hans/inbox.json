@@ -105,7 +105,8 @@
     "created_with_agent": "通过智能体创建：{{identifier}}",
     "failed_with_detail": "失败：{{detail}}",
     "autopilot_quota_blocked": "执行已被阻止：额度已用完",
-    "children_done_stage": "第 {{stage}} 阶段的子任务已全部结束"
+    "children_done_stage": "第 {{stage}} 阶段的子任务已全部结束",
+    "security_expiring": "风险接受将在 3 天内到期，请复检"
   },
   "toasts": {
     "source_context_retry_started": "已使用原始上下文开始重试",

@@ -5,6 +5,7 @@ import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryP
 import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
+import { SecurityCheckSchema, SecurityChecksSchema, SecurityScanSchema, type SecurityDecision, type SecurityScanInput } from "../workbench/security-schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
 import type { WorkspaceWakeupPage, WorkspaceWakeupFilters } from "../types/issue-wakeup";
@@ -4293,6 +4294,35 @@ export class ApiClient {
     projectId: string,
   ): Promise<ListProjectResourcesResponse> {
     return this.fetch(`/api/projects/${projectId}/resources`);
+  }
+
+  async listSecurityChecks(projectId = "", status = "", before = "") {
+    const params = new URLSearchParams();
+    if (projectId) params.set("project_id", projectId);
+    if (status) params.set("status", status);
+    if (before) params.set("before", before);
+    const endpoint = `/api/security/checks?${params}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), SecurityChecksSchema, endpoint);
+  }
+
+  async getSecurityCheck(id: string) {
+    const endpoint = `/api/security/checks/${encodeURIComponent(id)}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), SecurityCheckSchema, endpoint);
+  }
+
+  async getSecurityScan(id: string) {
+    const endpoint = `/api/security/scans/${encodeURIComponent(id)}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), SecurityScanSchema, endpoint);
+  }
+
+  async recordSecurityScan(input: SecurityScanInput) {
+    const endpoint = "/api/security/scans";
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST", body: JSON.stringify(input) }), SecurityScanSchema, endpoint);
+  }
+
+  async updateSecurityCheck(id: string, input: SecurityDecision) {
+    const endpoint = `/api/security/checks/${encodeURIComponent(id)}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PATCH", body: JSON.stringify(input) }), SecurityCheckSchema, endpoint);
   }
 
   async getProjectWorkbenchRoles(projectId: string) {
