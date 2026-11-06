@@ -673,6 +673,10 @@ func init() {
 	issueCreateCmd.Flags().String("parent", "", "Parent issue ID")
 	issueCreateCmd.Flags().Int("stage", 0, "Stage ordinal (>=1) grouping this sub-issue into an ordered barrier group under its parent; omit for unstaged. The parent assignee is woken only when every sub-issue in a stage finishes.")
 	issueCreateCmd.Flags().String("project", "", "Project ID")
+	issueCreateCmd.Flags().StringArray("criterion", nil, "Acceptance criterion without an identifier (repeatable, up to 120 characters each)")
+	issueCreateCmd.Flags().StringArray("boundary", nil, "Out-of-scope requirement (repeatable)")
+	issueCreateCmd.Flags().String("external-ticket", "", "Optional external ticket number, independent of the system issue identifier")
+	issueCreateCmd.Flags().Bool("unassigned", false, "Leave the new issue unassigned instead of using the project's default role")
 	issueCreateCmd.Flags().String("start-date", "", "Start date (calendar day, YYYY-MM-DD)")
 	issueCreateCmd.Flags().String("due-date", "", "Due date (calendar day, YYYY-MM-DD)")
 	issueCreateCmd.Flags().Bool("allow-duplicate", false, "Allow creating an issue even when an active duplicate exists")
@@ -1606,6 +1610,9 @@ func runIssueCreate(cmd *cobra.Command, _ []string) error {
 	if hasAssignee {
 		body["assignee_type"] = aType
 		body["assignee_id"] = aID
+	}
+	if err := applyIssueCreateRequirements(cmd, body); err != nil {
+		return err
 	}
 
 	// Quick-create stamp: when the daemon sets MULTICA_QUICK_CREATE_TASK_ID
