@@ -26,9 +26,7 @@ export function ProjectRolesFields({
   const wsId = useWorkspaceId();
   const agents = useQuery(agentListOptions(wsId));
   const runtimes = useQuery(runtimeListOptions(wsId));
-  const agentItems = (agents.data ?? [])
-    .filter((agent) => !agent.archived_at)
-    .map((agent) => ({ value: agent.id, label: agent.name }));
+  const activeAgents = (agents.data ?? []).filter((agent) => !agent.archived_at);
   const runtimeItems = (runtimes.data ?? []).map((runtime) => ({
     value: runtime.id,
     label: runtime.name,
@@ -62,6 +60,13 @@ export function ProjectRolesFields({
       )}
       {projectRoleOrder.map((role) => {
         const entry = config.roles[role];
+        const selectedAgent = activeAgents.find((agent) => agent.id === entry.agent_id);
+        const agentItems = activeAgents
+          .filter((agent) => !entry.runtime_id || agent.runtime_id === entry.runtime_id)
+          .map((agent) => ({ value: agent.id, label: agent.name }));
+        const compatibleRuntimes = runtimeItems.filter((runtime) =>
+          !selectedAgent || runtime.value === selectedAgent.runtime_id,
+        );
         return (
           <div
             key={role}
@@ -90,12 +95,13 @@ export function ProjectRolesFields({
                 <ConfigurationSelect
                   label={t(($) => $.workbench.runtime)}
                   value={entry.runtime_id ?? ""}
-                  items={bindingItems(runtimeItems, entry.runtime_id)}
+                  items={bindingItems(compatibleRuntimes, entry.runtime_id)}
                   disabled={disabled || runtimes.isPending || runtimes.isError}
                   onChange={(value) =>
                     change(role, { runtime_id: value || null })
                   }
                 />
+                <p className="text-caption text-muted-foreground">{t(($) => $.roles.runtime_constraint)}</p>
               </div>
             )}
           </div>

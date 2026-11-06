@@ -38,6 +38,9 @@ func assignInitialWorkbenchRole(ctx context.Context, q *db.Queries, params *Issu
 	if err != nil || agent.WorkspaceID != params.WorkspaceID || agent.ArchivedAt.Valid {
 		return fmt.Errorf("%w: project %s agent is unavailable", ErrIssueRequirements, roleName)
 	}
+	if role.RuntimeID != nil && *role.RuntimeID != util.UUIDToString(agent.RuntimeID) {
+		return fmt.Errorf("%w: project %s runtime no longer matches the configured agent", ErrIssueRequirements, roleName)
+	}
 	allowed, err := memberMayInvokeAgent(ctx, q, agent, params.CreatorID, params.WorkspaceID)
 	if err != nil {
 		return err

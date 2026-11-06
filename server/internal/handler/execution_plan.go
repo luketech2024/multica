@@ -114,6 +114,10 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		agent, err := q.GetAgentInWorkspace(r.Context(), db.GetAgentInWorkspaceParams{ID: id, WorkspaceID: current.WorkspaceID})
+		if err == nil && role.RuntimeID != nil && *role.RuntimeID != uuidToString(agent.RuntimeID) {
+			writeError(w, http.StatusConflict, "a configured role runtime no longer matches its agent")
+			return
+		}
 		if err != nil || !h.canInvokeAgent(r.Context(), agent, actorType, actorID, uuidToString(member.UserID), uuidToString(current.WorkspaceID)) {
 			writeError(w, http.StatusConflict, "a configured executor is unavailable or inaccessible")
 			return

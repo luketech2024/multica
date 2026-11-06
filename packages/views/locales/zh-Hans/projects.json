@@ -261,7 +261,8 @@
     "sec": "安全",
     "ops": "运维",
     "agent": "智能体",
-    "unavailable": "不可用"
+    "unavailable": "不可用",
+    "runtime_constraint": "选择已绑定该运行节点的智能体。运行节点留空时沿用智能体当前绑定。"
   },
   "wizard": {
     "basic": "基本信息",

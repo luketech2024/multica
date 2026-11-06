@@ -261,7 +261,8 @@
     "sec": "보안",
     "ops": "운영",
     "agent": "에이전트",
-    "unavailable": "사용 불가"
+    "unavailable": "사용 불가",
+    "runtime_constraint": "이 런타임에 연결된 에이전트를 선택하세요. 런타임을 비워 두면 에이전트의 현재 연결을 사용합니다."
   },
   "wizard": {
     "basic": "기본 정보",

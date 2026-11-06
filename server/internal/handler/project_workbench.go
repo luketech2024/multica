@@ -121,6 +121,10 @@ func (h *Handler) validateProjectRoleBindings(w http.ResponseWriter, r *http.Req
 				writeError(w, http.StatusBadRequest, "agent must be active in this workspace")
 				return false
 			}
+			if entry.RuntimeID != nil && *entry.RuntimeID != uuidToString(agent.RuntimeID) {
+				writeError(w, http.StatusBadRequest, "role runtime must match the selected agent's runtime")
+				return false
+			}
 		}
 		if entry.RuntimeID != nil {
 			id, valid := parseUUIDOrBadRequest(w, *entry.RuntimeID, "runtime_id")

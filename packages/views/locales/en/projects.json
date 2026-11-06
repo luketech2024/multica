@@ -261,7 +261,8 @@
     "sec": "Security",
     "ops": "Operations",
     "agent": "Agent",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "runtime_constraint": "Choose an agent bound to this runtime. Leave the runtime empty to use the agent’s current binding."
   },
   "wizard": {
     "basic": "Basic information",

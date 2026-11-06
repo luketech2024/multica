@@ -261,7 +261,8 @@
     "sec": "Sécurité",
     "ops": "Exploitation",
     "agent": "Agent",
-    "unavailable": "Indisponible"
+    "unavailable": "Indisponible",
+    "runtime_constraint": "Choisissez un agent lié à cet environnement. Laissez ce champ vide pour utiliser la liaison actuelle de l’agent."
   },
   "wizard": {
     "basic": "Informations générales",

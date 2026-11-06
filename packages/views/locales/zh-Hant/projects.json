@@ -261,7 +261,8 @@
     "sec": "安全",
     "ops": "維運",
     "agent": "智能體",
-    "unavailable": "無法使用"
+    "unavailable": "無法使用",
+    "runtime_constraint": "選擇已綁定該執行節點的智能體。執行節點留空時沿用智能體目前綁定。"
   },
   "wizard": {
     "basic": "基本資訊",
