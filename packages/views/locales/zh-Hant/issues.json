@@ -1870,5 +1870,21 @@
     "expected": "交接物（逗號分隔）",
     "add": "新增子任務",
     "save": "儲存拆單"
+  },
+  "handoff": {
+    "title": "子任務交接",
+    "unavailable": "交接資訊暫不可用。",
+    "retired": "此執行計畫已失效，保留歷史記錄。",
+    "loading": "正在載入交接資訊…",
+    "retry": "重試載入交接資訊",
+    "no_repo": "無需儲存庫",
+    "repo_unavailable": "儲存庫不可用",
+    "no_dependencies": "無前置任務",
+    "waiting": "等待 {{count}} 條前置任務完成",
+    "dependencies_ready": "前置任務已完成",
+    "dependency_unavailable": "前置任務不可用",
+    "serial": "序列群組 {{group}}",
+    "deliverables": "交接物清單",
+    "retries": "計畫重試預算 {{count}} 次"
   }
 }

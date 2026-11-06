@@ -1,10 +1,20 @@
 package workbench
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 )
+
+// HandoffJSON exposes the reserved object separately from scalar custom fields.
+func HandoffJSON(properties []byte) json.RawMessage {
+	var values map[string]json.RawMessage
+	if json.Unmarshal(properties, &values) != nil {
+		return nil
+	}
+	return values["workbench_handoff"]
+}
 
 type PlanTask struct {
 	Key         string   `json:"key"`

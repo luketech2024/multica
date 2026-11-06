@@ -73,6 +73,12 @@ func TestExecutionPlanIsAtomicIdempotentAndEnforcesDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var detail IssueResponse
+	testutil.Call(t, testHandler.GetIssue, testutil.WithURLParams(newRequest("GET", "/api/issues/"+first, nil), "id", first)).Want(http.StatusOK).JSON(&detail)
+	var responseHandoff workbench.Handoff
+	if json.Unmarshal(detail.WorkbenchHandoff, &responseHandoff) != nil || responseHandoff.RepoID != repo || responseHandoff.V != 2 {
+		t.Fatal("task detail lost the typed handoff projection")
+	}
 	claim, err := testHandler.resolveIssueClaimProjectContext(ctx, firstIssue)
 	if err != nil || len(claim.Resources) != 1 || claim.Resources[0].ID != repo || len(claim.Repos) != 1 {
 		t.Fatalf("claim did not restrict execution to the selected repository: %+v, %v", claim, err)

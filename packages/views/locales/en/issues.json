@@ -1939,5 +1939,21 @@
     "expected": "Expected deliverables, separated by commas",
     "add": "Add subtask",
     "save": "Save plan"
+  },
+  "handoff": {
+    "title": "Subtask handoff",
+    "unavailable": "Handoff details are unavailable.",
+    "retired": "This execution plan has been retired.",
+    "loading": "Loading handoff details…",
+    "retry": "Retry handoff details",
+    "no_repo": "No repository required",
+    "repo_unavailable": "Repository unavailable",
+    "no_dependencies": "No dependencies",
+    "waiting": "Waiting for {{count}} dependencies",
+    "dependencies_ready": "Dependencies completed",
+    "dependency_unavailable": "Dependency unavailable",
+    "serial": "Serial group {{group}}",
+    "deliverables": "Expected deliverables",
+    "retries": "Planned retry budget {{count}}"
   }
 }

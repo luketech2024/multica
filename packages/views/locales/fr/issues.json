@@ -1939,5 +1939,21 @@
     "expected": "Livrables séparés par des virgules",
     "add": "Ajouter une sous-tâche",
     "save": "Enregistrer le plan"
+  },
+  "handoff": {
+    "title": "Transmission de la sous-tâche",
+    "unavailable": "Les détails sont indisponibles.",
+    "retired": "Ce plan est désormais obsolète.",
+    "loading": "Chargement des détails…",
+    "retry": "Recharger les détails",
+    "no_repo": "Aucun dépôt requis",
+    "repo_unavailable": "Dépôt indisponible",
+    "no_dependencies": "Aucune dépendance",
+    "waiting": "En attente de {{count}} dépendances",
+    "dependencies_ready": "Dépendances terminées",
+    "dependency_unavailable": "Dépendance indisponible",
+    "serial": "Groupe séquentiel {{group}}",
+    "deliverables": "Livrables attendus",
+    "retries": "Budget prévu de {{count}} nouvelles tentatives"
   }
 }

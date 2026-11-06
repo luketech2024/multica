@@ -14,6 +14,8 @@ import type {
 export * from "./schemas";
 export { prefillTaskTemplate } from "./template-prefill";
 export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
+export { parseWorkbenchHandoff } from "./execution-plan";
+export type { WorkbenchHandoff } from "./execution-plan";
 
 export function useSaveExecutionPlan(wsId: string, issueId: string) {
   const qc = useQueryClient();

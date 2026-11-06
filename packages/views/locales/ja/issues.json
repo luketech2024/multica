@@ -1870,5 +1870,21 @@
     "expected": "成果物（カンマ区切り）",
     "add": "サブタスクを追加",
     "save": "計画を保存"
+  },
+  "handoff": {
+    "title": "サブタスクの引き継ぎ",
+    "unavailable": "引き継ぎ情報を利用できません。",
+    "retired": "この実行計画は無効になりました。",
+    "loading": "引き継ぎ情報を読み込み中…",
+    "retry": "引き継ぎ情報を再読み込み",
+    "no_repo": "リポジトリ不要",
+    "repo_unavailable": "リポジトリを利用できません",
+    "no_dependencies": "依存関係なし",
+    "waiting": "先行タスク {{count}} 件の完了待ち",
+    "dependencies_ready": "先行タスク完了",
+    "dependency_unavailable": "先行タスクを利用できません",
+    "serial": "直列実行グループ {{group}}",
+    "deliverables": "成果物一覧",
+    "retries": "計画上の再試行回数 {{count}} 回"
   }
 }

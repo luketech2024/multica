@@ -28,6 +28,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/realtime"
 	"github.com/multica-ai/multica/server/internal/runtimeapps"
 	"github.com/multica-ai/multica/server/internal/util"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/dbid"
 	"github.com/multica-ai/multica/server/pkg/featureflag"
@@ -8033,6 +8034,9 @@ func IssueToMap(issue db.Issue, issuePrefix string) map[string]any {
 	}
 	if len(issue.AcceptanceCriteria) > 0 {
 		result["acceptance_criteria"] = json.RawMessage(issue.AcceptanceCriteria)
+	}
+	if handoff := workbench.HandoffJSON(issue.Properties); len(handoff) > 0 {
+		result["workbench_handoff"] = handoff
 	}
 	return result
 }

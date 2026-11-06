@@ -1,5 +1,6 @@
 import type { Label } from "./label";
 import type { IssuePropertyValues } from "./property";
+import type { WorkbenchHandoff } from "../workbench/execution-plan";
 import type { ProjectRoles, ProjectTemplate } from "../workbench/schemas";
 
 /** Four lifecycle classifications. User-facing columns group by status key. */
@@ -271,6 +272,7 @@ export interface Issue {
   // Custom property values keyed by property definition id. Always present
   // in responses (empty object when unset), mirroring `metadata`.
   properties: IssuePropertyValues;
+  workbench_handoff?: WorkbenchHandoff | null;
   reactions?: IssueReaction[];
   labels?: Label[];
   created_at: string;

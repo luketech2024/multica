@@ -1870,5 +1870,21 @@
     "expected": "결과물 (쉼표로 구분)",
     "add": "하위 작업 추가",
     "save": "계획 저장"
+  },
+  "handoff": {
+    "title": "하위 작업 인계",
+    "unavailable": "인계 정보를 사용할 수 없습니다.",
+    "retired": "이 실행 계획은 종료되었습니다.",
+    "loading": "인계 정보 로드 중…",
+    "retry": "인계 정보 다시 로드",
+    "no_repo": "저장소 필요 없음",
+    "repo_unavailable": "저장소를 사용할 수 없음",
+    "no_dependencies": "선행 작업 없음",
+    "waiting": "선행 작업 {{count}}개 완료 대기",
+    "dependencies_ready": "선행 작업 완료",
+    "dependency_unavailable": "선행 작업을 사용할 수 없음",
+    "serial": "순차 실행 그룹 {{group}}",
+    "deliverables": "결과물 목록",
+    "retries": "계획된 재시도 예산 {{count}}회"
   }
 }

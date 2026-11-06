@@ -1870,5 +1870,21 @@
     "expected": "交接物（逗号分隔）",
     "add": "添加子任务",
     "save": "保存拆单"
+  },
+  "handoff": {
+    "title": "子任务交接",
+    "unavailable": "交接信息暂不可用。",
+    "retired": "此执行计划已失效，保留历史记录。",
+    "loading": "正在加载交接信息…",
+    "retry": "重试加载交接信息",
+    "no_repo": "无需仓库",
+    "repo_unavailable": "仓库不可用",
+    "no_dependencies": "无前置任务",
+    "waiting": "等待 {{count}} 条前置任务完成",
+    "dependencies_ready": "前置任务已完成",
+    "dependency_unavailable": "前置任务不可用",
+    "serial": "串行组 {{group}}",
+    "deliverables": "交接物清单",
+    "retries": "计划重试预算 {{count}} 次"
   }
 }
