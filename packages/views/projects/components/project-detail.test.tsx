@@ -25,6 +25,7 @@ vi.mock("../../workflows/project-workflow-menu", () => ({
   ProjectWorkflowMenuHost: ({ children }: { children: (submenu: null) => React.ReactNode }) => children(null),
 }));
 vi.mock("../../workflows/project-workflow-row", () => ({ ProjectWorkflowControl: () => null }));
+vi.mock("./deploy-targets-section", () => ({ DeployTargetsSection: () => null }));
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: readonly unknown[] }) => {

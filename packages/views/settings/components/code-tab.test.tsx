@@ -73,6 +73,7 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 // The repository list and self-hosted rows have their own tests.
 vi.mock("./repositories-section", () => ({ RepositoriesSection: () => null }));
 vi.mock("./code-vcs", () => ({ VCSConnectionRows: () => <div>VCS rows</div> }));
+vi.mock("./workbench-credentials", () => ({ WorkbenchCredentials: () => <div>Workbench credentials</div> }));
 // The merge rule editor has its own test on the statuses it offers.
 vi.mock("./pr-merge-status-row", () => ({
   PRMergeStatusRow: ({ canManage }: { canManage: boolean }) => (

@@ -1363,6 +1363,15 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 	// webhook secrets for token-based providers (Forgejo / Gitea / GitLab).
 	// Without it, connect/webhook handlers return 503 (so a misconfigured
 	// self-host never stores plaintext secrets).
+	if workbenchKey, err := secretbox.LoadKey("MULTICA_WORKBENCH_SECRET_KEY"); err == nil {
+		box, err := secretbox.New(workbenchKey)
+		clear(workbenchKey)
+		if err != nil {
+			slog.Error("workbench credential encryption unavailable", "error", err)
+		} else {
+			h.WorkbenchSecretBox = box
+		}
+	}
 	if vcsKey, err := secretbox.LoadKey("MULTICA_VCS_SECRET_KEY"); err == nil {
 		box, err := secretbox.New(vcsKey)
 		if err != nil {
@@ -2241,11 +2250,23 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Put("/", h.UpdateProject)
 					r.Delete("/", h.DeleteProject)
 					r.Post("/workflow", h.SetProjectWorkflow)
+					r.Get("/deploy-targets", h.ListDeployTargets)
+					r.Post("/deploy-targets", h.SaveDeployTarget)
+					r.Put("/deploy-targets/{targetId}", h.SaveDeployTarget)
+					r.Delete("/deploy-targets/{targetId}", h.DeleteDeployTarget)
 					r.Get("/resources", h.ListProjectResources)
 					r.Post("/resources", h.CreateProjectResource)
 					r.Put("/resources/{resourceId}", h.UpdateProjectResource)
 					r.Delete("/resources/{resourceId}", h.DeleteProjectResource)
 				})
+			})
+
+			r.Route("/api/workbench/credentials", func(r chi.Router) {
+				r.Get("/", h.ListWorkbenchCredentials)
+				r.Post("/", h.SaveWorkbenchCredential)
+				r.Put("/{credentialId}", h.SaveWorkbenchCredential)
+				r.Delete("/{credentialId}", h.DeleteWorkbenchCredential)
+				r.Get("/{credentialId}/references", h.ListWorkbenchCredentialReferences)
 			})
 
 			// Squads

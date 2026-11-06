@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
 import type { WorkspaceWakeupPage, WorkspaceWakeupFilters } from "../types/issue-wakeup";
@@ -4228,6 +4229,39 @@ export class ApiClient {
     projectId: string,
   ): Promise<ListProjectResourcesResponse> {
     return this.fetch(`/api/projects/${projectId}/resources`);
+  }
+
+  async listDeployTargets(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/deploy-targets`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), DeployTargetsSchema, endpoint);
+  }
+
+  async saveDeployTarget(projectId: string, data: DeployTargetInput, id?: string) {
+    const endpoint = `/api/projects/${projectId}/deploy-targets${id ? `/${id}` : ""}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: id ? "PUT" : "POST", body: JSON.stringify(data) }), DeployTargetSchema, endpoint);
+  }
+
+  async deleteDeployTarget(projectId: string, id: string, revision: number): Promise<void> {
+    await this.fetch(`/api/projects/${projectId}/deploy-targets/${id}?expected_revision=${revision}`, { method: "DELETE" });
+  }
+
+  async listWorkbenchCredentials() {
+    const endpoint = "/api/workbench/credentials";
+    return parseWorkbenchResponse(await this.fetch(endpoint), CredentialsSchema, endpoint);
+  }
+
+  async saveWorkbenchCredential(data: CredentialInput, id?: string) {
+    const endpoint = `/api/workbench/credentials${id ? `/${id}` : ""}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: id ? "PUT" : "POST", body: JSON.stringify(data) }), CredentialSchema, endpoint);
+  }
+
+  async deleteWorkbenchCredential(id: string, revision: number): Promise<void> {
+    await this.fetch(`/api/workbench/credentials/${id}?expected_revision=${revision}`, { method: "DELETE" });
+  }
+
+  async listWorkbenchCredentialReferences(id: string) {
+    const endpoint = `/api/workbench/credentials/${id}/references`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), DeployTargetsSchema, endpoint);
   }
 
   async createProjectResource(

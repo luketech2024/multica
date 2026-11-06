@@ -916,8 +916,32 @@ func (h *Handler) DeleteProjectResource(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "project resource not found")
 		return
 	}
-	if err := h.Queries.DeleteProjectResource(r.Context(), resource.ID); err != nil {
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to begin resource deletion")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	qtx := h.Queries.WithTx(tx)
+	if _, err = qtx.GetProjectResourceInWorkspaceForUpdate(r.Context(), db.GetProjectResourceInWorkspaceForUpdateParams{ID: resource.ID, WorkspaceID: project.WorkspaceID}); err != nil {
+		writeError(w, http.StatusNotFound, "project resource not found")
+		return
+	}
+	count, err := qtx.CountDeployTargetsForResource(r.Context(), db.CountDeployTargetsForResourceParams{WorkspaceID: project.WorkspaceID, RepoID: resource.ID})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to check deployment references")
+		return
+	}
+	if count > 0 {
+		writeError(w, http.StatusConflict, "remove deployment targets before removing this repository")
+		return
+	}
+	if err := qtx.DeleteProjectResource(r.Context(), resource.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to delete project resource")
+		return
+	}
+	if err = tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to commit resource deletion")
 		return
 	}
 	h.publish(

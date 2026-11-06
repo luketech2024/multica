@@ -42,6 +42,7 @@ import {
 } from "./settings-layout";
 import { GitHubMark } from "./github-mark";
 import { VCSConnectionRows } from "./code-vcs";
+import { WorkbenchCredentials } from "./workbench-credentials";
 import { HostMark, HostStatus } from "./code-host";
 import { RepositoriesSection } from "./repositories-section";
 import { PRMergeStatusRow } from "./pr-merge-status-row";
@@ -318,6 +319,8 @@ export function CodeTab() {
           <PRMergeStatusRow canManage={isManager} />
         </SettingsCard>
       </SettingsSection>
+
+      {isManager && <WorkbenchCredentials key={wsId} />}
 
       <AlertDialog
         open={!!disconnectTarget}

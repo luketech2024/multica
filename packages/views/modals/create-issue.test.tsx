@@ -962,6 +962,7 @@ describe("CreateIssueModal", () => {
     expect(mockSetManual).toHaveBeenCalledWith({
       title: "",
       description: "",
+      requirementsText: "",
       status: "in_progress",
       assigneeType: "member",
       assigneeId: "alice",

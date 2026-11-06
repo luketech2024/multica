@@ -652,6 +652,22 @@ type ContactSalesInquiry struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
+type Credential struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
+	Label       string             `json:"label"`
+	Kind        string             `json:"kind"`
+	Usage       []string           `json:"usage"`
+	SecretEnc   []byte             `json:"secret_enc"`
+	WrappedKey  []byte             `json:"wrapped_key"`
+	LastFour    string             `json:"last_four"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	RotatedAt   pgtype.Timestamptz `json:"rotated_at"`
+	Revision    int64              `json:"revision"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type DaemonConnection struct {
 	ID              pgtype.UUID        `json:"id"`
 	AgentID         pgtype.UUID        `json:"agent_id"`
@@ -671,6 +687,24 @@ type DaemonToken struct {
 	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	OwnerID     pgtype.UUID        `json:"owner_id"`
+}
+
+type DeployTarget struct {
+	ID           pgtype.UUID        `json:"id"`
+	WorkspaceID  pgtype.UUID        `json:"workspace_id"`
+	ProjectID    pgtype.UUID        `json:"project_id"`
+	RepoID       pgtype.UUID        `json:"repo_id"`
+	Label        string             `json:"label"`
+	Env          string             `json:"env"`
+	Kind         string             `json:"kind"`
+	Channel      string             `json:"channel"`
+	RuntimeID    pgtype.UUID        `json:"runtime_id"`
+	CredentialID pgtype.UUID        `json:"credential_id"`
+	Location     []byte             `json:"location"`
+	LastCheck    []byte             `json:"last_check"`
+	Revision     int64              `json:"revision"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type DingtalkBotIdentity struct {

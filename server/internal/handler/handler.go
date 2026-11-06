@@ -429,7 +429,8 @@ type Handler struct {
 	// in that case so a misconfigured self-host deployment surfaces a clear
 	// error rather than silently storing plaintext. Wired in
 	// cmd/server/router.go after New.
-	VCSSecretBox *secretbox.Box
+	VCSSecretBox       *secretbox.Box
+	WorkbenchSecretBox *secretbox.Box
 	// PluginSurfaceTokens seal short-lived launch claims. Nil disables surface
 	// launches; wired from a domain-separated MULTICA_PLUGIN_SECRET_KEY at boot.
 	PluginSurfaceTokens *secretbox.Box

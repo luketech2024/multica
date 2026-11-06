@@ -677,6 +677,14 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to delete project views")
 		return
 	}
+	if err := qtx.DeleteProjectDeployTargets(r.Context(), db.DeleteProjectDeployTargetsParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete project deployment targets")
+		return
+	}
+	if _, err := tx.Exec(r.Context(), `DELETE FROM credentials WHERE workspace_id=$1 AND project_id=$2`, project.WorkspaceID, project.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete project credentials")
+		return
+	}
 	if err := qtx.DeleteProject(r.Context(), db.DeleteProjectParams{
 		ID:          project.ID,
 		WorkspaceID: project.WorkspaceID,

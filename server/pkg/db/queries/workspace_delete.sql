@@ -691,6 +691,12 @@ DELETE FROM agent WHERE agent.workspace_id = $1;
 
 -- name: DeleteWorkspaceRuntimesAndProjects :exec
 WITH
+deleted_deploy_targets AS (
+    DELETE FROM deploy_targets WHERE workspace_id=$1
+),
+deleted_credentials AS (
+    DELETE FROM credentials WHERE workspace_id=$1
+),
 deleted_runtimes AS (
     DELETE FROM agent_runtime WHERE agent_runtime.workspace_id = $1
 ),
