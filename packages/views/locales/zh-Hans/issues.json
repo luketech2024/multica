@@ -1824,5 +1824,15 @@
       "empty_title": "还没有保存的视图",
       "empty_description": "在任务列表里调好筛选和显示方式，然后另存为视图。"
     }
+  },
+  "ticket": {
+    "system": "系统编号",
+    "external": "外部工单号（选填）",
+    "assigned_on_create": "创建时自动分配",
+    "edit": "修改外部工单号",
+    "add": "外部工单号",
+    "updated": "修改了外部工单号",
+    "duplicate": "已有任务使用该工单号",
+    "save_failed": "外部工单号保存失败。"
   }
 }

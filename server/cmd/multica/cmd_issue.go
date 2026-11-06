@@ -542,7 +542,7 @@ var validIssueSortColumns = []string{
 // it is split into assignee_type/assignee_id — so that name is rejected
 // rather than silently ignored.
 var validIssueFields = []string{
-	"id", "workspace_id", "number", "identifier", "title", "description",
+	"id", "workspace_id", "number", "identifier", "external_ticket_no", "title", "description",
 	"status", "status_category", "status_name", "priority", "assignee_type",
 	"assignee_id", "creator_type", "creator_id", "parent_issue_id",
 	"duplicate_of", "project_id", "position", "stage", "start_date", "due_date", "created_at",

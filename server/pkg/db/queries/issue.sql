@@ -8,7 +8,7 @@
 SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
-       i.revision, i.duplicate_of_issue_id, i.acceptance_criteria
+       i.revision, i.duplicate_of_issue_id, i.acceptance_criteria, i.external_ticket_no
 FROM issue i
 WHERE i.workspace_id = $1
   AND (sqlc.narg('status')::text IS NULL OR i.status = sqlc.narg('status'))
@@ -182,10 +182,10 @@ INSERT INTO issue (
     workspace_id, title, description, status, priority,
     assignee_type, assignee_id, creator_type, creator_id,
     parent_issue_id, position, start_date, due_date, number, project_id,
-    stage, properties, last_activity_at, id, acceptance_criteria
+    stage, properties, last_activity_at, id, acceptance_criteria, external_ticket_no
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-    sqlc.narg('stage'), COALESCE(sqlc.narg('properties')::jsonb, '{}'::jsonb), now(), COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()), COALESCE(sqlc.narg('acceptance_criteria')::jsonb, '[]'::jsonb)
+    sqlc.narg('stage'), COALESCE(sqlc.narg('properties')::jsonb, '{}'::jsonb), now(), COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()), COALESCE(sqlc.narg('acceptance_criteria')::jsonb, '[]'::jsonb), COALESCE(sqlc.narg('external_ticket_no')::text, '')
 ) RETURNING *;
 
 -- name: GetIssueByNumber :one
@@ -206,6 +206,7 @@ WITH wakeup_source AS MATERIALIZED (SELECT set_config('multica.source_task_id', 
         COALESCE(sqlc.narg('title')::text, i.title) AS next_title,
         COALESCE(sqlc.narg('description')::text, i.description) AS next_description,
         COALESCE(sqlc.narg('acceptance_criteria')::jsonb, i.acceptance_criteria) AS next_acceptance_criteria,
+        COALESCE(sqlc.narg('external_ticket_no')::text, i.external_ticket_no) AS next_external_ticket_no,
         COALESCE(sqlc.narg('status')::text, i.status) AS next_status,
         COALESCE(sqlc.narg('priority')::text, i.priority) AS next_priority,
         sqlc.narg('assignee_type')::text AS next_assignee_type,
@@ -263,21 +264,21 @@ WITH wakeup_source AS MATERIALIZED (SELECT set_config('multica.source_task_id', 
     SELECT
         candidate.*,
         ROW(
-            title, description, acceptance_criteria, status, priority, assignee_type, assignee_id,
+            title, description, acceptance_criteria, external_ticket_no, status, priority, assignee_type, assignee_id,
             position, start_date, due_date, parent_issue_id, project_id, stage,
             duplicate_of_issue_id
         ) IS DISTINCT FROM ROW(
-            next_title, next_description, next_acceptance_criteria, next_status, next_priority,
+            next_title, next_description, next_acceptance_criteria, next_external_ticket_no, next_status, next_priority,
             next_assignee_type, next_assignee_id, next_position, next_start_date,
             next_due_date, next_parent_issue_id, next_project_id, next_stage,
             next_duplicate_of_issue_id
         ) AS did_change,
         ROW(
-            title, description, acceptance_criteria, status, priority, assignee_type, assignee_id,
+            title, description, acceptance_criteria, external_ticket_no, status, priority, assignee_type, assignee_id,
             start_date, due_date, parent_issue_id, project_id, stage,
             duplicate_of_issue_id
         ) IS DISTINCT FROM ROW(
-            next_title, next_description, next_acceptance_criteria, next_status, next_priority,
+            next_title, next_description, next_acceptance_criteria, next_external_ticket_no, next_status, next_priority,
             next_assignee_type, next_assignee_id, next_start_date, next_due_date,
             next_parent_issue_id, next_project_id, next_stage,
             next_duplicate_of_issue_id
@@ -288,6 +289,7 @@ UPDATE issue AS i SET
     title = changed.next_title,
     description = changed.next_description,
     acceptance_criteria = changed.next_acceptance_criteria,
+    external_ticket_no = changed.next_external_ticket_no,
     status = changed.next_status,
     priority = changed.next_priority,
     assignee_type = changed.next_assignee_type,
@@ -412,10 +414,10 @@ INSERT INTO issue (
     workspace_id, title, description, status, priority,
     assignee_type, assignee_id, creator_type, creator_id,
     parent_issue_id, position, start_date, due_date, number, project_id,
-    origin_type, origin_id, stage, properties, last_activity_at, id, acceptance_criteria
+    origin_type, origin_id, stage, properties, last_activity_at, id, acceptance_criteria, external_ticket_no
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-    sqlc.narg('origin_type'), sqlc.narg('origin_id'), sqlc.narg('stage'), COALESCE(sqlc.narg('properties')::jsonb, '{}'::jsonb), now(), COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()), COALESCE(sqlc.narg('acceptance_criteria')::jsonb, '[]'::jsonb)
+    sqlc.narg('origin_type'), sqlc.narg('origin_id'), sqlc.narg('stage'), COALESCE(sqlc.narg('properties')::jsonb, '{}'::jsonb), now(), COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()), COALESCE(sqlc.narg('acceptance_criteria')::jsonb, '[]'::jsonb), COALESCE(sqlc.narg('external_ticket_no')::text, '')
 ) RETURNING *;
 
 -- name: LockIssueDuplicateKey :exec
@@ -515,7 +517,7 @@ DELETE FROM issue WHERE issue.id IN (SELECT target.id FROM target);
 SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
-       i.revision, i.duplicate_of_issue_id, i.acceptance_criteria
+       i.revision, i.duplicate_of_issue_id, i.acceptance_criteria, i.external_ticket_no
 FROM issue i
 WHERE i.workspace_id = $1
   -- Negate only known terminal keys so an unknown legacy key remains visible.

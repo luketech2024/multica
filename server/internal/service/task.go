@@ -7992,14 +7992,15 @@ func resolveDuplicateOf(ctx context.Context, q IssueMapQuerier, issue db.Issue, 
 }
 
 func IssueToMap(issue db.Issue, issuePrefix string) map[string]any {
-	return map[string]any{
-		"id":           util.UUIDToString(issue.ID),
-		"workspace_id": util.UUIDToString(issue.WorkspaceID),
-		"number":       issue.Number,
-		"identifier":   IssueIdentifier(issuePrefix, issue.Number),
-		"title":        issue.Title,
-		"description":  util.TextToPtr(issue.Description),
-		"status":       issue.Status,
+	result := map[string]any{
+		"external_ticket_no": issue.ExternalTicketNo,
+		"id":                 util.UUIDToString(issue.ID),
+		"workspace_id":       util.UUIDToString(issue.WorkspaceID),
+		"number":             issue.Number,
+		"identifier":         IssueIdentifier(issuePrefix, issue.Number),
+		"title":              issue.Title,
+		"description":        util.TextToPtr(issue.Description),
+		"status":             issue.Status,
 		// Mirrors handler.IssueResponse.StatusCategory. Built-ins map to a
 		// public lifecycle category without a catalog lookup; custom statuses
 		// are filled by IssueToMapResolved. (MUL-6243)
@@ -8030,6 +8031,10 @@ func IssueToMap(issue db.Issue, issuePrefix string) map[string]any {
 		"metadata":         util.JSONObjectOrEmpty(issue.Metadata),
 		"properties":       util.JSONObjectOrEmpty(issue.Properties),
 	}
+	if len(issue.AcceptanceCriteria) > 0 {
+		result["acceptance_criteria"] = json.RawMessage(issue.AcceptanceCriteria)
+	}
+	return result
 }
 
 // IssueIdentifier renders the human-facing issue key ("MUL-42"). Callers that

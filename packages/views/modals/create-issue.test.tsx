@@ -963,6 +963,7 @@ describe("CreateIssueModal", () => {
       title: "",
       description: "",
       requirementsText: "",
+      externalTicketNo: "",
       status: "in_progress",
       assigneeType: "member",
       assigneeId: "alice",

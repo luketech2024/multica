@@ -218,6 +218,7 @@ export function useUpdateIssue() {
         title_base: _titleBase,
         expected_revision: _expectedRevision,
         acceptance_criteria: _acceptanceCriteria,
+        external_ticket_no: _externalTicketNo,
         confirm_requirements: _confirmRequirements,
         ...patch
       } = data;

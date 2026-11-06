@@ -5,6 +5,7 @@ import type { Project, ProjectStatus } from "./project";
 
 // Issue API
 export interface CreateIssueRequest {
+  external_ticket_no?: string;
   acceptance_criteria?: Issue["acceptance_criteria"];
   title: string;
   description?: string;
@@ -52,6 +53,7 @@ export type CreateCommentSubIssueRequest =
   | CreateCommentSubIssueAgentRequest;
 
 export interface UpdateIssueRequest {
+  external_ticket_no?: string;
   acceptance_criteria?: Issue["acceptance_criteria"];
   confirm_requirements?: boolean;
   /** Legacy aggregate compare-and-swap token. New text editors use field

@@ -63,6 +63,7 @@ func NewIssueService(q *db.Queries, tx TxStarter, bus *events.Bus, ac analytics.
 // to IssueService.Create. The handler owns the parsing step that turns its
 // request payload into this struct; the service stays transport-agnostic.
 type IssueCreateParams struct {
+	ExternalTicketNo   string
 	AcceptanceCriteria []byte
 	WorkspaceID        pgtype.UUID
 	Title              string
@@ -187,6 +188,8 @@ func (e *IssuePropertyValidationError) Error() string { return e.Message }
 // transaction. Callers translate this into a 409 — the request was valid when
 // it arrived, so retrying against the refreshed catalog is the remedy.
 var ErrIssueStatusUnavailable = errors.New("issue status is no longer available")
+var ErrIssueExternalTicket = errors.New("invalid external ticket number")
+
 var ErrIssueRequirements = errors.New("invalid issue requirements")
 
 var ErrSourceContextAlreadyAttached = errors.New("source context is already attached")
@@ -236,6 +239,12 @@ type IssueCreateResult struct {
 // Caller-owned validation is limited to transport-shaped checks: title
 // required, RFC3339 date format, assignee pair sanity.
 func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts IssueCreateOpts) (IssueCreateResult, error) {
+	if p.ParentIssueID.Valid && p.ExternalTicketNo != "" {
+		return IssueCreateResult{}, fmt.Errorf("%w: only parent tasks can carry an external ticket number", ErrIssueExternalTicket)
+	}
+	if err := workbench.ValidateExternalTicket(p.ExternalTicketNo); err != nil {
+		return IssueCreateResult{}, fmt.Errorf("%w: %s", ErrIssueExternalTicket, err)
+	}
 	if len(p.AcceptanceCriteria) > 0 {
 		if p.Status != "todo" && p.Status != "backlog" {
 			return IssueCreateResult{}, fmt.Errorf("%w: new requirements must start in todo or backlog", ErrIssueRequirements)
@@ -390,6 +399,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 	var assignedTask db.AgentTaskQueue
 	if p.OriginType.Valid {
 		issue, err = qtx.CreateIssueWithOrigin(ctx, db.CreateIssueWithOriginParams{
+			ExternalTicketNo:   pgtype.Text{String: p.ExternalTicketNo, Valid: true},
 			AcceptanceCriteria: p.AcceptanceCriteria,
 			ID:                 dbid.NewV7(),
 			WorkspaceID:        p.WorkspaceID,
@@ -414,6 +424,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 		})
 	} else {
 		issue, err = qtx.CreateIssue(ctx, db.CreateIssueParams{
+			ExternalTicketNo:   pgtype.Text{String: p.ExternalTicketNo, Valid: true},
 			AcceptanceCriteria: p.AcceptanceCriteria,
 			ID:                 dbid.NewV7(),
 			WorkspaceID:        p.WorkspaceID,

@@ -132,6 +132,7 @@ function ListRowContent({
 
           <span className="flex min-w-0 flex-1 items-center gap-1.5">
             <span className="truncate">{issue.title}</span>
+            {issue.external_ticket_no && <span className="shrink-0 text-caption text-muted-foreground">#{issue.external_ticket_no}</span>}
             {/* Keep custom names visible when this row appears outside a status section. */}
             <CustomStatusChip status={issue.status} className="shrink-0" />
             <IssueDuplicateOfMarker issue={issue} insideLink />

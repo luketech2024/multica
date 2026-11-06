@@ -40,6 +40,7 @@ import (
 
 // IssueResponse is the JSON response for an issue.
 type IssueResponse struct {
+	ExternalTicketNo   string          `json:"external_ticket_no"`
 	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
 	ID                 string          `json:"id"`
 	WorkspaceID        string          `json:"workspace_id"`
@@ -485,6 +486,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		statusCategory = i.Status
 	}
 	return IssueResponse{
+		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
@@ -524,6 +526,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
+		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
@@ -595,6 +598,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 	}
 	identifier := issuePrefix + "-" + strconv.Itoa(int(i.Number))
 	return IssueResponse{
+		ExternalTicketNo:   i.ExternalTicketNo,
 		AcceptanceCriteria: json.RawMessage(i.AcceptanceCriteria),
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
@@ -1103,7 +1107,7 @@ func buildSearchQuery(phrase string, terms []string, queryNum int, hasNum bool, 
 	%s
 	SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
-		i.parent_issue_id, i.acceptance_criteria, i.context_refs, i.position,
+		i.parent_issue_id, i.acceptance_criteria, i.external_ticket_no, i.context_refs, i.position,
 		i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id,
 		i.revision, i.duplicate_of_issue_id,
 		pc.match_source,
@@ -1194,6 +1198,7 @@ func (h *Handler) SearchIssues(w http.ResponseWriter, r *http.Request) {
 				&sr.issue.CreatorID,
 				&sr.issue.ParentIssueID,
 				&sr.issue.AcceptanceCriteria,
+				&sr.issue.ExternalTicketNo,
 				&sr.issue.ContextRefs,
 				&sr.issue.Position,
 				&sr.issue.StartDate,
@@ -1767,7 +1772,7 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 	query := fmt.Sprintf(`SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
-	   i.revision, i.duplicate_of_issue_id, i.acceptance_criteria
+	   i.revision, i.duplicate_of_issue_id, i.acceptance_criteria, i.external_ticket_no
 FROM issue i
 WHERE %s
 ORDER BY %s
@@ -1810,6 +1815,7 @@ LIMIT %s OFFSET %s`, whereSql, orderBy, limitRef, offsetRef)
 			&row.Revision,
 			&row.DuplicateOfIssueID,
 			&row.AcceptanceCriteria,
+			&row.ExternalTicketNo,
 		); err != nil {
 			slog.Warn("ListIssues scan failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "failed to list issues")
@@ -2368,7 +2374,7 @@ WITH ranked AS (
 		i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
 		i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at,
-		i.number, i.project_id, i.metadata, i.stage, i.properties, i.revision, i.duplicate_of_issue_id, i.acceptance_criteria,
+		i.number, i.project_id, i.metadata, i.stage, i.properties, i.revision, i.duplicate_of_issue_id, i.acceptance_criteria, i.external_ticket_no,
 		COUNT(*) OVER (PARTITION BY i.assignee_type, i.assignee_id) AS group_total,
 		ROW_NUMBER() OVER (
 			PARTITION BY i.assignee_type, i.assignee_id
@@ -2381,7 +2387,7 @@ SELECT
 	id, workspace_id, title, description, status, priority,
 	assignee_type, assignee_id, creator_type, creator_id,
 	parent_issue_id, position, start_date, due_date, created_at, updated_at, last_activity_at,
-	number, project_id, metadata, stage, properties, revision, duplicate_of_issue_id, acceptance_criteria, group_total
+	number, project_id, metadata, stage, properties, revision, duplicate_of_issue_id, acceptance_criteria, external_ticket_no, group_total
 FROM ranked
 WHERE rn > %s AND rn <= %s + %s
 ORDER BY
@@ -2432,6 +2438,7 @@ ORDER BY
 			&row.Revision,
 			&row.DuplicateOfIssueID,
 			&row.AcceptanceCriteria,
+			&row.ExternalTicketNo,
 			&row.GroupTotal,
 		); err != nil {
 			slog.Warn("ListGroupedIssues scan failed", "error", err)
@@ -3074,6 +3081,7 @@ func readRuntimeCLIVersion(metadata []byte) string {
 }
 
 type CreateIssueRequest struct {
+	ExternalTicketNo   string          `json:"external_ticket_no"`
 	AcceptanceCriteria json.RawMessage `json:"acceptance_criteria,omitempty"`
 	Title              string          `json:"title"`
 	Description        *string         `json:"description"`
@@ -3502,6 +3510,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.IssueService.Create(r.Context(), service.IssueCreateParams{
+		ExternalTicketNo:   req.ExternalTicketNo,
 		AcceptanceCriteria: req.AcceptanceCriteria,
 		WorkspaceID:        wsUUID,
 		Title:              req.Title,
@@ -3569,7 +3578,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "one or more labels not found in this workspace")
 		return
 	}
-	if errors.Is(err, service.ErrIssueRequirements) {
+	if errors.Is(err, service.ErrIssueRequirements) || errors.Is(err, service.ErrIssueExternalTicket) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -3605,6 +3614,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateIssueRequest struct {
+	ExternalTicketNo    *string         `json:"external_ticket_no,omitempty"`
 	AcceptanceCriteria  json.RawMessage `json:"acceptance_criteria,omitempty"`
 	ConfirmRequirements bool            `json:"confirm_requirements,omitempty"`
 	ExpectedRevision    *int64          `json:"expected_revision,omitempty"`
@@ -3820,6 +3830,13 @@ func (h *Handler) updateIssueAtomically(ctx context.Context, workspaceID pgtype.
 		return db.Issue{}, current, false, fmt.Errorf("update locked issue: %w", err)
 	}
 	var requirementsActivity db.ActivityLog
+	var externalTicketActivity db.ActivityLog
+	if current.ExternalTicketNo != issue.ExternalTicketNo {
+		externalTicketActivity, err = recordExternalTicketActivity(ctx, qtx, current, issue)
+		if err != nil {
+			return db.Issue{}, current, false, fmt.Errorf("record external ticket audit: %w", err)
+		}
+	}
 	if len(params.AcceptanceCriteria) > 0 && !bytes.Equal(current.AcceptanceCriteria, issue.AcceptanceCriteria) {
 		requirementsActivity, err = recordRequirementsActivity(ctx, qtx, current, issue)
 		if err != nil {
@@ -3854,6 +3871,7 @@ func (h *Handler) updateIssueAtomically(ctx context.Context, workspaceID pgtype.
 	}
 	h.broadcastCancelledWakeups(ctx, workspaceID, cancelledWakeups)
 	h.publishRequirementsActivity(requirementsActivity)
+	h.publishRequirementsActivity(externalTicketActivity)
 	return issue, current, attachmentsChanged, nil
 }
 
@@ -3923,6 +3941,29 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// COALESCE fields — only set when explicitly provided
+	externalTicket := prevIssue.ExternalTicketNo
+	if req.ExternalTicketNo != nil {
+		externalTicket = *req.ExternalTicketNo
+	}
+	isSubtask := prevIssue.ParentIssueID.Valid
+	if _, changingParent := rawFields["parent_issue_id"]; changingParent {
+		isSubtask = req.ParentIssueID != nil && *req.ParentIssueID != ""
+	}
+	if isSubtask && externalTicket != "" {
+		writeError(w, http.StatusBadRequest, "clear the external ticket number before assigning a parent task")
+		return
+	}
+	if req.ExternalTicketNo != nil {
+		if req.ExpectedRevision == nil {
+			writeError(w, http.StatusBadRequest, "expected_revision is required for external ticket changes")
+			return
+		}
+		if err := workbench.ValidateExternalTicket(*req.ExternalTicketNo); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		params.ExternalTicketNo = pgtype.Text{String: *req.ExternalTicketNo, Valid: true}
+	}
 	if req.Status != nil && *req.Status != prevIssue.Status && req.ExpectedRevision == nil {
 		var criteriaVersion struct {
 			V int `json:"v"`
@@ -4144,7 +4185,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	writeCtx := withWakeupHandedTo(r.Context(), h.handedToAgent(r.Context(), prevIssue, params, handoff != nil))
 	var issue db.Issue
 	attachmentsChanged := false
-	if req.Description != nil || req.TitleBase != nil || req.DescriptionBase != nil || len(attachmentIDs) > 0 || len(params.AcceptanceCriteria) > 0 {
+	if req.Description != nil || req.TitleBase != nil || req.DescriptionBase != nil || len(attachmentIDs) > 0 || len(params.AcceptanceCriteria) > 0 || params.ExternalTicketNo.Valid {
 		var lockedPrev db.Issue
 		issue, lockedPrev, attachmentsChanged, err = h.updateIssueAtomically(
 			writeCtx, prevIssue.WorkspaceID, params, rawFields, req.TitleBase, req.DescriptionBase, attachmentIDs, statusKeyForGuard, handoff != nil,

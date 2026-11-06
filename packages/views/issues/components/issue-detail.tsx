@@ -7,6 +7,7 @@ import {
 } from "@multica/core/issues";
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
+import { ExternalTicketEditor } from "./external-ticket-editor";
 import { useStatusLabel } from "../utils/status-label";
 import { priorityLabel } from "../utils/priority-label";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
@@ -398,6 +399,8 @@ function formatActivity(
       return t(($) => $.activity.description_updated);
     case "requirements_updated":
       return t(($) => $.requirements.activity_updated);
+    case "external_ticket_updated":
+      return t(($) => $.ticket.updated);
     case "duplicate_marked":
       return t(($) => $.activity.duplicate_marked, {
         identifier: details.original_identifier || "?",
@@ -3266,6 +3269,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
                 it never overlaps the title (which truncates to make room).
                 It self-hides when no agent is active. */}
             <IssueAgentHeaderChip issueId={id} onJumpToRun={jumpToRun} />
+            {!issue.parent_issue_id && <ExternalTicketEditor issue={issue} />}
             <IssueWakeupHeaderChip issueId={id} onOpen={openWakeups} />
             {onDone && !issueBehavesAsAny(issue, ["done", "closed"]) && (
               <Tooltip>

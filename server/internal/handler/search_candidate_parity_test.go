@@ -304,6 +304,7 @@ func runSearchForParity(t *testing.T, label, query string, args []any) []searchP
 			&sr.issue.CreatorID,
 			&sr.issue.ParentIssueID,
 			&sr.issue.AcceptanceCriteria,
+			&sr.issue.ExternalTicketNo,
 			&sr.issue.ContextRefs,
 			&sr.issue.Position,
 			&sr.issue.StartDate,
@@ -575,7 +576,7 @@ func buildLegacySearchQueryForParity(phrase string, terms []string, queryNum int
 
 	query := fmt.Sprintf(`SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
-		i.parent_issue_id, i.acceptance_criteria, i.context_refs, i.position,
+		i.parent_issue_id, i.acceptance_criteria, i.external_ticket_no, i.context_refs, i.position,
 		i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id,
 		i.revision, i.duplicate_of_issue_id,
 		%s AS match_source,

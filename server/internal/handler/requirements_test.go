@@ -46,7 +46,7 @@ func TestRequirementsListProjectionsKeepConfirmation(t *testing.T) {
 	}
 	projectID := dbfx.Project(t, "Requirements projection")
 	raw := []byte(`{"v":1,"version":1,"items":[{"id":"A-01","text":"Report"}],"bounds":["No billing"],"gate":{"spec":{"passed_by":"member","passed_at":"2026-11-06T00:00:00Z"}}}`)
-	id := dbfx.Issue(t, "Confirmed list task", testutil.Cols{"project_id": projectID, "acceptance_criteria": raw})
+	id := dbfx.Issue(t, "Confirmed list task", testutil.Cols{"project_id": projectID, "acceptance_criteria": raw, "external_ticket_no": "LIST-27"})
 	assertCriteria := func(issues []IssueResponse) {
 		t.Helper()
 		for _, issue := range issues {
@@ -54,6 +54,9 @@ func TestRequirementsListProjectionsKeepConfirmation(t *testing.T) {
 				continue
 			}
 			criteria, err := workbench.ParseRequirements(issue.AcceptanceCriteria)
+			if issue.ExternalTicketNo != "LIST-27" {
+				t.Fatal("list lost external ticket number")
+			}
 			if err != nil || criteria.Gate.Spec == nil || len(criteria.Bounds) != 1 {
 				t.Fatalf("list lost criteria: %s", issue.AcceptanceCriteria)
 			}

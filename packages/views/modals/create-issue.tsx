@@ -1,5 +1,7 @@
 "use client";
 import { parseRequirementsInput } from "@multica/core/issues/requirements-input";
+import { Input } from "@multica/ui/components/ui/input";
+import { ExternalTicketInput } from "../issues/components/external-ticket-input";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 
 import { issueStatusCategory } from "@multica/core/issues";
@@ -476,6 +478,7 @@ export function ManualCreatePanel({
       title: "",
       description: "",
       requirementsText: "",
+      externalTicketNo: "",
       status,
       assigneeType,
       assigneeId,
@@ -576,6 +579,7 @@ export function ManualCreatePanel({
         issue = await createIssueMutation.mutateAsync({
           title: title.trim(),
           acceptance_criteria: acceptanceCriteria,
+          external_ticket_no: parentIssueId ? undefined : draft.manual.externalTicketNo || undefined,
           description,
           status,
           priority,
@@ -1010,7 +1014,7 @@ export function ManualCreatePanel({
             </div>
 
             {/* Title */}
-            <div className="px-5 pb-2 shrink-0">
+            <div className="px-5 pb-2 shrink-0 grid grid-cols-[minmax(0,1.618fr)_minmax(0,1fr)] gap-4">
               <TitleEditor
                 key={formResetKey}
                 ref={titleEditorRef}
@@ -1022,6 +1026,10 @@ export function ManualCreatePanel({
                 // Chord only — plain Enter still just ends title editing (#5532).
                 onSubmitShortcut={handleSubmit}
               />
+              <div className="space-y-2">
+                <label className="block text-caption">{tIssues(($) => $.ticket.system)}<Input readOnly value={tIssues(($) => $.ticket.assigned_on_create)} /></label>
+                {!parentIssueId && !anchorCommentId && <ExternalTicketInput value={draft.manual.externalTicketNo ?? ""} onChange={(externalTicketNo) => setManual({ externalTicketNo })} />}
+              </div>
             </div>
 
             {/* Description — takes remaining space */}

@@ -212,6 +212,7 @@ export const BoardCardContent = memo(function BoardCardContent({
       {/* Row 2: Title */}
       <p className="mt-1 text-body font-medium leading-snug cjk:leading-normal line-clamp-2">
         {issue.title}
+        {issue.external_ticket_no && <span className="ml-2 text-caption text-muted-foreground">#{issue.external_ticket_no}</span>}
       </p>
 
       {showDescription && (() => {

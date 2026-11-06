@@ -203,6 +203,7 @@ export interface AcceptanceCriteria {
 }
 
 export interface Issue {
+  external_ticket_no?: string;
   acceptance_criteria?: AcceptanceCriteria;
   id: string;
   workspace_id: string;

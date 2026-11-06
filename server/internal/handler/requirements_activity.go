@@ -44,3 +44,19 @@ func (h *Handler) publishRequirementsActivity(activity db.ActivityLog) {
 		},
 	})
 }
+
+func recordExternalTicketActivity(ctx context.Context, q *db.Queries, before, after db.Issue) (db.ActivityLog, error) {
+	actor, ok := ctx.Value(wakeupActorKey{}).(wakeupActor)
+	if !ok {
+		return db.ActivityLog{}, errors.New("external ticket audit requires an authenticated actor")
+	}
+	details, err := json.Marshal(map[string]any{"before": before.ExternalTicketNo, "after": after.ExternalTicketNo, "revision": after.Revision})
+	if err != nil {
+		return db.ActivityLog{}, err
+	}
+	return q.CreateActivity(ctx, db.CreateActivityParams{
+		ID: dbid.NewV7(), WorkspaceID: after.WorkspaceID, IssueID: after.ID,
+		ActorType: strToText(actor.kind), ActorID: optionalActorUUID(actor.id),
+		Action: "external_ticket_updated", Details: details,
+	})
+}

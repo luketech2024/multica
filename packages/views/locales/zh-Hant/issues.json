@@ -1824,5 +1824,15 @@
       "empty_title": "還沒有儲存的檢視",
       "empty_description": "在任務列表裡調好篩選和顯示方式，然後另存為檢視。"
     }
+  },
+  "ticket": {
+    "system": "系統編號",
+    "external": "外部工單號（選填）",
+    "assigned_on_create": "建立時自動分配",
+    "edit": "修改外部工單號",
+    "add": "外部工單號",
+    "updated": "修改了外部工單號",
+    "duplicate": "已有任務使用此工單號",
+    "save_failed": "外部工單號儲存失敗。"
   }
 }

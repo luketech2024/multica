@@ -1893,5 +1893,15 @@
       "empty_title": "Aucune vue enregistrée pour l'instant",
       "empty_description": "Réglez les filtres et l'affichage d'une liste de tâches, puis enregistrez-les comme vue."
     }
+  },
+  "ticket": {
+    "system": "Numéro système",
+    "external": "Numéro de ticket externe (facultatif)",
+    "assigned_on_create": "Attribué à la création",
+    "edit": "Modifier le numéro du ticket externe",
+    "add": "Ticket externe",
+    "updated": "Numéro de ticket externe modifié",
+    "duplicate": "Une autre tâche utilise ce numéro de ticket",
+    "save_failed": "Impossible d’enregistrer le numéro du ticket externe."
   }
 }

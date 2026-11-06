@@ -1473,7 +1473,10 @@ export const AcceptanceCriteriaSchema = z.object({
 const EmptyAcceptanceCriteriaSchema = z.union([z.null(), z.array(z.never()).length(0)])
   .transform(() => AcceptanceCriteriaSchema.parse({ v: 1, items: [], bounds: [] }));
 
+export const ExternalTicketCountSchema = z.object({ count: z.number().int().nonnegative() });
+
 export const IssueSchema = z.object({
+  external_ticket_no: z.string().max(32).regex(/^[A-Za-z0-9-]*$/).optional().catch(undefined),
   // Invalid or unsupported criteria stay unavailable for editing.
   acceptance_criteria: z.union([AcceptanceCriteriaSchema, EmptyAcceptanceCriteriaSchema]).optional().catch(undefined),
   id: z.string(),

@@ -1893,5 +1893,15 @@
       "empty_title": "No saved views yet",
       "empty_description": "Set up filters and display options in an issue list, then save them as a view."
     }
+  },
+  "ticket": {
+    "system": "System number",
+    "external": "External ticket number (optional)",
+    "assigned_on_create": "Assigned on creation",
+    "edit": "Edit external ticket number",
+    "add": "External ticket",
+    "updated": "External ticket number updated",
+    "duplicate": "Another issue uses this ticket number",
+    "save_failed": "Could not save the external ticket number."
   }
 }

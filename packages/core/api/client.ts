@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
@@ -1186,6 +1187,13 @@ export class ApiClient {
     return parseWithFallback(raw, ListIssuesResponseSchema, EMPTY_LIST_ISSUES_RESPONSE, {
       endpoint: "GET /api/issues",
     });
+  }
+
+  async countExternalTicketDuplicates(value: string, excludeId?: string) {
+    const search = new URLSearchParams({ value });
+    if (excludeId) search.set("exclude_id", excludeId);
+    const endpoint = `/api/issues/external-ticket-duplicates?${search}`;
+    return parseWithFallback<{ count: number | null }>(await this.fetch(endpoint), ExternalTicketCountSchema, { count: null }, { endpoint });
   }
 
   async listGroupedIssues(params: ListGroupedIssuesParams): Promise<GroupedIssuesResponse> {
