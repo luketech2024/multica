@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DragEndEvent } from "@dnd-kit/core";
 import type { IssueViewPreference } from "@multica/core/api/schemas";
 import { issueViewPreferenceOptions } from "@multica/core/issue-views/preferences";
+import { issueKeys } from "@multica/core/issues/queries";
 import { buildIssueStatusCatalog } from "@multica/core/issue-statuses/queries";
 import { SIDEBAR_PROJECTS_SCOPE } from "@multica/core/issues/sidebar-project-prefs";
 import {
@@ -14,7 +15,7 @@ import {
 } from "@multica/core/issues/stores/sidebar-tree-store";
 import type { Project } from "@multica/core/types";
 import { renderWithI18n } from "../../test/i18n";
-import { ProjectsSection } from "./work-tree";
+import { ProjectsSection, useIssueIdInTree } from "./work-tree";
 
 const apiMock = vi.hoisted(() => ({ putIssueViewPreference: vi.fn() }));
 vi.mock("@multica/core/api", async (importOriginal) => ({
@@ -79,6 +80,39 @@ const savedPrefs = (prefs: Record<string, unknown>): IssueViewPreference => ({
   scope_id: "u1",
   updated_at: "2026-10-31T00:00:00Z",
   prefs: { hidden: [], order: [], ...prefs },
+});
+
+it("defers query cache notifications until a rendering child has finished", async () => {
+  const qc = new QueryClient();
+  const key = [...issueKeys.sidebarAll("workspace"), "visible"];
+  qc.setQueryData(key, { issues: [] });
+  const observer = new QueryObserver(qc, { queryKey: key, enabled: false });
+  const unsubscribe = observer.subscribe(() => {});
+  const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+  const data = { issues: [{ id: "selected", identifier: "WB-1" }] };
+  function CacheWriter() {
+    qc.setQueryData(key, data);
+    return null;
+  }
+  function Reader() {
+    const selected = useIssueIdInTree("workspace", "WB-1");
+    const [show, setShow] = useState(false);
+    return <>
+      <button onClick={() => setShow(true)}>Load row</button>
+      <output>{selected ?? "empty"}</output>
+      {show && <CacheWriter />}
+    </>;
+  }
+  try {
+    renderWithI18n(<QueryClientProvider client={qc}><Reader /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Load row" }));
+    await waitFor(() => expect(screen.getByText("selected")).toBeVisible());
+    expect(errors.mock.calls.filter(([message]) => String(message).includes("Cannot update a component"))).toEqual([]);
+  } finally {
+    unsubscribe();
+    errors.mockRestore();
+    qc.clear();
+  }
 });
 
 function renderSection() {

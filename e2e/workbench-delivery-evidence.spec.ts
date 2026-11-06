@@ -32,7 +32,13 @@ test.describe("Workbench delivery evidence", () => {
     await api.updateIssue(childId, { status: "done" });
     const slug = await loginAsDefault(page);
     const errors: string[] = [];
+    const renderWarnings: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error" && message.text().includes("Cannot update a component")) {
+        renderWarnings.push(message.text());
+      }
+    });
     await page.goto(`/${slug}/issues/${parent.id}`);
     const evidence = page.getByRole("region", { name: "Delivery evidence", exact: true });
     await expect(evidence.getByRole("button", { name: "Record evidence" })).toBeEnabled({ timeout: 20000 });
@@ -96,5 +102,6 @@ test.describe("Workbench delivery evidence", () => {
     await page.reload();
     await expect(evidence.getByText("No delivery evidence recorded.")).toBeVisible();
     expect(errors).toEqual([]);
+    expect(renderWarnings).toEqual([]);
   });
 });

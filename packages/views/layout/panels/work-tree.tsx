@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useSyncExternalStore } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { notifyManager, useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToFirstScrollableAncestor, restrictToVerticalAxis } from "@dnd-kit/modifiers";
@@ -62,7 +62,9 @@ export function useIssueIdInTree(wsId: string, ref: string | null): string | nul
   const cache = qc.getQueryCache();
   const subscribe = useCallback(
     (onChange: () => void) => {
-      const unsubscribeCache = cache.subscribe(onChange);
+      // Queries can register while another component renders. Match Query's
+      // deferred observer notifications before updating this React subscriber.
+      const unsubscribeCache = cache.subscribe(notifyManager.batchCalls(onChange));
       const unsubscribeKept = useSidebarKeptStore.subscribe(onChange);
       return () => {
         unsubscribeCache();
