@@ -1988,5 +1988,24 @@
     "save": "Enregistrer l’adresse",
     "failed": "Échec de l’enregistrement de l’aperçu.",
     "retry_targets": "Recharger la configuration de l’environnement"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "loading": "Chargement de la progression…",
+    "failed": "Impossible de charger la progression des tâches.",
+    "unplanned": "Cette version des exigences nécessite un plan d’exécution confirmé.",
+    "states": {
+      "waiting": "En attente",
+      "running": "En cours",
+      "review": "En attente de validation",
+      "complete": "Terminé",
+      "blocked": "Bloqué",
+      "paused": "En pause",
+      "cancelled": "Annulé",
+      "unavailable": "Preuves de la tâche indisponibles",
+      "stopping": "Arrêt en cours",
+      "unknown": "Résultat inconnu",
+      "resuming": "Reprise en cours"
+    }
   }
 }

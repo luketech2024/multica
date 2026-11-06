@@ -7,6 +7,7 @@ import {
 } from "@multica/core/issues";
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
+import { WorkbenchPipeline } from "./workbench-pipeline";
 import { ExecutionControl } from "./execution-control";
 import { WorkbenchHandoffPanel } from "./workbench-handoff-panel";
 import { TaskPreview } from "./task-preview";
@@ -2918,6 +2919,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   const sidebarContent = (
     <IssueSidebarStack>
+      <WorkbenchPipeline issue={issue} />
       <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />

@@ -13,6 +13,8 @@ import type {
   ProjectTemplate,
 } from "./schemas";
 export * from "./schemas";
+export { workbenchPipeline } from "./pipeline";
+export type { PipelineState } from "./pipeline";
 export { prefillTaskTemplate } from "./template-prefill";
 export type { ExecutionPlanInput, ExecutionPlanTask } from "./execution-plan";
 export { parseWorkbenchHandoff, analyzeExecutionPlan } from "./execution-plan";

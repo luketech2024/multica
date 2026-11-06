@@ -1919,5 +1919,24 @@
     "save": "保存地址",
     "failed": "预览保存失败。",
     "retry_targets": "重试读取环境配置"
+  },
+  "pipeline": {
+    "title": "流水线",
+    "loading": "正在加载任务进度…",
+    "failed": "任务进度加载失败。",
+    "unplanned": "当前需求版本尚需确认拆单计划。",
+    "states": {
+      "waiting": "等待",
+      "running": "进行中",
+      "review": "待验收",
+      "complete": "已完成",
+      "blocked": "阻塞",
+      "paused": "已暂停",
+      "cancelled": "已取消",
+      "unavailable": "任务证据不可用",
+      "stopping": "停止中",
+      "unknown": "结果未知",
+      "resuming": "恢复中"
+    }
   }
 }

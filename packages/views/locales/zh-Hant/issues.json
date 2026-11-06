@@ -1919,5 +1919,24 @@
     "save": "儲存位址",
     "failed": "預覽儲存失敗。",
     "retry_targets": "重試讀取環境設定"
+  },
+  "pipeline": {
+    "title": "流水線",
+    "loading": "正在載入任務進度…",
+    "failed": "任務進度載入失敗。",
+    "unplanned": "目前需求版本尚需確認拆單計畫。",
+    "states": {
+      "waiting": "等待",
+      "running": "進行中",
+      "review": "待驗收",
+      "complete": "已完成",
+      "blocked": "阻塞",
+      "paused": "已暫停",
+      "cancelled": "已取消",
+      "unavailable": "任務證據不可用",
+      "stopping": "停止中",
+      "unknown": "結果未知",
+      "resuming": "恢復中"
+    }
   }
 }

@@ -1919,5 +1919,24 @@
     "save": "URL を保存",
     "failed": "プレビューを保存できませんでした。",
     "retry_targets": "環境設定を再読み込み"
+  },
+  "pipeline": {
+    "title": "パイプライン",
+    "loading": "タスクの進捗を読み込み中…",
+    "failed": "タスクの進捗を読み込めませんでした。",
+    "unplanned": "この要件バージョンには確定した実行計画が必要です。",
+    "states": {
+      "waiting": "待機中",
+      "running": "進行中",
+      "review": "承認待ち",
+      "complete": "完了",
+      "blocked": "ブロック中",
+      "paused": "一時停止中",
+      "cancelled": "キャンセル済み",
+      "unavailable": "タスクの証跡を取得できません",
+      "stopping": "停止処理中",
+      "unknown": "結果不明",
+      "resuming": "再開処理中"
+    }
   }
 }

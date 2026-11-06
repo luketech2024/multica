@@ -1988,5 +1988,24 @@
     "save": "Save address",
     "failed": "Could not save preview.",
     "retry_targets": "Retry environment configuration"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "loading": "Loading task progress…",
+    "failed": "Task progress could not be loaded.",
+    "unplanned": "A confirmed execution plan is needed for this requirement version.",
+    "states": {
+      "waiting": "Waiting",
+      "running": "In progress",
+      "review": "Awaiting acceptance",
+      "complete": "Completed",
+      "blocked": "Blocked",
+      "paused": "Paused",
+      "cancelled": "Cancelled",
+      "unavailable": "Task evidence unavailable",
+      "stopping": "Stopping",
+      "unknown": "Outcome unknown",
+      "resuming": "Resuming"
+    }
   }
 }
