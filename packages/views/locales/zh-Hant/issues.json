@@ -1903,5 +1903,21 @@
     "resume": "恢復執行",
     "failed": "執行操作失敗，請重試。",
     "updated": "更新了執行控制"
+  },
+  "preview": {
+    "title": "預覽",
+    "loading": "正在載入預覽欄位…",
+    "retry": "重試",
+    "not_configured": "管理員可啟用工作區共用的預覽欄位。",
+    "configure": "啟用預覽欄位",
+    "wrong_type": "preview_url 欄位需要使用 URL 類型。",
+    "open": "開啟已登記預覽",
+    "unpublished": "尚未登記預覽位址。",
+    "address": "預覽位址",
+    "use_target": "使用 {{name}} 的網域",
+    "record_hint": "請在預覽已可透過該位址存取後儲存。",
+    "save": "儲存位址",
+    "failed": "預覽儲存失敗。",
+    "retry_targets": "重試讀取環境設定"
   }
 }

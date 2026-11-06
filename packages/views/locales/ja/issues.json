@@ -1903,5 +1903,21 @@
     "resume": "実行を再開",
     "failed": "実行操作に失敗しました。再試行してください。",
     "updated": "実行制御を更新しました"
+  },
+  "preview": {
+    "title": "プレビュー",
+    "loading": "プレビュー項目を読み込み中…",
+    "retry": "再試行",
+    "not_configured": "管理者はワークスペース共通のプレビュー項目を有効にできます。",
+    "configure": "プレビュー項目を有効にする",
+    "wrong_type": "preview_url 項目は URL 型である必要があります。",
+    "open": "登録済みプレビューを開く",
+    "unpublished": "プレビュー URL は未登録です。",
+    "address": "プレビュー URL",
+    "use_target": "{{name}} のドメインを使用",
+    "record_hint": "この URL でプレビューにアクセスできるようになってから保存してください。",
+    "save": "URL を保存",
+    "failed": "プレビューを保存できませんでした。",
+    "retry_targets": "環境設定を再読み込み"
   }
 }

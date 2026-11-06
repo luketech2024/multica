@@ -1972,5 +1972,21 @@
     "resume": "Resume execution",
     "failed": "Execution action failed. Try again.",
     "updated": "Updated execution control"
+  },
+  "preview": {
+    "title": "Preview",
+    "loading": "Loading preview field…",
+    "retry": "Retry",
+    "not_configured": "An administrator can enable the shared preview field.",
+    "configure": "Enable preview field",
+    "wrong_type": "The preview_url field must use the URL type.",
+    "open": "Open recorded preview",
+    "unpublished": "No preview address recorded.",
+    "address": "Preview address",
+    "use_target": "Use {{name}} domain",
+    "record_hint": "Save after the preview is available at this address.",
+    "save": "Save address",
+    "failed": "Could not save preview.",
+    "retry_targets": "Retry environment configuration"
   }
 }

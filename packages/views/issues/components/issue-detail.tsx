@@ -9,6 +9,7 @@ import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
 import { ExecutionControl } from "./execution-control";
 import { WorkbenchHandoffPanel } from "./workbench-handoff-panel";
+import { TaskPreview } from "./task-preview";
 import { ExternalTicketEditor } from "./external-ticket-editor";
 import { useStatusLabel } from "../utils/status-label";
 import { priorityLabel } from "../utils/priority-label";
@@ -2921,6 +2922,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />
         : <RequirementsPanel key={issue.id} issue={issue} />}
+      {issue.project_id && <TaskPreview key={`preview-${issue.id}`} issue={issue} />}
       {/* Properties */}
       <div>
         <IssueSidebarSectionHeader title={t(($) => $.detail.section_properties)} open={propertiesOpen} onOpenChange={setPropertiesOpen}  />

@@ -136,6 +136,11 @@ End completed agent tasks with one paired summary block. Keep the conclusion to
 Report actual verification and remaining limitations. The full transcript remains
 the evidence behind the summary. Include a preview URL only when that preview exists,
 using `/preview/{project}/{issue}/` on the configured preview origin.
+Use the immutable project ID and system issue identifier for those path segments.
+When a preview is available, resolve the workspace URL property named `preview_url`
+and write its value through the existing issue property API. An administrator enables
+that field. Keep the field name as the integration key. Do not record a suggested
+address as an available preview before deployment has succeeded.
 
 ```text
 <!-- wb-summary v1 -->

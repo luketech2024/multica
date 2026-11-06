@@ -1972,5 +1972,21 @@
     "resume": "Reprendre l’exécution",
     "failed": "Échec de l’action. Réessayez.",
     "updated": "Contrôle d’exécution mis à jour"
+  },
+  "preview": {
+    "title": "Aperçu",
+    "loading": "Chargement du champ d’aperçu…",
+    "retry": "Réessayer",
+    "not_configured": "Un administrateur peut activer le champ d’aperçu partagé.",
+    "configure": "Activer le champ d’aperçu",
+    "wrong_type": "Le champ preview_url doit être de type URL.",
+    "open": "Ouvrir l’aperçu enregistré",
+    "unpublished": "Aucune adresse d’aperçu enregistrée.",
+    "address": "Adresse d’aperçu",
+    "use_target": "Utiliser le domaine de {{name}}",
+    "record_hint": "Enregistrez lorsque l’aperçu est accessible à cette adresse.",
+    "save": "Enregistrer l’adresse",
+    "failed": "Échec de l’enregistrement de l’aperçu.",
+    "retry_targets": "Recharger la configuration de l’environnement"
   }
 }
