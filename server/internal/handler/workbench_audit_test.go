@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/csv"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -54,6 +56,88 @@ func TestWorkbenchAuditExportPaginatesAndScopesNinetyDays(t *testing.T) {
 	}
 	dbfx.Exec(t, "UPDATE member SET role='member' WHERE workspace_id=$1 AND user_id=$2", workspace, testUserID)
 	testutil.Call(t, inboxWorkspaceHandler(testHandler.ExportWorkbenchAudit), inboxRequest(http.MethodGet, "/api/workbench/audit.csv", workspace)).Want(http.StatusForbidden)
+}
+
+func TestWorkbenchAuditDownloadOwnershipExpiryAndSnapshot(t *testing.T) {
+	workspace := dbfx.Workspace(t, "Audit downloads", "audit-download-"+uuid.NewString())
+	dbfx.Member(t, workspace, testUserID, "owner")
+	dbfx.Cleanup(t, "DELETE FROM workbench_audit_export WHERE workspace_id=$1", workspace)
+	dbfx.Cleanup(t, "DELETE FROM inbox_item WHERE workspace_id=$1", workspace)
+	dbfx.Insert(t, "activity_log", testutil.Cols{"workspace_id": workspace, "action": "security_accept", "actor_type": "member", "actor_id": testUserID, "details": []byte(`{"reason":"Reviewed low risk"}`)})
+	var result struct {
+		ID        string    `json:"id"`
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.CreateWorkbenchAuditExport), inboxRequest("POST", "/api/workbench/audit-exports?scope=security&days=7", workspace)).Want(201).JSON(&result)
+	if result.ExpiresAt.Before(time.Now().Add(23*time.Hour)) || result.ExpiresAt.After(time.Now().Add(25*time.Hour)) {
+		t.Fatal("export expiry is not 24 hours")
+	}
+	var noticeCount int
+	dbfx.QueryRow(t, "SELECT count(*) FROM inbox_item WHERE workspace_id=$1 AND details->>'export_id'=$2", workspace, result.ID).Scan(&noticeCount)
+	if noticeCount != 1 {
+		t.Fatalf("export notices=%d", noticeCount)
+	}
+	request := testutil.WithURLParams(inboxRequest("GET", "/api/workbench/audit-exports/"+result.ID, workspace), "exportId", result.ID)
+	first := testutil.Call(t, inboxWorkspaceHandler(testHandler.DownloadWorkbenchAuditExport), request).Want(200)
+	if !strings.Contains(first.Body.String(), "security_accept") || !strings.Contains(first.Body.String(), "Reviewed low risk") {
+		t.Fatal("download missed snapshot content")
+	}
+	dbfx.Insert(t, "activity_log", testutil.Cols{"workspace_id": workspace, "action": "security_recheck", "details": []byte(`{"later":true}`)})
+	request = testutil.WithURLParams(inboxRequest("GET", "/api/workbench/audit-exports/"+result.ID, workspace), "exportId", result.ID)
+	second := testutil.Call(t, inboxWorkspaceHandler(testHandler.DownloadWorkbenchAuditExport), request).Want(200)
+	if first.Body.String() != second.Body.String() {
+		t.Fatal("download changed after creation")
+	}
+	other := dbfx.User(t, "Other manager", "audit-manager-"+uuid.NewString()+"@example.test")
+	dbfx.Member(t, workspace, other, "admin")
+	request = testutil.WithURLParams(inboxRequest("GET", "/api/workbench/audit-exports/"+result.ID, workspace), "exportId", result.ID)
+	request.Header.Set("X-User-ID", other)
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.DownloadWorkbenchAuditExport), request).Want(404)
+	dbfx.Exec(t, "UPDATE member SET role='member' WHERE workspace_id=$1 AND user_id=$2", workspace, testUserID)
+	request = testutil.WithURLParams(inboxRequest("GET", "/api/workbench/audit-exports/"+result.ID, workspace), "exportId", result.ID)
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.DownloadWorkbenchAuditExport), request).Want(403)
+	dbfx.Exec(t, "UPDATE member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", workspace, testUserID)
+	dbfx.Exec(t, "UPDATE workbench_audit_export SET expires_at=now()-interval '1 second' WHERE id=$1", result.ID)
+	request = testutil.WithURLParams(inboxRequest("GET", "/api/workbench/audit-exports/"+result.ID, workspace), "exportId", result.ID)
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.DownloadWorkbenchAuditExport), request).Want(410)
+	if _, err := testHandler.Queries.PruneWorkbenchAuditExports(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	dbfx.QueryRow(t, "SELECT count(*) FROM workbench_audit_export WHERE id=$1", result.ID).Scan(&count)
+	if count != 0 {
+		t.Fatal("expired export remained stored")
+	}
+}
+
+func TestWorkbenchAuditListPaginatesSecurityAndRejectsInvalidFilters(t *testing.T) {
+	workspace := dbfx.Workspace(t, "Audit page", "audit-page-"+uuid.NewString())
+	dbfx.Member(t, workspace, testUserID, "owner")
+	dbfx.Cleanup(t, "DELETE FROM activity_log WHERE workspace_id=$1", workspace)
+	dbfx.Exec(t, `INSERT INTO activity_log(workspace_id,action,details,created_at)
+        SELECT $1,'security_recheck','{}',now()-interval '1 hour' FROM generate_series(1,1001)`, workspace)
+	dbfx.Insert(t, "activity_log", testutil.Cols{"workspace_id": workspace, "action": "credential_rotated"})
+	var page struct {
+		Records []json.RawMessage `json:"records"`
+		Next    string            `json:"next_cursor"`
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListWorkbenchAudit), inboxRequest("GET", "/api/workbench/audit?scope=security", workspace)).Want(200).JSON(&page)
+	if len(page.Records) != 1000 || page.Next == "" {
+		t.Fatalf("first page=%d cursor=%s", len(page.Records), page.Next)
+	}
+	var record struct {
+		Details map[string]any `json:"details"`
+	}
+	if err := json.Unmarshal(page.Records[0], &record); err != nil || record.Details == nil {
+		t.Fatalf("audit details must be a JSON object: %s (%v)", page.Records[0], err)
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListWorkbenchAudit), inboxRequest("GET", "/api/workbench/audit?scope=security&cursor="+page.Next, workspace)).Want(200).JSON(&page)
+	if len(page.Records) != 1 || page.Next != "" {
+		t.Fatalf("last page=%d cursor=%s", len(page.Records), page.Next)
+	}
+	for _, query := range []string{"scope=invalid", "days=365", "cursor=bad"} {
+		testutil.Call(t, inboxWorkspaceHandler(testHandler.ListWorkbenchAudit), inboxRequest("GET", "/api/workbench/audit?"+query, workspace)).Want(400)
+	}
 }
 
 func TestAuditCSVCellTreatsFormulaPrefixesAsText(t *testing.T) {

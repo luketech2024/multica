@@ -851,6 +851,9 @@ func main() {
 	if err := schedulerMgr.Register(scheduler.SecurityAcceptanceJob(taskSvc)); err != nil {
 		slog.Error("scheduler: register security acceptance expiry", "error", err)
 	}
+	if err := schedulerMgr.Register(scheduler.WorkbenchAuditExportPruneJob(queries)); err != nil {
+		slog.Error("scheduler: register audit export expiry", "error", err)
+	}
 	if err := schedulerMgr.Register(scheduler.IssueWakeupJob(&service.IssueWakeupService{Tasks: taskSvc})); err != nil {
 		slog.Error("scheduler: register issue wakeups", "error", err)
 	}

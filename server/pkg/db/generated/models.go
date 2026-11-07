@@ -1889,6 +1889,19 @@ type WecomInstallSession struct {
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
 
+type WorkbenchAuditExport struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	RequesterID pgtype.UUID        `json:"requester_id"`
+	Filename    string             `json:"filename"`
+	Content     []byte             `json:"content"`
+	Scope       string             `json:"scope"`
+	RangeStart  pgtype.Timestamptz `json:"range_start"`
+	RangeEnd    pgtype.Timestamptz `json:"range_end"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+}
+
 type Workspace struct {
 	ID           pgtype.UUID        `json:"id"`
 	Name         string             `json:"name"`

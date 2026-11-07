@@ -11,6 +11,79 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createWorkbenchAuditExport = `-- name: CreateWorkbenchAuditExport :one
+INSERT INTO workbench_audit_export (id,workspace_id,requester_id,filename,content,scope,range_start,range_end,expires_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, workspace_id, requester_id, filename, content, scope, range_start, range_end, created_at, expires_at
+`
+
+type CreateWorkbenchAuditExportParams struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	RequesterID pgtype.UUID        `json:"requester_id"`
+	Filename    string             `json:"filename"`
+	Content     []byte             `json:"content"`
+	Scope       string             `json:"scope"`
+	RangeStart  pgtype.Timestamptz `json:"range_start"`
+	RangeEnd    pgtype.Timestamptz `json:"range_end"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreateWorkbenchAuditExport(ctx context.Context, arg CreateWorkbenchAuditExportParams) (WorkbenchAuditExport, error) {
+	row := q.db.QueryRow(ctx, createWorkbenchAuditExport,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.RequesterID,
+		arg.Filename,
+		arg.Content,
+		arg.Scope,
+		arg.RangeStart,
+		arg.RangeEnd,
+		arg.ExpiresAt,
+	)
+	var i WorkbenchAuditExport
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.RequesterID,
+		&i.Filename,
+		&i.Content,
+		&i.Scope,
+		&i.RangeStart,
+		&i.RangeEnd,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const getWorkbenchAuditExport = `-- name: GetWorkbenchAuditExport :one
+SELECT id, workspace_id, requester_id, filename, content, scope, range_start, range_end, created_at, expires_at FROM workbench_audit_export WHERE workspace_id=$1 AND requester_id=$2 AND id=$3
+`
+
+type GetWorkbenchAuditExportParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	RequesterID pgtype.UUID `json:"requester_id"`
+	ID          pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) GetWorkbenchAuditExport(ctx context.Context, arg GetWorkbenchAuditExportParams) (WorkbenchAuditExport, error) {
+	row := q.db.QueryRow(ctx, getWorkbenchAuditExport, arg.WorkspaceID, arg.RequesterID, arg.ID)
+	var i WorkbenchAuditExport
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.RequesterID,
+		&i.Filename,
+		&i.Content,
+		&i.Scope,
+		&i.RangeStart,
+		&i.RangeEnd,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const listWorkbenchAuditPage = `-- name: ListWorkbenchAuditPage :many
 SELECT log.id, log.workspace_id, log.issue_id, log.actor_type, log.actor_id, log.action, log.details, log.created_at, COALESCE(person.name, agent.name, '')::text AS actor_name
 FROM activity_log log
@@ -79,4 +152,19 @@ func (q *Queries) ListWorkbenchAuditPage(ctx context.Context, arg ListWorkbenchA
 		return nil, err
 	}
 	return items, nil
+}
+
+const pruneWorkbenchAuditExports = `-- name: PruneWorkbenchAuditExports :execrows
+WITH expired AS (
+    SELECT id FROM workbench_audit_export WHERE expires_at<=now() ORDER BY expires_at LIMIT 100
+)
+DELETE FROM workbench_audit_export WHERE id IN (SELECT id FROM expired)
+`
+
+func (q *Queries) PruneWorkbenchAuditExports(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, pruneWorkbenchAuditExports)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

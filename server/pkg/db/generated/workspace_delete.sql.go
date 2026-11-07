@@ -606,6 +606,9 @@ func (q *Queries) DeleteWorkspacePullRequests(ctx context.Context, workspaceID p
 
 const deleteWorkspaceRuntimesAndProjects = `-- name: DeleteWorkspaceRuntimesAndProjects :exec
 WITH
+deleted_audit_exports AS (
+    DELETE FROM workbench_audit_export WHERE workspace_id=$1
+),
 deleted_security_checks AS (
     DELETE FROM security_checks WHERE workspace_id=$1
 ),

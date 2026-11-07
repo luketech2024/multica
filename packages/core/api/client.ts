@@ -6,6 +6,7 @@ import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTe
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { SecurityCheckSchema, SecurityChecksSchema, SecurityScanSchema, type SecurityDecision, type SecurityScanInput } from "../workbench/security-schemas";
+import { AuditPageSchema, AuditExportSchema, type AuditScope } from "../workbench/audit-schemas";
 import { AgentRuntimeSchema, EMPTY_RUNTIME } from "../runtimes/schema";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
 import type { WorkspaceWakeupPage, WorkspaceWakeupFilters } from "../types/issue-wakeup";
@@ -4386,6 +4387,23 @@ export class ApiClient {
 
   async exportWorkbenchAudit(): Promise<Blob> {
     const response = await this.fetchRaw("/api/workbench/audit.csv");
+    return response.blob();
+  }
+
+  async listWorkbenchAudit(scope: AuditScope, days: number, cursor: string) {
+    const params = new URLSearchParams({ scope, days: String(days) });
+    if (cursor) params.set("cursor", cursor);
+    const endpoint = `/api/workbench/audit?${params}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), AuditPageSchema, endpoint);
+  }
+
+  async createWorkbenchAuditExport(scope: AuditScope, days: number) {
+    const endpoint = `/api/workbench/audit-exports?${new URLSearchParams({ scope, days: String(days) })}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST" }), AuditExportSchema, endpoint);
+  }
+
+  async downloadWorkbenchAuditExport(id: string): Promise<Blob> {
+    const response = await this.fetchRaw(`/api/workbench/audit-exports/${encodeURIComponent(id)}`);
     return response.blob();
   }
 

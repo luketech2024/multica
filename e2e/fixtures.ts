@@ -361,6 +361,21 @@ export class TestApiClient {
     return (await res.json()) as { id: string };
   }
 
+  async expireAuditExport(id: string) {
+    if (!this.workspaceId) throw new Error("Select a workspace before expiring an audit export");
+    const client = new pg.Client(DATABASE_URL);
+    await client.connect();
+    try {
+      const result = await client.query(
+        "UPDATE workbench_audit_export SET expires_at = now() - interval '1 second' WHERE id = $1 AND workspace_id = $2",
+        [id, this.workspaceId],
+      );
+      if (result.rowCount !== 1) throw new Error("Audit export not found in the selected workspace");
+    } finally {
+      await client.end();
+    }
+  }
+
   /** Seed an owned runtime without launching an actual agent tool. */
   async seedRuntime(name: string): Promise<string> {
     if (!this.workspaceId || !this.email) throw new Error("Select a workspace before seeding a runtime");

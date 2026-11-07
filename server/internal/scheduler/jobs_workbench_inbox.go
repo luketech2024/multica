@@ -41,3 +41,30 @@ func WorkbenchInboxPruneJob(queries *db.Queries) JobSpec {
 		},
 	}
 }
+
+func WorkbenchAuditExportPruneJob(queries *db.Queries) JobSpec {
+	return JobSpec{
+		Name: "prune_workbench_audit_exports", Cadence: time.Hour, CatchUpMode: CatchUpLatestOnly, CatchUpWindow: 24 * time.Hour,
+		RunTimeout: 10 * time.Minute, StaleTimeout: 15 * time.Minute, HeartbeatInterval: 30 * time.Second,
+		AllowStaleReentry: true, MaxAttempts: 3, Scopes: StaticScopes(ScopeGlobal),
+		Handler: func(ctx context.Context, in HandlerInput) (HandlerResult, error) {
+			result := HandlerResult{}
+			for batch := 0; batch < 1000; batch++ {
+				deleted, err := queries.PruneWorkbenchAuditExports(ctx)
+				if err != nil {
+					return result, err
+				}
+				result.RowsAffected += deleted
+				if deleted < 100 {
+					return result, nil
+				}
+				if in.Heartbeat != nil {
+					if err := in.Heartbeat(ctx); err != nil {
+						return result, err
+					}
+				}
+			}
+			return result, nil
+		},
+	}
+}

@@ -3,6 +3,9 @@ import { paths } from "@multica/core/paths";
 
 export function inboxDestination(item: InboxItem, slug: string | null | undefined): string | null {
   if (!slug) return null;
+  if (item.details?.source === "workbench_audit_export" && item.details.export_id) {
+    return `${paths.workspace(slug).security()}?tab=audit&export=${encodeURIComponent(item.details.export_id)}`;
+  }
   if (item.details?.source === "workbench_security" && item.details.check_id) {
     return `${paths.workspace(slug).security()}?check=${encodeURIComponent(item.details.check_id)}`;
   }

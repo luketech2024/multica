@@ -10,6 +10,7 @@
   },
   "exports": {
     "./workbench/security": "./workbench/security.ts",
+    "./workbench/audit": "./workbench/audit.ts",
     ".": "./index.ts",
     "./markdown": "./markdown/index.ts",
     "./types": "./types/index.ts",

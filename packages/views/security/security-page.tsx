@@ -16,10 +16,45 @@ import { ConfigurationSelect } from "../projects/components/configuration-select
 import { AppLink, useNavigation } from "../navigation";
 import { useLocale, useT } from "../i18n";
 import { githubShortLabel } from "../common/github-url";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
+import { WorkbenchCredentials } from "../settings/components/workbench-credentials";
+import { AuditPanel } from "./audit-panel";
 
 const severityColors = { high: "text-destructive", medium: "text-warning", low: "text-info" };
 
 export function SecurityPage() {
+  const { t } = useT("projects");
+  const navigation = useNavigation();
+  const paths = useWorkspacePaths();
+  const { role } = useCurrentMember(useWorkspaceId());
+  const canManage = role === "owner" || role === "admin";
+  const tab = ["checks", "credentials", "audit"].find((value) => value === navigation.searchParams.get("tab")) ?? "checks";
+  const selectTab = (value: string) => {
+    const params = new URLSearchParams(navigation.searchParams);
+    params.set("tab", value);
+    params.delete("check");
+    navigation.replace(`${paths.security()}?${params}`);
+  };
+  return <Tabs className="h-full min-h-0 gap-0" value={tab} onValueChange={(value) => selectTab(String(value))}>
+    <header className="space-y-3 border-b p-4">
+      <h1 className="text-title font-semibold">{t(($) => $.security.title)}</h1>
+        <TabsList aria-label={t(($) => $.security.title)}>
+          <TabsTrigger value="checks">{t(($) => $.audit.checks)}</TabsTrigger>
+          {canManage && <TabsTrigger value="credentials">{t(($) => $.audit.credentials)}</TabsTrigger>}
+          {canManage && <TabsTrigger value="audit">{t(($) => $.audit.title)}</TabsTrigger>}
+        </TabsList>
+    </header>
+    <TabsContent value="checks" className="flex min-h-0 flex-col"><SecurityChecksPage /></TabsContent>
+    <TabsContent value="audit" className="flex min-h-0 flex-col">
+      {canManage ? <AuditPanel /> : <p role="alert" className="p-4">{t(($) => $.audit.denied)}</p>}
+    </TabsContent>
+    <TabsContent value="credentials" className="min-h-0 overflow-auto p-4">
+      {canManage ? <WorkbenchCredentials /> : <p role="alert">{t(($) => $.audit.denied)}</p>}
+    </TabsContent>
+  </Tabs>;
+}
+
+function SecurityChecksPage() {
   const { t } = useT("projects");
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
@@ -40,7 +75,7 @@ export function SecurityPage() {
 
   return <main className="flex h-full min-h-0 flex-col">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-      <h1 className="text-heading-small font-semibold">{t(($) => $.security.title)}</h1>
+      <h2 className="text-title-sm font-semibold">{t(($) => $.audit.checks)}</h2>
       <Button variant="outline" onClick={() => void list.refetch()} disabled={list.isFetching}>{t(($) => $.security.refresh)}</Button>
     </header>
     <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">

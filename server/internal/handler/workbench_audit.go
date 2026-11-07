@@ -31,25 +31,19 @@ func auditCSVCell(value string) string {
 	return value
 }
 
-func writeWorkbenchAuditCSV(ctx context.Context, q *db.Queries, output io.Writer, workspaceID pgtype.UUID, until time.Time) error {
+func writeWorkbenchAuditCSV(ctx context.Context, q *db.Queries, output io.Writer, workspaceID pgtype.UUID, selection auditSelection) error {
 	if _, err := io.WriteString(output, "\ufeff"); err != nil {
 		return err
 	}
 	writer := csv.NewWriter(output)
 	writer.UseCRLF = true
-	since := until.Add(-90 * 24 * time.Hour)
-	if err := writer.Write([]string{"exported_at", until.Format(time.RFC3339Nano), "range_start", since.Format(time.RFC3339Nano), "range_end", until.Format(time.RFC3339Nano), "scope", "configuration"}); err != nil {
+	if err := writer.Write([]string{"exported_at", time.Now().UTC().Format(time.RFC3339Nano), "range_start", selection.Since.Format(time.RFC3339Nano), "range_end", selection.Until.Format(time.RFC3339Nano), "scope", selection.Scope}); err != nil {
 		return err
 	}
 	if err := writer.Write([]string{"id", "created_at", "actor_type", "actor_id", "actor_name", "issue_id", "action", "details"}); err != nil {
 		return err
 	}
-	params := db.ListWorkbenchAuditPageParams{
-		WorkspaceID: workspaceID, Actions: workbenchAuditActions,
-		SinceAt: pgtype.Timestamptz{Time: since, Valid: true},
-		UntilAt: pgtype.Timestamptz{Time: until, Valid: true}, BeforeAt: pgtype.Timestamptz{Time: until, Valid: true},
-		BeforeID: parseUUID("ffffffff-ffff-ffff-ffff-ffffffffffff"),
-	}
+	params := selection.params(workspaceID)
 	for {
 		rows, err := q.ListWorkbenchAuditPage(ctx, params)
 		if err != nil {
@@ -79,7 +73,11 @@ func (h *Handler) ExportWorkbenchAudit(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	until := time.Now().UTC()
+	selection, err := parseAuditSelection(r, "configuration")
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
 	tx, err := h.TxStarter.Begin(r.Context())
 	if err != nil {
 		writeError(w, 500, "failed to start audit export")
@@ -97,7 +95,7 @@ func (h *Handler) ExportWorkbenchAudit(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.Remove(file.Name())
 	defer file.Close()
-	if err := writeWorkbenchAuditCSV(r.Context(), h.Queries.WithTx(tx), file, member.WorkspaceID, until); err != nil {
+	if err := writeWorkbenchAuditCSV(r.Context(), h.Queries.WithTx(tx), file, member.WorkspaceID, selection); err != nil {
 		slog.Error("build workbench audit export", "workspace_id", uuidToString(member.WorkspaceID), "error", err)
 		writeError(w, 500, "failed to build audit export")
 		return
@@ -116,7 +114,7 @@ func (h *Handler) ExportWorkbenchAudit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", `attachment; filename="workbench-audit-`+until.Format("2006-01-02")+`.csv"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="workbench-audit-`+selection.Until.Format("2006-01-02")+`.csv"`)
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	w.Header().Set("Cache-Control", "no-store")
 	if _, err := io.Copy(w, file); err != nil {
