@@ -319,6 +319,10 @@
       "goSettings": {
         "label": "前往设置",
         "description": "打开工作区设置。"
+      },
+      "showShortcutHelp": {
+        "label": "快捷键帮助",
+        "description": ""
       }
     },
     "fixed": {

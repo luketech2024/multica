@@ -48,6 +48,9 @@ test.describe("Workbench cards", () => {
       await page.setViewportSize({ width, height: 900 });
       await expect.poll(() => flow.locator('[data-testid="virtuoso-item-list"]').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(columns);
     }
+    await page.keyboard.press("k");
+    await expect(flow.locator("a[data-keyboard-selected]")).toContainText(title);
+    await expect(flow.locator("a[data-keyboard-selected]")).toBeFocused();
     await expect.poll(async () => {
       await flow.locator('[data-virtuoso-scroller]').evaluate((element) => { element.scrollTop = element.scrollHeight; });
       return flow.getByText(title, { exact: true }).count();

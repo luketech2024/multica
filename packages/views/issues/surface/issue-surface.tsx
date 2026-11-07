@@ -41,6 +41,7 @@ import { BoardView } from "../components/board-view";
 import { BOARD_COL_WIDTH } from "../components/board-column";
 import { BatchActionToolbar } from "../components/batch-action-toolbar";
 import { GanttView } from "../components/gantt-view";
+import { WorkbenchKeyboardProvider } from "./workbench-keyboard";
 import { WorkbenchCardFlow } from "../components/workbench-card-flow";
 import { ListView } from "../components/list-view";
 import { SwimLaneView } from "../components/swimlane-view";
@@ -297,6 +298,7 @@ function IssueSurfaceContent({
             loading and empty states too, so a view switch that briefly shows
             a skeleton keeps the peek open. */}
         <IssuePeekHost>
+        <WorkbenchKeyboardProvider enabled={!!enableWorkbenchBand && (controller.viewMode === "board" || controller.viewMode === "list")} issues={issues}>
         {/* A failed status catalog precedes loading/empty/content on purpose.
             Row fetching is suspended while it is down (a custom status filter
             cannot be routed without it), so every branch below would render an
@@ -419,6 +421,7 @@ function IssueSurfaceContent({
             )}
           </div>
         )}
+        </WorkbenchKeyboardProvider>
         </IssuePeekHost>
         {shouldShowBatchToolbar && (
           <BatchActionToolbar

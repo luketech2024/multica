@@ -2010,5 +2010,15 @@
   "workbench_card": {
     "review": "검수",
     "flow": "작업 카드"
+  },
+  "workbench_keys": {
+    "title": "키보드 단축키",
+    "search": "전체 검색",
+    "move": "다음 / 이전 작업",
+    "open": "선택한 작업 열기",
+    "review": "검수 대기 작업의 검수 열기",
+    "create": "새 작업",
+    "escape": "작업 목록으로 돌아가기 / 선택 해제",
+    "help": "단축키 도움말"
   }
 }

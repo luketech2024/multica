@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useCallback, useMemo, useState, type ReactNode } from "react";
-import { Virtuoso } from "react-virtuoso";
+import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import { Ban, EyeOff, FolderMinus, MoreHorizontal, Plus, UserMinus } from "@multica/ui/icons";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -24,6 +24,7 @@ import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
 import { useViewStoreApi } from "@multica/core/issues/stores/view-store-context";
 import { useViewBaseline } from "../surface/view-baseline-context";
 import { StatusHeading } from "./status-heading";
+import { useWorkbenchKeyboardReveal } from "../surface/workbench-keyboard";
 import { DraggableBoardCard } from "./board-card";
 import type { ChildProgress } from "./list-row";
 import { useT } from "../../i18n";
@@ -182,6 +183,14 @@ export const BoardColumn = memo(function BoardColumn({
     () => (footer ? { Footer: () => <>{footer}</> } : EMPTY_VIRTUOSO_COMPONENTS),
     [footer],
   );
+
+  const virtualRef = useRef<VirtuosoHandle>(null);
+  useWorkbenchKeyboardReveal(useCallback((id: string) => {
+    const index = resolvedIssues.findIndex((issue) => issue.id === id);
+    if (index < 0) return false;
+    virtualRef.current?.scrollToIndex({ index, align: "center" });
+    return true;
+  }, [resolvedIssues]));
 
   const computeItemKey = (_index: number, issue: Issue) => issue.id;
   const itemContent = (index: number, issue: Issue) => (
@@ -358,6 +367,7 @@ export const BoardColumn = memo(function BoardColumn({
                 </>
               ) : scrollEl ? (
                 <Virtuoso
+                  ref={virtualRef}
                   customScrollParent={scrollEl}
                   data={resolvedIssues}
                   computeItemKey={computeItemKey}

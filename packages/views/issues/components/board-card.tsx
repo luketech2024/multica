@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, memo } from "react";
+import { useWorkbenchKeyboardTarget } from "../surface/workbench-keyboard";
 import { WorkbenchTaskCardContent } from "./workbench-task-card";
 import { AppLink } from "../../navigation";
 import { useSortable, defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
@@ -377,6 +378,7 @@ export const DraggableBoardCard = memo(function DraggableBoardCard({
   workbench?: boolean;
 }) {
   const p = useWorkspacePaths();
+  const keyboard = useWorkbenchKeyboardTarget(issue.id);
   const peek = useIssuePeekActions();
   const peeked = useIsIssuePeeked(issue.id);
   const peekLinkProps = useIssuePeekLinkProps(issue.id);
@@ -427,8 +429,9 @@ export const DraggableBoardCard = memo(function DraggableBoardCard({
         <AppLink
           href={p.issueDetail(issue.id)}
           newTabTitle={issue.identifier}
-          className={`group/card block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${isDragging ? "pointer-events-none" : ""}`}
+          className={`group/card block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring data-[keyboard-selected]:ring-2 data-[keyboard-selected]:ring-ring transition-colors ${isDragging ? "pointer-events-none" : ""}`}
           {...peekLinkProps}
+          {...keyboard}
         >
           <BoardCardContent
             workbench={workbench}

@@ -2079,5 +2079,15 @@
   "workbench_card": {
     "review": "Vérifier",
     "flow": "Cartes de tâches"
+  },
+  "workbench_keys": {
+    "title": "Raccourcis clavier",
+    "search": "Recherche globale",
+    "move": "Tâche suivante / précédente",
+    "open": "Ouvrir la tâche sélectionnée",
+    "review": "Ouvrir la validation d’une tâche à vérifier",
+    "create": "Nouvelle tâche",
+    "escape": "Retour à la liste / effacer la sélection",
+    "help": "Aide des raccourcis"
   }
 }

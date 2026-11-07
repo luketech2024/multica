@@ -321,6 +321,10 @@
       "goSettings": {
         "label": "Go to Settings",
         "description": "Open workspace settings."
+      },
+      "showShortcutHelp": {
+        "label": "Shortcut help",
+        "description": ""
       }
     },
     "fixed": {

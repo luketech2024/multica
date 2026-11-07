@@ -43,6 +43,8 @@ import {
 import { WorkflowHandoffConfirmDialog } from "../../workflows/handoff-confirm-dialog";
 import { stepHandlerActor, useStepHandlerLabel } from "../../workflows/step-handler";
 import { projectListOptions } from "@multica/core/projects/queries";
+import { workbenchReadingOrder } from "@multica/core/workbench/keyboard";
+import { useWorkbenchKeyboardOrder } from "../surface/workbench-keyboard";
 import { BoardCardContent } from "./board-card";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 import { ListLoadMoreFooter } from "./list-load-more-footer";
@@ -559,6 +561,9 @@ function BoardViewImpl({
       setColumns(buildColumns(groupedIssues, groups, grouping, groupingOptionIds));
     }
   }, [groupedIssues, groups, grouping, groupingOptionIds, settleVersion, setColumns, isDraggingRef, isSettlingRef]);
+
+  const keyboardOrder = useMemo(() => workbenchReadingOrder(groups.map((group) => columns[group.id] ?? EMPTY_IDS)), [columns, groups]);
+  useWorkbenchKeyboardOrder(keyboardOrder);
 
   // --- Issue map ---
   // Frozen during drag so BoardColumn/DraggableBoardCard props stay

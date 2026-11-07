@@ -10,6 +10,7 @@
   },
   "exports": {
     "./workbench/status-band": "./workbench/status-band.ts",
+    "./workbench/keyboard": "./workbench/keyboard.ts",
     "./workbench/security": "./workbench/security.ts",
     "./workbench/audit": "./workbench/audit.ts",
     ".": "./index.ts",

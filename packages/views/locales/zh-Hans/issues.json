@@ -2010,5 +2010,15 @@
   "workbench_card": {
     "review": "去验收",
     "flow": "任务卡片流"
+  },
+  "workbench_keys": {
+    "title": "快捷键",
+    "search": "全局搜索",
+    "move": "下一个 / 上一个任务",
+    "open": "打开选中任务",
+    "review": "打开待验收任务的验收页",
+    "create": "新建任务",
+    "escape": "返回任务清单 / 取消选中",
+    "help": "快捷键帮助"
   }
 }

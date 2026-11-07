@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configureShortcutPlatform } from "@multica/core/shortcuts";
 import { NavigationProvider, type NavigationAdapter } from "../navigation";
@@ -72,6 +72,14 @@ describe("GlobalShortcuts history navigation", () => {
 
   afterEach(() => {
     configureShortcutPlatform(null);
+  });
+
+  it("returns from task detail to the task list on Escape", () => {
+    const adapter = makeAdapter({ pathname: "/w/issues/TASK-1" });
+    const { unmount } = renderShortcuts(adapter);
+    act(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })); });
+    expect(adapter.push).toHaveBeenCalledWith("/w/issues");
+    unmount();
   });
 
   it("steps back through history on Mod+[", () => {

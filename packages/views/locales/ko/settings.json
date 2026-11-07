@@ -319,6 +319,10 @@
       "goSettings": {
         "label": "설정으로 이동",
         "description": "워크스페이스 설정을 엽니다."
+      },
+      "showShortcutHelp": {
+        "label": "단축키 도움말",
+        "description": ""
       }
     },
     "fixed": {

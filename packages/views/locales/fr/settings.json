@@ -321,6 +321,10 @@
       "goSettings": {
         "label": "Aller aux paramètres",
         "description": "Ouvrir les paramètres de l'espace de travail."
+      },
+      "showShortcutHelp": {
+        "label": "Aide des raccourcis",
+        "description": ""
       }
     },
     "fixed": {

@@ -2079,5 +2079,15 @@
   "workbench_card": {
     "review": "Review",
     "flow": "Task cards"
+  },
+  "workbench_keys": {
+    "title": "Keyboard shortcuts",
+    "search": "Global search",
+    "move": "Next / previous task",
+    "open": "Open selected task",
+    "review": "Open acceptance for a task awaiting review",
+    "create": "New task",
+    "escape": "Return to task list / clear selection",
+    "help": "Shortcut help"
   }
 }

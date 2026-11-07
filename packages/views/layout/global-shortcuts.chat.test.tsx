@@ -109,6 +109,20 @@ describe("chat toggle shortcut", () => {
     expect(h.chat.toggle).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps single-key creation out of dropdown controls and menu popups", () => {
+    render(<GlobalShortcuts />);
+    for (const role of ["combobox", "listbox", "menu"]) {
+      const control = document.createElement("div");
+      control.setAttribute("role", role);
+      const option = document.createElement("button");
+      control.appendChild(option);
+      document.body.appendChild(control);
+      option.dispatchEvent(new KeyboardEvent("keydown", { key: "c", bubbles: true, cancelable: true }));
+      control.remove();
+    }
+    expect(openCreateIssueWithPreference).not.toHaveBeenCalled();
+  });
+
   it("still fires while the caret is inside a text input", () => {
     render(<GlobalShortcuts />);
     const input = document.createElement("input");

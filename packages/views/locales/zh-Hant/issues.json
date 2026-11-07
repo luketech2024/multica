@@ -2010,5 +2010,15 @@
   "workbench_card": {
     "review": "去驗收",
     "flow": "任務卡片流"
+  },
+  "workbench_keys": {
+    "title": "快捷鍵",
+    "search": "全域搜尋",
+    "move": "下一個 / 上一個任務",
+    "open": "開啟選取任務",
+    "review": "開啟待驗收任務的驗收頁",
+    "create": "新增任務",
+    "escape": "返回任務清單 / 取消選取",
+    "help": "快捷鍵說明"
   }
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSidebar } from "@multica/ui/components/ui/sidebar";
 import {
   getShortcut,
   isEditableShortcutTarget,
+  isPortalLayerShortcutTarget,
   shortcutMatchesEvent,
   SHORTCUT_ACTION_BY_ID,
   useShortcutStore,
@@ -18,9 +19,11 @@ import { isFloatingChatRouteSuppressed } from "../chat/floating-chat-visibility"
 import { useAppShell } from "./app-shell-context";
 import { openCreateIssueForPath } from "./global-actions";
 import { useNavigation } from "../navigation";
+import { WorkbenchShortcutHelp } from "./workbench-shortcut-help";
 import { useSearchStore } from "../search/search-store";
 
 const GLOBAL_ACTIONS: readonly ShortcutActionId[] = [
+  "showShortcutHelp",
   "openSearch",
   "createIssue",
   "toggleSidebar",
@@ -47,6 +50,7 @@ export function shouldIgnoreGlobalShortcutEvent(event: KeyboardEvent): boolean {
 
 /** Executes configurable product-level shortcuts inside the dashboard shell. */
 export function GlobalShortcuts() {
+  const [showHelp, setShowHelp] = useState(false);
   const { toggleSidebar } = useSidebar();
   const toggleNav = useAppShell()?.toggleNav ?? toggleSidebar;
   const navigation = useNavigation();
@@ -88,9 +92,16 @@ export function GlobalShortcuts() {
       // action after the focused control already consumed the same chord.
       if (shouldIgnoreGlobalShortcutEvent(event)) return;
 
+      if (event.key === "Escape" && !isPortalLayerShortcutTarget(event.target)
+        && !useModalStore.getState().modal && navigation.pathname.startsWith(`${workspacePaths.issues()}/`)) {
+        event.preventDefault();
+        navigation.push(workspacePaths.issues());
+        return;
+      }
+
       const actionId = GLOBAL_ACTIONS.find((candidate) => {
         const action = SHORTCUT_ACTION_BY_ID[candidate];
-        if (!action.allowInEditable && isEditableShortcutTarget(event.target)) {
+        if (!action.allowInEditable && (isEditableShortcutTarget(event.target) || isPortalLayerShortcutTarget(event.target))) {
           return false;
         }
         if (candidate === "toggleChat" && !canToggleFloatingChat()) return false;
@@ -99,6 +110,10 @@ export function GlobalShortcuts() {
       if (!actionId) return;
 
       event.preventDefault();
+      if (actionId === "showShortcutHelp") {
+        if (!useModalStore.getState().modal) setShowHelp(true);
+        return;
+      }
       if (actionId === "openSearch") {
         useSearchStore.getState().toggle();
         return;
@@ -137,5 +152,5 @@ export function GlobalShortcuts() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [navigation, overrides, toggleNav, workspacePaths]);
 
-  return null;
+  return showHelp ? <WorkbenchShortcutHelp open onOpenChange={setShowHelp} /> : null;
 }

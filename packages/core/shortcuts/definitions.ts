@@ -6,6 +6,7 @@ import {
 } from "./platform";
 
 export type ShortcutActionId =
+  | "showShortcutHelp"
   | "openSearch"
   | "createIssue"
   | "toggleSidebar"
@@ -77,6 +78,7 @@ const primary = (key: string) =>
   createShortcutChord(key, { primary: true });
 
 export const SHORTCUT_ACTIONS: readonly ShortcutActionDefinition[] = [
+  { id: "showShortcutHelp", category: "general", defaultShortcut: createShortcutChord("?", { shift: true }), allowInEditable: false },
   { id: "openSearch", category: "general", defaultShortcut: primary("K"), allowInEditable: true },
   { id: "createIssue", category: "general", defaultShortcut: createShortcutChord("C"), allowInEditable: false },
   { id: "toggleSidebar", category: "general", defaultShortcut: primary("B"), allowInEditable: false },
@@ -266,7 +268,7 @@ export function isEditableShortcutTarget(target: EventTarget | null): boolean {
     target.tagName === "INPUT" ||
     target.tagName === "TEXTAREA" ||
     target.tagName === "SELECT" ||
-    target.closest("[contenteditable='true']") !== null
+    target.closest("[contenteditable='true'], [role='combobox'], [role='listbox']") !== null
   );
 }
 

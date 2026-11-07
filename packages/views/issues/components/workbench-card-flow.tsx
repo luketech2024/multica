@@ -1,7 +1,7 @@
 "use client";
 
-import { forwardRef, useEffect, useMemo } from "react";
-import { VirtuosoGrid } from "react-virtuoso";
+import { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import { VirtuosoGrid, type VirtuosoGridHandle } from "react-virtuoso";
 import type { Issue, Project } from "@multica/core/types";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { AppLink } from "../../navigation";
@@ -10,6 +10,7 @@ import { IssueActionsContextMenu } from "../actions";
 import { useIssuePeekActions, useIssuePeekLinkProps, useIsIssuePeeked, PEEK_TARGET_ATTR } from "../surface/peek-context";
 import type { IssueStatusPagination } from "../surface/use-issue-status-branches";
 import { WorkbenchTaskCardContent } from "./workbench-task-card";
+import { useWorkbenchKeyboardOrder, useWorkbenchKeyboardReveal, useWorkbenchKeyboardTarget } from "../surface/workbench-keyboard";
 import { ListLoadMoreFooter } from "./list-load-more-footer";
 
 const GridList = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(function GridList({ className, ...props }, ref) {
@@ -18,6 +19,7 @@ const GridList = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>
 
 function FlowCard({ issue, project }: { issue: Issue; project?: Project }) {
   const paths = useWorkspacePaths();
+  const keyboard = useWorkbenchKeyboardTarget(issue.id);
   const peekProps = useIssuePeekLinkProps(issue.id);
   const peeked = useIsIssuePeeked(issue.id);
   return (
@@ -26,9 +28,10 @@ function FlowCard({ issue, project }: { issue: Issue; project?: Project }) {
         href={paths.issueDetail(issue.id)}
         newTabTitle={issue.identifier}
         {...peekProps}
+        {...keyboard}
         {...{ [PEEK_TARGET_ATTR]: issue.id }}
         data-peeked={peeked ? "" : undefined}
-        className="group/card block min-w-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group/card block min-w-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring data-[keyboard-selected]:ring-2 data-[keyboard-selected]:ring-ring"
       >
         <WorkbenchTaskCardContent issue={issue} project={project} />
       </AppLink>
@@ -43,6 +46,15 @@ export function WorkbenchCardFlow({ issues, projectMap, statusPagination }: {
 }) {
   const { t } = useT("issues");
   const peek = useIssuePeekActions();
+  const gridRef = useRef<VirtuosoGridHandle>(null);
+  const ids = useMemo(() => issues.map((issue) => issue.id), [issues]);
+  useWorkbenchKeyboardOrder(ids);
+  useWorkbenchKeyboardReveal(useCallback((id: string) => {
+    const index = ids.indexOf(id);
+    if (index < 0) return false;
+    gridRef.current?.scrollToIndex({ index, align: "center" });
+    return true;
+  }, [ids]));
   useEffect(() => {
     peek?.publishColumns([issues.map((issue) => issue.id)]);
     return () => peek?.publishColumns(null);
@@ -69,6 +81,7 @@ export function WorkbenchCardFlow({ issues, projectMap, statusPagination }: {
   return (
     <section aria-label={t(($) => $.workbench_card.flow)} className="flex min-h-0 flex-1 flex-col">
       <VirtuosoGrid
+        ref={gridRef}
         data={issues}
         style={{ height: "100%" }}
         initialItemCount={12}

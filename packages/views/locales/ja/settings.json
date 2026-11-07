@@ -319,6 +319,10 @@
       "goSettings": {
         "label": "設定へ移動",
         "description": "ワークスペース設定を開きます。"
+      },
+      "showShortcutHelp": {
+        "label": "ショートカットヘルプ",
+        "description": ""
       }
     },
     "fixed": {
