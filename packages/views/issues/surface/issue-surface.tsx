@@ -41,6 +41,7 @@ import { BoardView } from "../components/board-view";
 import { BOARD_COL_WIDTH } from "../components/board-column";
 import { BatchActionToolbar } from "../components/batch-action-toolbar";
 import { GanttView } from "../components/gantt-view";
+import { WorkbenchCardFlow } from "../components/workbench-card-flow";
 import { ListView } from "../components/list-view";
 import { SwimLaneView } from "../components/swimlane-view";
 import { TableView } from "../components/table-view";
@@ -357,6 +358,7 @@ function IssueSurfaceContent({
           <div className={cn("flex flex-col flex-1 min-h-0", contentClassName)}>
             {controller.viewMode === "board" && (
               <BoardView
+                workbench={enableWorkbenchBand}
                 issues={issues}
                 visibleStatuses={controller.visibleStatuses}
                 onMoveIssue={controller.moveIssue}
@@ -368,7 +370,13 @@ function IssueSurfaceContent({
                 groupBranches={controller.groupBranches}
               />
             )}
-            {controller.viewMode === "list" && (
+            {controller.viewMode === "list" && (enableWorkbenchBand ? (
+              <WorkbenchCardFlow
+                issues={issues}
+                projectMap={controller.projectMap}
+                statusPagination={controller.statusPagination!}
+              />
+            ) : (
               <ListView
                 issues={issues}
                 visibleStatuses={controller.visibleStatuses}
@@ -379,7 +387,7 @@ function IssueSurfaceContent({
                 onCreateIssue={openCreateIssue}
                 statusPagination={controller.statusPagination!}
               />
-            )}
+            ))}
             {controller.viewMode === "table" && (
               <TableView
                 serverQuery={controller.tableQuerySpec}

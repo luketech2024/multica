@@ -268,6 +268,7 @@ function BoardViewImpl({
   onCreateIssue,
   statusPagination,
   groupBranches,
+  workbench,
 }: {
   issues: Issue[];
   visibleStatuses: IssueStatus[];
@@ -279,6 +280,7 @@ function BoardViewImpl({
   onCreateIssue?: (defaults: IssueCreateDefaults) => void;
   statusPagination?: IssueStatusPagination;
   groupBranches?: IssueGroupBranches;
+  workbench?: boolean;
 }) {
   const { t } = useT("issues");
   const storeGrouping = useViewStore((s) => s.grouping);
@@ -868,6 +870,7 @@ function BoardViewImpl({
           groups.map((group) =>
             isStatusGroup(group) ? (
               <ServerPaginatedBoardColumn
+                workbench={workbench}
                 key={group.id}
                 group={group}
                 issueIds={columns[group.id] ?? EMPTY_IDS}
@@ -882,6 +885,7 @@ function BoardViewImpl({
             ) : (
               groupPagination?.[group.id] ? (
                 <ServerPaginatedBoardColumn
+                  workbench={workbench}
                   key={group.id}
                   group={group}
                   issueIds={columns[group.id] ?? EMPTY_IDS}
@@ -895,6 +899,7 @@ function BoardViewImpl({
                 />
               ) : (
                 <BoardColumn
+                  workbench={workbench}
                   key={group.id}
                   group={group}
                   issueIds={columns[group.id] ?? EMPTY_IDS}
@@ -924,6 +929,7 @@ function BoardViewImpl({
         {activeIssue ? (
           <div style={{ width: BOARD_CARD_WIDTH }} className="rotate-1 cursor-grabbing opacity-90 shadow-lg shadow-black/10">
             <BoardCardContent
+              workbench={workbench}
               issue={activeIssue}
               childProgress={childProgressMap.get(activeIssue.id)}
               project={
@@ -970,6 +976,7 @@ const ServerPaginatedBoardColumn = memo(function ServerPaginatedBoardColumn({
   projectId,
   onCreateIssue,
   sortLabel,
+  workbench,
 }: {
   group: BoardColumnGroup;
   issueIds: string[];
@@ -980,6 +987,7 @@ const ServerPaginatedBoardColumn = memo(function ServerPaginatedBoardColumn({
   projectId?: string;
   onCreateIssue?: (defaults: IssueCreateDefaults) => void;
   sortLabel?: string | null;
+  workbench?: boolean;
 }) {
   const footer = page ? (
     <ListLoadMoreFooter
@@ -993,6 +1001,7 @@ const ServerPaginatedBoardColumn = memo(function ServerPaginatedBoardColumn({
   ) : undefined;
   return (
     <BoardColumn
+      workbench={workbench}
       group={group}
       issueIds={issueIds}
       issueMap={issueMap}

@@ -136,6 +136,7 @@ export interface IssueSurfaceController {
   /** Canonical server-owned Table membership. */
   tableQuerySpec: IssueTableQuerySpec;
   workbenchBaseQuery: IssueTableQuerySpec;
+  fixedTaskCards?: boolean;
   /** Exact disjunctive counts for the active server-backed filter submenu. */
   tableFacetCounts?: IssueTableFacetsResponse;
   /** Whether scopedIssues is a complete client window for local count use. */
@@ -489,6 +490,7 @@ export function useIssueSurfaceController({
 
   // Display preferences hide individual columns; status filters independently
   // select exact keys. Selecting a key explicitly restores its hidden column.
+  const workbenchCards = !!workbench;
   const serverStatuses = useMemo<IssueStatus[]>(
     () => {
       const visible = workflowColumns(
@@ -500,12 +502,13 @@ export function useIssueSurfaceController({
         ),
         projectWorkflow,
       );
-      return effectiveViewMode === "list"
+      return effectiveViewMode === "list" && !workbenchCards
         ? visible.filter((status) => !listCollapsedStatuses.includes(status))
         : visible;
     },
     [
       effectiveViewMode,
+      workbenchCards,
       listCollapsedStatuses,
       catalog,
       columnStatus,
@@ -1076,6 +1079,7 @@ export function useIssueSurfaceController({
     workingAgents,
     hasActiveFilters: hasActiveFilters || !!workbench?.only_mine || (!!workbench && workbench.band !== "all"),
     workbenchBaseQuery,
+    fixedTaskCards: workbenchCards && (viewMode === "board" || viewMode === "list"),
     statusPagination: usesServerStatusSurface
       ? data.statusPagination
       : undefined,

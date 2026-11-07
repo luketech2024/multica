@@ -19,7 +19,7 @@ vi.mock("@multica/core/hooks", () => ({
 }));
 
 function renderDisplay(
-  props: { allowGantt?: boolean } = {},
+  props: { allowGantt?: boolean; fixedTaskCards?: boolean } = {},
   setup: (store: StoreApi<IssueViewState>) => void = () => {},
 ) {
   setApiInstance(
@@ -64,6 +64,12 @@ describe("Display layout", () => {
 
     expect(store.getState().viewMode).toBe("table");
     expect(await screen.findByText("Table options")).toBeInTheDocument();
+  });
+
+  it("hides property toggles for fixed workbench cards", () => {
+    renderDisplay({ fixedTaskCards: true }, (store) => store.getState().setViewMode("board"));
+    expect(screen.queryByText("Card properties")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "View" })).toBeInTheDocument();
   });
 
   it("offers Gantt only where the surface renders it", async () => {

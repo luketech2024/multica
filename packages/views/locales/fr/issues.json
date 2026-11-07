@@ -2075,5 +2075,9 @@
     "today": "Terminées aujourd’hui",
     "mine": "Assignées à moi",
     "retry": "Réessayer les compteurs"
+  },
+  "workbench_card": {
+    "review": "Vérifier",
+    "flow": "Cartes de tâches"
   }
 }

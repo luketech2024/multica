@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, memo } from "react";
+import { WorkbenchTaskCardContent } from "./workbench-task-card";
 import { AppLink } from "../../navigation";
 import { useSortable, defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
@@ -54,7 +55,7 @@ function PickerWrapper({ children, className }: { children: React.ReactNode; cla
   );
 }
 
-export const BoardCardContent = memo(function BoardCardContent({
+const DetailedBoardCardContent = memo(function DetailedBoardCardContent({
   issue,
   editable = false,
   childProgress,
@@ -344,6 +345,18 @@ export const BoardCardContent = memo(function BoardCardContent({
   );
 });
 
+export function BoardCardContent(props: {
+  issue: Issue;
+  editable?: boolean;
+  childProgress?: ChildProgress;
+  project?: Project;
+  workbench?: boolean;
+}) {
+  return props.workbench
+    ? <WorkbenchTaskCardContent issue={props.issue} project={props.project} compact />
+    : <DetailedBoardCardContent {...props} />;
+}
+
 const animateLayoutChanges: AnimateLayoutChanges = (args) => {
   const { isSorting, wasDragging } = args;
   if (isSorting || wasDragging) return false;
@@ -355,11 +368,13 @@ export const DraggableBoardCard = memo(function DraggableBoardCard({
   childProgress,
   project,
   disableSorting,
+  workbench,
 }: {
   issue: Issue;
   childProgress?: ChildProgress;
   project?: Project;
   disableSorting?: boolean;
+  workbench?: boolean;
 }) {
   const p = useWorkspacePaths();
   const peek = useIssuePeekActions();
@@ -412,10 +427,11 @@ export const DraggableBoardCard = memo(function DraggableBoardCard({
         <AppLink
           href={p.issueDetail(issue.id)}
           newTabTitle={issue.identifier}
-          className={`group block transition-colors ${isDragging ? "pointer-events-none" : ""}`}
+          className={`group/card block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${isDragging ? "pointer-events-none" : ""}`}
           {...peekLinkProps}
         >
           <BoardCardContent
+            workbench={workbench}
             issue={issue}
             editable
             childProgress={childProgress}

@@ -2006,5 +2006,9 @@
     "today": "今日完了",
     "mine": "自分に割り当て",
     "retry": "件数を再取得"
+  },
+  "workbench_card": {
+    "review": "検収へ",
+    "flow": "タスクカード"
   }
 }

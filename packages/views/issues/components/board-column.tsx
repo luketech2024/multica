@@ -109,6 +109,7 @@ export const BoardColumn = memo(function BoardColumn({
   projectId,
   onCreateIssue,
   sortLabel,
+  workbench,
 }: {
   group: BoardColumnGroup;
   issueIds: string[];
@@ -121,6 +122,7 @@ export const BoardColumn = memo(function BoardColumn({
   projectId?: string;
   onCreateIssue?: (defaults: IssueCreateDefaults) => void;
   sortLabel?: string | null;
+  workbench?: boolean;
 }) {
   const status = group.status;
   const wsId = useWorkspaceId();
@@ -188,6 +190,7 @@ export const BoardColumn = memo(function BoardColumn({
     // height math stays correct.
     <div className={index === 0 ? undefined : "pt-2"}>
       <DraggableBoardCard
+        workbench={workbench}
         issue={issue}
         childProgress={childProgressMap?.get(issue.id)}
         project={
@@ -360,7 +363,7 @@ export const BoardColumn = memo(function BoardColumn({
                   computeItemKey={computeItemKey}
                   initialScrollTop={restoredScrollTop}
                   initialItemCount={Math.min(resolvedIssues.length, BOARD_SEED_COUNT)}
-                  defaultItemHeight={BOARD_CARD_ESTIMATED_HEIGHT}
+                  defaultItemHeight={workbench ? 80 : BOARD_CARD_ESTIMATED_HEIGHT}
                   increaseViewportBy={{ top: 300, bottom: 300 }}
                   components={footerComponents}
                   itemContent={itemContent}
@@ -376,7 +379,7 @@ export const BoardColumn = memo(function BoardColumn({
                   itemContent={itemContent}
                   computeItemKey={computeItemKey}
                   count={BOARD_SEED_COUNT}
-                  estimatedItemHeight={BOARD_CARD_ESTIMATED_HEIGHT}
+                  estimatedItemHeight={workbench ? 80 : BOARD_CARD_ESTIMATED_HEIGHT}
                 />
               )}
             </SortableContext>

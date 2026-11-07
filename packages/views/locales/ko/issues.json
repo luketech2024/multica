@@ -2006,5 +2006,9 @@
     "today": "오늘 완료",
     "mine": "나에게 할당됨",
     "retry": "집계 다시 시도"
+  },
+  "workbench_card": {
+    "review": "검수",
+    "flow": "작업 카드"
   }
 }

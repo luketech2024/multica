@@ -17,22 +17,22 @@ const statusVariants = {
   cancelled: "neutral",
 } as const satisfies Record<BuiltInIssueStatus, string>;
 
-export function StatusHeading({
-  status,
-  count,
-}: {
-  status: IssueStatus;
-  count: number;
-}) {
+export function StatusBadge({ status }: { status: IssueStatus }) {
   const wsId = useWorkspaceId();
   const labelOf = useStatusLabel(wsId);
   const { categoryOf, colorOf, iconOf } = useIssueStatuses(wsId);
   return (
+    <Badge variant={isBuiltInIssueStatus(status) ? statusVariants[status] : "neutral"} className={status === "cancelled" ? "line-through" : undefined}>
+      <StatusIcon category={categoryOf(status)} color={colorOf(status)} icon={iconOf(status)} status={status} className="h-3 w-3" />
+      {labelOf(status)}
+    </Badge>
+  );
+}
+
+export function StatusHeading({ status, count }: { status: IssueStatus; count: number }) {
+  return (
     <div className="flex items-center gap-2">
-      <Badge variant={isBuiltInIssueStatus(status) ? statusVariants[status] : "neutral"} className={status === "cancelled" ? "line-through" : undefined}>
-        <StatusIcon category={categoryOf(status)} color={colorOf(status)} icon={iconOf(status)} status={status} className="h-3 w-3" />
-        {labelOf(status)}
-      </Badge>
+      <StatusBadge status={status} />
       <span className="text-caption text-muted-foreground">{count}</span>
     </div>
   );

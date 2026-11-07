@@ -2006,5 +2006,9 @@
     "today": "今日完成",
     "mine": "只看我的",
     "retry": "重试统计"
+  },
+  "workbench_card": {
+    "review": "去验收",
+    "flow": "任务卡片流"
   }
 }

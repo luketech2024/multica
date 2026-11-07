@@ -1797,6 +1797,7 @@ const LAYOUTS: { mode: ViewMode; Icon: typeof List }[] = [
 export function IssueDisplayControls({
   scopedIssues,
   hideViewToggle = false,
+  fixedTaskCards = false,
   allowGantt = false,
   dateFilter = null,
   onDateFilterChange,
@@ -1809,6 +1810,7 @@ export function IssueDisplayControls({
 }: {
   scopedIssues: Issue[];
   hideViewToggle?: boolean;
+  fixedTaskCards?: boolean;
   /** The host renders its own filter trigger (the view header's chip row). */
   hideFilter?: boolean;
   /** A ghost icon button named only by its tooltip, for the issue view header. */
@@ -2351,7 +2353,7 @@ export function IssueDisplayControls({
                   />
                 </div>
               )}
-              {availableCardPropertyOptions.length > 0 && (
+              {!fixedTaskCards && availableCardPropertyOptions.length > 0 && (
                 <div>
                   <span className="text-caption font-medium text-muted-foreground">
                     {t(($) => $.display.card_properties_section)}

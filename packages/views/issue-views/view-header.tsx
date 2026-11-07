@@ -544,6 +544,7 @@ export function IssueViewHeader({
             />
           )}
           <IssueDisplayControls
+            fixedTaskCards={controller.fixedTaskCards}
             hideFilter
             scopedIssues={controller.surfaceIssues}
             allowGantt={controller.allowGantt}

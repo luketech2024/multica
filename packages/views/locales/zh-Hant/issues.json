@@ -2006,5 +2006,9 @@
     "today": "今日完成",
     "mine": "只看我的",
     "retry": "重試統計"
+  },
+  "workbench_card": {
+    "review": "去驗收",
+    "flow": "任務卡片流"
   }
 }
