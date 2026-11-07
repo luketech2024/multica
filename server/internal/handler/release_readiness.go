@@ -43,20 +43,26 @@ func (h *Handler) GetIssueReleaseReadiness(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "task not found")
 		return
 	}
+	result, err := readIssueReleaseReadiness(r.Context(), q, current)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to read release evidence")
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func readIssueReleaseReadiness(ctx context.Context, q *db.Queries, current db.Issue) (workbench.ReleaseReadiness, error) {
 	criteria, err := workbench.ParseRequirements(current.AcceptanceCriteria)
 	if err != nil {
-		writeError(w, http.StatusConflict, "acceptance evidence is unavailable")
-		return
+		return workbench.ReleaseReadiness{}, err
 	}
-	review, err := readDeliveryReview(r.Context(), q, current, criteria)
+	review, err := readDeliveryReview(ctx, q, current, criteria)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read acceptance evidence")
-		return
+		return workbench.ReleaseReadiness{}, err
 	}
-	resources, err := q.ListProjectResourcesInWorkspace(r.Context(), db.ListProjectResourcesInWorkspaceParams{ProjectID: current.ProjectID, WorkspaceID: current.WorkspaceID})
+	resources, err := q.ListProjectResourcesInWorkspace(ctx, db.ListProjectResourcesInWorkspaceParams{ProjectID: current.ProjectID, WorkspaceID: current.WorkspaceID})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read repositories")
-		return
+		return workbench.ReleaseReadiness{}, err
 	}
 	repos := make([]workbench.ReleaseRepository, 0, len(resources))
 	for _, resource := range resources {
@@ -73,12 +79,11 @@ func (h *Handler) GetIssueReleaseReadiness(w http.ResponseWriter, r *http.Reques
 		}
 		repos = append(repos, workbench.ReleaseRepository{ID: uuidToString(resource.ID), URL: ref.URL, Branch: branch})
 	}
-	prs, err := readReleasePullRequests(r.Context(), q, current)
+	prs, err := readReleasePullRequests(ctx, q, current)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to read merge evidence")
-		return
+		return workbench.ReleaseReadiness{}, err
 	}
 	result := workbench.CheckReleaseReadiness(uuidToString(current.ID), current.Status, criteria, repos, prs, len(review.Blockers) == 0)
 	result.Revision = current.Revision
-	writeJSON(w, http.StatusOK, result)
+	return result, nil
 }

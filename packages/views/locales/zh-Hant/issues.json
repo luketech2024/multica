@@ -2033,6 +2033,7 @@
       "merge_missing": "缺少與驗收來源提交相符的合併記錄。",
       "merge_ambiguous": "存在多個相符的 PR，請核對關聯記錄。"
     },
-    "retry": "重試"
+    "retry": "重試",
+    "join": "加入發布"
   }
 }

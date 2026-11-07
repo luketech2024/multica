@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "인증서 갱신 실패",
       "deploy_target_check_requested": "대상 확인 요청",
       "deploy_target_checked": "대상 확인 완료",
-      "business_template_published": "비즈니스 템플릿 게시"
+      "business_template_published": "비즈니스 템플릿 게시",
+      "release_created": "릴리스 생성"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "새 버전으로 교체할 필드 선택",
     "merge": "선택한 필드 병합",
     "keep": "프로젝트 값을 유지하고 검토 완료"
+  },
+  "releases": {
+    "title": "릴리스",
+    "create": "릴리스 만들기",
+    "project": "프로젝트",
+    "environment": "환경",
+    "all": "전체",
+    "staging": "스테이징",
+    "prod": "프로덕션",
+    "loading": "릴리스 불러오는 중…",
+    "failed": "릴리스를 불러오지 못했습니다.",
+    "retry": "다시 시도",
+    "empty": "릴리스가 없습니다.",
+    "task_count": "작업 {{count}}개",
+    "repo_count": "저장소 {{count}}개",
+    "more": "더 보기",
+    "choose_project": "프로젝트 선택",
+    "no_candidates": "이 환경에서 추가할 수 있는 검수 및 병합 완료 작업이 없습니다.",
+    "version": "버전 태그",
+    "auto_version": "생성 시 자동 지정",
+    "cancel": "취소",
+    "tasks": "포함된 작업",
+    "repositories": "저장소 스냅샷",
+    "status": {
+      "draft": "초안",
+      "prechecking": "사전 검사 중",
+      "ready": "준비 완료",
+      "deploying": "배포 중",
+      "verifying": "검증 중",
+      "live": "배포 완료",
+      "failed": "실패",
+      "partial": "일부 성공",
+      "retrying": "재시도 중"
+    }
   }
 }

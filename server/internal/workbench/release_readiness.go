@@ -141,7 +141,7 @@ func CheckReleaseReadiness(parentID, status string, criteria Requirements, repos
 			continue
 		}
 		for _, pr := range matched {
-			result.Merges = append(result.Merges, ReleaseMerge{RepoID: repoID, PullRequestID: pr.ID, URL: pr.URL, BaseBranch: pr.BaseBranch, SourceCommit: pr.HeadSHA, MergeCommit: pr.MergeCommitSHA})
+			result.Merges = append(result.Merges, ReleaseMerge{RepoID: repoID, PullRequestID: pr.ID, URL: pr.URL, BaseBranch: pr.BaseBranch, SourceCommit: strings.ToLower(pr.HeadSHA), MergeCommit: strings.ToLower(pr.MergeCommitSHA)})
 		}
 	}
 	return result

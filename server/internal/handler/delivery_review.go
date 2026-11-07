@@ -110,6 +110,15 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if input.Action == "undo" {
+		inRelease, err := q.IssueHasWorkbenchRelease(r.Context(), db.IssueHasWorkbenchReleaseParams{WorkspaceID: current.WorkspaceID, IssueID: uuidToString(current.ID)})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to read release membership")
+			return
+		}
+		if inRelease {
+			writeError(w, http.StatusConflict, "acceptance cannot be undone after joining a release")
+			return
+		}
 		prs, err := readReleasePullRequests(r.Context(), q, current)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to verify acceptance undo eligibility")

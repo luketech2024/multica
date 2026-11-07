@@ -13,7 +13,8 @@
     "skills": "Skills",
     "settings": "Settings",
     "views": "Views",
-    "security": "Security center"
+    "security": "Security center",
+    "releases": "Releases"
   },
   "tab": {
     "issue": "Issue",

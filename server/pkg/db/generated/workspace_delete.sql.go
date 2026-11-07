@@ -621,6 +621,15 @@ deleted_deploy_targets AS (
 deleted_business_templates AS (
     DELETE FROM workbench_business_templates WHERE workspace_id=$1
 ),
+deleted_release_orders AS (
+    DELETE FROM workbench_release_orders WHERE workspace_id=$1
+),
+deleted_release_counters AS (
+    DELETE FROM workbench_release_counters WHERE workspace_id=$1
+),
+deleted_release_reservations AS (
+    DELETE FROM workbench_release_reservations WHERE workspace_id=$1
+),
 deleted_credentials AS (
     DELETE FROM credentials WHERE workspace_id=$1
 ),

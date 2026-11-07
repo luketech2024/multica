@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "Certificate renewal failed",
       "deploy_target_check_requested": "Target check requested",
       "deploy_target_checked": "Target checked",
-      "business_template_published": "Business template published"
+      "business_template_published": "Business template published",
+      "release_created": "Release created"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "Choose fields to replace with the new version",
     "merge": "Merge selected fields",
     "keep": "Keep project values and mark reviewed"
+  },
+  "releases": {
+    "title": "Releases",
+    "create": "New release",
+    "project": "Project",
+    "environment": "Environment",
+    "all": "All",
+    "staging": "Staging",
+    "prod": "Production",
+    "loading": "Loading releases…",
+    "failed": "Could not load releases.",
+    "retry": "Retry",
+    "empty": "No release orders yet.",
+    "task_count": "{{count}} tasks",
+    "repo_count": "{{count}} repositories",
+    "more": "Load more",
+    "choose_project": "Choose a project",
+    "no_candidates": "No accepted, merged tasks are available for this environment.",
+    "version": "Version tag",
+    "auto_version": "Generated when created",
+    "cancel": "Cancel",
+    "tasks": "Included tasks",
+    "repositories": "Repository snapshots",
+    "status": {
+      "draft": "Draft",
+      "prechecking": "Prechecking",
+      "ready": "Ready",
+      "deploying": "Deploying",
+      "verifying": "Verifying",
+      "live": "Live",
+      "failed": "Failed",
+      "partial": "Partially successful",
+      "retrying": "Retrying"
+    }
   }
 }

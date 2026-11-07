@@ -13,7 +13,8 @@
     "skills": "스킬",
     "settings": "설정",
     "views": "뷰",
-    "security": "보안 센터"
+    "security": "보안 센터",
+    "releases": "릴리스"
   },
   "tab": {
     "issue": "태스크",

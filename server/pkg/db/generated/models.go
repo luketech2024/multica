@@ -1916,6 +1916,35 @@ type WorkbenchBusinessTemplate struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type WorkbenchReleaseCounter struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	NextNumber  int64       `json:"next_number"`
+}
+
+type WorkbenchReleaseOrder struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
+	Number      int64              `json:"number"`
+	Env         string             `json:"env"`
+	Status      string             `json:"status"`
+	RequestID   pgtype.UUID        `json:"request_id"`
+	RequestHash string             `json:"request_hash"`
+	Manifest    []byte             `json:"manifest"`
+	Revision    int64              `json:"revision"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type WorkbenchReleaseReservation struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ReleaseID   pgtype.UUID `json:"release_id"`
+	RepoID      pgtype.UUID `json:"repo_id"`
+	MergeCommit string      `json:"merge_commit"`
+	Env         string      `json:"env"`
+}
+
 type Workspace struct {
 	ID           pgtype.UUID        `json:"id"`
 	Name         string             `json:"name"`

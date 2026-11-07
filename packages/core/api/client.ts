@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { ReleaseOrderSchema, ReleaseOrdersSchema, ReleaseCandidatesSchema, type ReleaseOrder, type ReleaseOrders, type ReleaseCandidates, type ReleaseOrderInput } from "../workbench/release-schemas";
 import { DeliveryReviewSchema, ReleaseReadinessSchema, type DeliveryReviewState, type DeliveryReviewInput, type ReleaseReadiness } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
@@ -1648,6 +1649,34 @@ export class ApiClient {
     const review = parseWithFallback<DeliveryReviewState | null>(await this.fetch(endpoint), DeliveryReviewSchema, null, { endpoint });
     if (!review) throw new Error("Invalid delivery review response");
     return review;
+  }
+
+  async listReleaseOrders(projectId = "", env = "", before = ""): Promise<ReleaseOrders> {
+    const endpoint = `/api/releases?${new URLSearchParams({ project_id: projectId, env, before })}`;
+    const result = parseWithFallback<ReleaseOrders | null>(await this.fetch(endpoint), ReleaseOrdersSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid release list response");
+    return result;
+  }
+
+  async getReleaseOrder(id: string): Promise<ReleaseOrder> {
+    const endpoint = `/api/releases/${encodeURIComponent(id)}`;
+    const result = parseWithFallback<ReleaseOrder | null>(await this.fetch(endpoint), ReleaseOrderSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid release order response");
+    return result;
+  }
+
+  async listReleaseCandidates(projectId: string, env: string, before = ""): Promise<ReleaseCandidates> {
+    const endpoint = `/api/releases/candidates?${new URLSearchParams({ project_id: projectId, env, before })}`;
+    const result = parseWithFallback<ReleaseCandidates | null>(await this.fetch(endpoint), ReleaseCandidatesSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid release candidates response");
+    return result;
+  }
+
+  async createReleaseOrder(input: ReleaseOrderInput): Promise<ReleaseOrder> {
+    const endpoint = "/api/releases";
+    const result = parseWithFallback<ReleaseOrder | null>(await this.fetch(endpoint, { method: "POST", body: JSON.stringify(input) }), ReleaseOrderSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid created release response");
+    return result;
   }
 
   async getReleaseReadiness(id: string): Promise<ReleaseReadiness> {

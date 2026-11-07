@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "证书续期失败",
       "deploy_target_check_requested": "发起部署目标自检",
       "deploy_target_checked": "完成部署目标自检",
-      "business_template_published": "发布业务模板"
+      "business_template_published": "发布业务模板",
+      "release_created": "创建发布单"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "选择采用新版的字段",
     "merge": "合并所选字段",
     "keep": "保留项目内容并标记已审阅"
+  },
+  "releases": {
+    "title": "发布中心",
+    "create": "新建发布单",
+    "project": "项目",
+    "environment": "目标环境",
+    "all": "全部",
+    "staging": "预发",
+    "prod": "生产",
+    "loading": "正在加载发布单…",
+    "failed": "发布单加载失败。",
+    "retry": "重试",
+    "empty": "还没有发布单。",
+    "task_count": "{{count}} 个任务",
+    "repo_count": "{{count}} 个仓库",
+    "more": "加载更多",
+    "choose_project": "选择项目",
+    "no_candidates": "当前环境没有可加入的已验收、已合并任务。",
+    "version": "版本标签",
+    "auto_version": "创建时自动生成",
+    "cancel": "取消",
+    "tasks": "包含任务",
+    "repositories": "仓库快照",
+    "status": {
+      "draft": "草稿",
+      "prechecking": "预检中",
+      "ready": "待发布",
+      "deploying": "发布中",
+      "verifying": "验证中",
+      "live": "已上线",
+      "failed": "失败",
+      "partial": "部分成功",
+      "retrying": "重试中"
+    }
   }
 }

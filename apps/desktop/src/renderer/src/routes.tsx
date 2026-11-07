@@ -32,6 +32,8 @@ import { SquadsPage, SquadDetailPage as SquadDetailPageView } from "@multica/vie
 import { AllViewsPage } from "@multica/views/issue-views";
 import { InboxPage } from "@multica/views/inbox";
 import { SecurityPage } from "@multica/views/security";
+import { ReleasesPage } from "@multica/views/releases";
+import { ReleaseDetailPage } from "./pages/release-detail-page";
 import { ChatPage } from "@multica/views/chat";
 import { SettingsPage } from "@multica/views/settings";
 import { useT } from "@multica/views/i18n";
@@ -208,6 +210,8 @@ export const appRoutes: RouteObject[] = [
             element: <SecurityPage />,
             handle: { title: "Security" },
           },
+          { path: "releases", element: <ReleasesPage /> },
+          { path: "releases/:id", element: <ReleaseDetailPage /> },
           {
             path: "runtimes/:id",
             element: <RuntimeDetailPage />,

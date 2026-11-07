@@ -13,7 +13,8 @@
     "skills": "Skills",
     "settings": "設定",
     "views": "檢視",
-    "security": "安全中心"
+    "security": "安全中心",
+    "releases": "發布中心"
   },
   "tab": {
     "issue": "任務",

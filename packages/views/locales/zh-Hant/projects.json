@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "憑證續期失敗",
       "deploy_target_check_requested": "發起部署目標自檢",
       "deploy_target_checked": "完成部署目標自檢",
-      "business_template_published": "發佈業務範本"
+      "business_template_published": "發佈業務範本",
+      "release_created": "建立發布單"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "選擇採用新版的欄位",
     "merge": "合併所選欄位",
     "keep": "保留專案內容並標記已審閱"
+  },
+  "releases": {
+    "title": "發布中心",
+    "create": "新增發布單",
+    "project": "專案",
+    "environment": "目標環境",
+    "all": "全部",
+    "staging": "預發",
+    "prod": "正式",
+    "loading": "正在載入發布單…",
+    "failed": "發布單載入失敗。",
+    "retry": "重試",
+    "empty": "尚無發布單。",
+    "task_count": "{{count}} 個任務",
+    "repo_count": "{{count}} 個儲存庫",
+    "more": "載入更多",
+    "choose_project": "選擇專案",
+    "no_candidates": "目前環境沒有可加入的已驗收、已合併任務。",
+    "version": "版本標籤",
+    "auto_version": "建立時自動產生",
+    "cancel": "取消",
+    "tasks": "包含任務",
+    "repositories": "儲存庫快照",
+    "status": {
+      "draft": "草稿",
+      "prechecking": "預檢中",
+      "ready": "待發布",
+      "deploying": "發布中",
+      "verifying": "驗證中",
+      "live": "已上線",
+      "failed": "失敗",
+      "partial": "部分成功",
+      "retrying": "重試中"
+    }
   }
 }

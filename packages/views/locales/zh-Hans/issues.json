@@ -2033,6 +2033,7 @@
       "merge_missing": "缺少与验收源提交匹配的合并记录。",
       "merge_ambiguous": "存在多个匹配的 PR，请核对关联记录。"
     },
-    "retry": "重试"
+    "retry": "重试",
+    "join": "加入发布"
   }
 }

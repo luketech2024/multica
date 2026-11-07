@@ -7,6 +7,7 @@ import { ReleaseReadiness } from "./release-readiness";
 
 const read = vi.fn();
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace" }));
+vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({ releases: () => "/acme/releases" }) }));
 vi.mock("@multica/core/api", () => ({ api: { getReleaseReadiness: (...args: unknown[]) => read(...args) } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 

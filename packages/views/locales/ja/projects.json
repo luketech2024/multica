@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "証明書更新失敗",
       "deploy_target_check_requested": "ターゲット確認を依頼",
       "deploy_target_checked": "ターゲットを確認",
-      "business_template_published": "業務テンプレートを公開"
+      "business_template_published": "業務テンプレートを公開",
+      "release_created": "リリースを作成"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "新しいバージョンに置き換える項目を選択",
     "merge": "選択した項目を統合",
     "keep": "現在の内容を保持して確認済みにする"
+  },
+  "releases": {
+    "title": "リリース",
+    "create": "リリースを作成",
+    "project": "プロジェクト",
+    "environment": "環境",
+    "all": "すべて",
+    "staging": "ステージング",
+    "prod": "本番",
+    "loading": "リリースを読み込み中…",
+    "failed": "リリースを読み込めませんでした。",
+    "retry": "再試行",
+    "empty": "リリースはまだありません。",
+    "task_count": "タスク {{count}} 件",
+    "repo_count": "リポジトリ {{count}} 件",
+    "more": "さらに読み込む",
+    "choose_project": "プロジェクトを選択",
+    "no_candidates": "この環境で利用できる検収・マージ済みのタスクはありません。",
+    "version": "バージョンタグ",
+    "auto_version": "作成時に自動生成",
+    "cancel": "キャンセル",
+    "tasks": "対象タスク",
+    "repositories": "リポジトリのスナップショット",
+    "status": {
+      "draft": "下書き",
+      "prechecking": "事前確認中",
+      "ready": "リリース待ち",
+      "deploying": "デプロイ中",
+      "verifying": "検証中",
+      "live": "公開済み",
+      "failed": "失敗",
+      "partial": "一部成功",
+      "retrying": "再試行中"
+    }
   }
 }

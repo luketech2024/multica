@@ -442,7 +442,8 @@
       "certificate_renewal_failed": "Renouvellement du certificat échoué",
       "deploy_target_check_requested": "Test de cible demandé",
       "deploy_target_checked": "Cible testée",
-      "business_template_published": "Modèle métier publié"
+      "business_template_published": "Modèle métier publié",
+      "release_created": "Publication créée"
     }
   },
   "deployment": {
@@ -468,5 +469,39 @@
     "choose": "Choisir les champs à remplacer par la nouvelle version",
     "merge": "Fusionner les champs sélectionnés",
     "keep": "Conserver les valeurs et marquer comme examiné"
+  },
+  "releases": {
+    "title": "Publications",
+    "create": "Nouvelle publication",
+    "project": "Projet",
+    "environment": "Environnement",
+    "all": "Tous",
+    "staging": "Préproduction",
+    "prod": "Production",
+    "loading": "Chargement des publications…",
+    "failed": "Impossible de charger les publications.",
+    "retry": "Réessayer",
+    "empty": "Aucune publication.",
+    "task_count": "{{count}} tâches",
+    "repo_count": "{{count}} dépôts",
+    "more": "Charger plus",
+    "choose_project": "Choisir un projet",
+    "no_candidates": "Aucune tâche acceptée et fusionnée disponible pour cet environnement.",
+    "version": "Tag de version",
+    "auto_version": "Généré à la création",
+    "cancel": "Annuler",
+    "tasks": "Tâches incluses",
+    "repositories": "Instantanés des dépôts",
+    "status": {
+      "draft": "Brouillon",
+      "prechecking": "Précontrôle",
+      "ready": "Prêt",
+      "deploying": "Déploiement",
+      "verifying": "Vérification",
+      "live": "En ligne",
+      "failed": "Échec",
+      "partial": "Réussite partielle",
+      "retrying": "Nouvel essai"
+    }
   }
 }

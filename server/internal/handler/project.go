@@ -800,6 +800,15 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to lock project")
 		return
 	}
+	hasReleases, releaseErr := qtx.ProjectHasWorkbenchReleases(r.Context(), db.ProjectHasWorkbenchReleasesParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID})
+	if releaseErr != nil {
+		writeError(w, http.StatusInternalServerError, "failed to check release references")
+		return
+	}
+	if hasReleases {
+		writeError(w, http.StatusConflict, "projects with release history cannot be deleted")
+		return
+	}
 	if err := qtx.ClearChatSessionProjectByProject(r.Context(), db.ClearChatSessionProjectByProjectParams{
 		ProjectID:   project.ID,
 		WorkspaceID: project.WorkspaceID,

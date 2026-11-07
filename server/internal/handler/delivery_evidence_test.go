@@ -9,6 +9,7 @@ import (
 
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
+	"github.com/multica-ai/multica/server/pkg/dbid"
 )
 
 func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.T) {
@@ -150,7 +151,69 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 		t.Fatalf("accepted source and merged child should match: %+v", result)
 	}
 	review("undo", "", accepted.Revision, http.StatusConflict)
+	t.Cleanup(func() {
+		dbfx.Exec(t, `DELETE FROM workbench_release_reservations WHERE release_id IN (SELECT id FROM workbench_release_orders WHERE project_id=$1)`, project)
+		dbfx.Exec(t, `DELETE FROM workbench_release_orders WHERE project_id=$1`, project)
+	})
+	input := workbench.ReleaseOrderInput{ProjectID: project, Env: "staging", RequestID: uuidToString(dbid.NewV7()), Tasks: []workbench.ReleaseTaskInput{{ID: parent, ExpectedRevision: accepted.Revision}}}
+	candidateCount := func(env string) int {
+		t.Helper()
+		var result struct {
+			Candidates []json.RawMessage `json:"candidates"`
+		}
+		testutil.Call(t, testHandler.ListReleaseCandidates, newRequest("GET", "/api/releases/candidates?project_id="+project+"&env="+env, nil)).Want(http.StatusOK).JSON(&result)
+		return len(result.Candidates)
+	}
+	if candidateCount("staging") != 1 {
+		t.Fatal("accepted merged task missing from candidates")
+	}
+	createRelease := func(code int) map[string]any {
+		t.Helper()
+		response := testutil.Call(t, testHandler.CreateReleaseOrder, newRequest("POST", "/api/releases", input)).Want(code)
+		var result map[string]any
+		response.JSON(&result)
+		return result
+	}
+	failing := *testHandler
+	failing.TxStarter = rollbackOnCommitTxStarter{pool: testPool}
+	testutil.Call(t, failing.CreateReleaseOrder, newRequest("POST", "/api/releases", input)).Want(http.StatusInternalServerError)
+	if candidateCount("staging") != 1 {
+		t.Fatal("failed transaction reserved a candidate")
+	}
+	agentRequest := newRequest("POST", "/api/releases", input)
+	agentRequest.Header.Set("X-Actor-Source", "task_token")
+	agentRequest.Header.Set("X-Agent-ID", testUserID)
+	testutil.Call(t, testHandler.CreateReleaseOrder, agentRequest).Want(http.StatusForbidden)
+	order := createRelease(http.StatusCreated)
+	if candidateCount("staging") != 0 || candidateCount("prod") != 1 {
+		t.Fatal("candidate reservations were not isolated by environment")
+	}
+	if replay := createRelease(http.StatusOK); replay["id"] != order["id"] {
+		t.Fatal("idempotent replay created a different release")
+	}
+	input.Env = "prod"
+	createRelease(http.StatusConflict)
+	input.RequestID = uuidToString(dbid.NewV7())
+	production := createRelease(http.StatusCreated)
+	if production["id"] == order["id"] || production["env"] != "prod" {
+		t.Fatal("cross-environment promotion did not create a separate order")
+	}
+	input.RequestID = uuidToString(dbid.NewV7())
+	createRelease(http.StatusConflict)
+	var stored map[string]any
+	testutil.Call(t, testHandler.GetReleaseOrder, testutil.WithURLParams(newRequest("GET", "/api/releases/"+order["id"].(string), nil), "releaseId", order["id"].(string))).Want(http.StatusOK).JSON(&stored)
+	if stored["identifier"] != order["identifier"] || stored["manifest"] == nil {
+		t.Fatal("release snapshot did not survive reread")
+	}
+	outsider := dbfx.User(t, "Release outsider", "release-outsider-"+project+"@example.test")
+	outsiderRequest := testutil.WithURLParams(newRequest("GET", "/api/releases/"+order["id"].(string), nil), "releaseId", order["id"].(string))
+	outsiderRequest.Header.Set("X-User-ID", outsider)
+	testutil.Call(t, testHandler.GetReleaseOrder, outsiderRequest).Want(http.StatusNotFound)
+	testutil.Call(t, testHandler.DeleteProject, testutil.WithURLParams(newRequest("DELETE", "/api/projects/"+project, nil), "id", project)).Want(http.StatusConflict)
 	dbfx.Exec(t, `DELETE FROM issue_pull_request WHERE issue_id=$1 AND pull_request_id=$2`, child, pr)
+	review("undo", "", accepted.Revision, http.StatusConflict)
+	dbfx.Exec(t, `DELETE FROM workbench_release_reservations WHERE release_id IN (SELECT id FROM workbench_release_orders WHERE project_id=$1)`, project)
+	dbfx.Exec(t, `DELETE FROM workbench_release_orders WHERE project_id=$1`, project)
 	undone := review("undo", "", accepted.Revision, http.StatusOK)
 	if undone.Status != "in_review" {
 		t.Fatal("undo did not restore review")
