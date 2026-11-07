@@ -107,6 +107,9 @@ export interface GitHubPullRequest {
   state: GitHubPullRequestState;
   html_url: string;
   branch: string | null;
+  base_branch?: string;
+  head_sha?: string;
+  merge_commit_sha?: string;
   author_login: string | null;
   author_avatar_url: string | null;
   merged_at: string | null;

@@ -76,6 +76,9 @@ type GitHubPullRequestResponse struct {
 	State           string  `json:"state"`
 	HtmlURL         string  `json:"html_url"`
 	Branch          *string `json:"branch"`
+	BaseBranch      string  `json:"base_branch"`
+	HeadSHA         string  `json:"head_sha"`
+	MergeCommitSHA  string  `json:"merge_commit_sha"`
 	AuthorLogin     *string `json:"author_login"`
 	AuthorAvatarURL *string `json:"author_avatar_url"`
 	MergedAt        *string `json:"merged_at"`
@@ -204,6 +207,9 @@ func githubPullRequestToResponse(p db.GithubPullRequest, snapshotEnabled bool) G
 		State:             p.State,
 		HtmlURL:           p.HtmlUrl,
 		Branch:            textToPtr(p.Branch),
+		BaseBranch:        p.BaseBranch,
+		HeadSHA:           p.HeadSha,
+		MergeCommitSHA:    confirmedPRMergeCommit(p.State, p.MergeCommitSha),
 		AuthorLogin:       textToPtr(p.AuthorLogin),
 		AuthorAvatarURL:   textToPtr(p.AuthorAvatarUrl),
 		MergedAt:          timestampToPtr(p.MergedAt),
@@ -252,6 +258,9 @@ func issuePullRequestRowToResponse(p db.ListPullRequestsByIssueRow, snapshotEnab
 		State:             p.State,
 		HtmlURL:           p.HtmlUrl,
 		Branch:            textToPtr(p.Branch),
+		BaseBranch:        p.BaseBranch,
+		HeadSHA:           p.HeadSha,
+		MergeCommitSHA:    confirmedPRMergeCommit(p.State, p.MergeCommitSha),
 		AuthorLogin:       textToPtr(p.AuthorLogin),
 		AuthorAvatarURL:   textToPtr(p.AuthorAvatarUrl),
 		MergedAt:          timestampToPtr(p.MergedAt),
@@ -1247,6 +1256,10 @@ type ghPullRequestPayload struct {
 		State          string `json:"state"`
 		Draft          bool   `json:"draft"`
 		Merged         bool   `json:"merged"`
+		MergeCommitSHA string `json:"merge_commit_sha"`
+		Base           struct {
+			Ref string `json:"ref"`
+		} `json:"base"`
 		MergedAt       string `json:"merged_at"`
 		ClosedAt       string `json:"closed_at"`
 		CreatedAt      string `json:"created_at"`
@@ -1576,6 +1589,8 @@ func (h *Handler) mirrorPullRequestForWorkspace(ctx context.Context, wsID pgtype
 		PrCreatedAt:         parseGHTimeRequired(p.PullRequest.CreatedAt),
 		PrUpdatedAt:         parseGHTimeRequired(p.PullRequest.UpdatedAt),
 		HeadSha:             p.PullRequest.Head.SHA,
+		BaseBranch:          p.PullRequest.Base.Ref,
+		MergeCommitSha:      confirmedPRMergeCommit(state, p.PullRequest.MergeCommitSHA),
 		MergeableState:      mergeable,
 		ClearMergeableState: pgtype.Bool{Bool: clearMergeable, Valid: true},
 		Additions:           p.PullRequest.Additions,
@@ -1960,4 +1975,14 @@ func strPtrOrNil(s string) *string {
 	}
 	v := s
 	return &v
+}
+
+func confirmedPRMergeCommit(state, sha string) string {
+	if state != "merged" || (len(sha) != 40 && len(sha) != 64) {
+		return ""
+	}
+	if _, err := hex.DecodeString(sha); err != nil {
+		return ""
+	}
+	return sha
 }

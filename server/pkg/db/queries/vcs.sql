@@ -76,12 +76,12 @@ INSERT INTO vcs_pull_request (
     workspace_id, connection_id, provider, repo_owner, repo_name, pr_number,
     title, state, html_url, branch, author_login, author_avatar_url,
     merged_at, closed_at, pr_created_at, pr_updated_at,
-    additions, deletions, changed_files, head_sha
+    additions, deletions, changed_files, head_sha, base_branch, merge_commit_sha
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
     $7, $8, $9, sqlc.narg('branch'), sqlc.narg('author_login'), sqlc.narg('author_avatar_url'),
     sqlc.narg('merged_at'), sqlc.narg('closed_at'), $10, $11,
-    $12, $13, $14, $15
+    $12, $13, $14, $15, $16, $17
 )
 ON CONFLICT (connection_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     workspace_id      = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.workspace_id      ELSE vcs_pull_request.workspace_id      END,
@@ -99,6 +99,11 @@ ON CONFLICT (connection_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     deletions         = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.deletions         ELSE vcs_pull_request.deletions         END,
     changed_files     = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.changed_files     ELSE vcs_pull_request.changed_files     END,
     head_sha          = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.head_sha          ELSE vcs_pull_request.head_sha          END,
+    base_branch = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at
+        THEN COALESCE(NULLIF(EXCLUDED.base_branch, ''), vcs_pull_request.base_branch) ELSE vcs_pull_request.base_branch END,
+    merge_commit_sha = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at
+        THEN CASE WHEN EXCLUDED.state='merged' THEN COALESCE(NULLIF(EXCLUDED.merge_commit_sha, ''), vcs_pull_request.merge_commit_sha) ELSE '' END
+        ELSE vcs_pull_request.merge_commit_sha END,
     updated_at        = now()
 RETURNING *;
 

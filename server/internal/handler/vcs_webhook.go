@@ -33,6 +33,9 @@ func vcsPullRequestToResponse(p db.VcsPullRequest) GitHubPullRequestResponse {
 		State:            p.State,
 		HtmlURL:          p.HtmlUrl,
 		Branch:           textToPtr(p.Branch),
+		BaseBranch:       p.BaseBranch,
+		HeadSHA:          p.HeadSha,
+		MergeCommitSHA:   confirmedPRMergeCommit(p.State, p.MergeCommitSha),
 		AuthorLogin:      textToPtr(p.AuthorLogin),
 		AuthorAvatarURL:  textToPtr(p.AuthorAvatarUrl),
 		MergedAt:         timestampToPtr(p.MergedAt),
@@ -61,6 +64,9 @@ func vcsPullRequestRowToResponse(p db.ListVCSPullRequestsByIssueRow) GitHubPullR
 		State:            p.State,
 		HtmlURL:          p.HtmlUrl,
 		Branch:           textToPtr(p.Branch),
+		BaseBranch:       p.BaseBranch,
+		HeadSHA:          p.HeadSha,
+		MergeCommitSHA:   confirmedPRMergeCommit(p.State, p.MergeCommitSha),
 		AuthorLogin:      textToPtr(p.AuthorLogin),
 		AuthorAvatarURL:  textToPtr(p.AuthorAvatarUrl),
 		MergedAt:         timestampToPtr(p.MergedAt),
@@ -194,6 +200,8 @@ func (h *Handler) mirrorVCSPullRequest(ctx context.Context, conn db.VcsConnectio
 		Deletions:       ev.Deletions,
 		ChangedFiles:    ev.ChangedFiles,
 		HeadSha:         ev.HeadSHA,
+		BaseBranch:      ev.BaseBranch,
+		MergeCommitSha:  confirmedPRMergeCommit(ev.State, ev.MergeCommitSHA),
 	})
 	if err != nil {
 		slog.Warn("vcs: upsert pr failed", "err", err)

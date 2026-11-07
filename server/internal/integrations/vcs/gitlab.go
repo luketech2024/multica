@@ -62,6 +62,8 @@ type glMergeRequestPayload struct {
 		State          string `json:"state"` // opened|closed|merged|locked
 		Action         string `json:"action"`
 		SourceBranch   string `json:"source_branch"`
+		TargetBranch   string `json:"target_branch"`
+		MergeCommitSHA string `json:"merge_commit_sha"`
 		URL            string `json:"url"`
 		Draft          bool   `json:"draft"`
 		WorkInProgress bool   `json:"work_in_progress"`
@@ -92,6 +94,8 @@ func (gitlabProvider) ParsePullRequest(body []byte) (PullRequestEvent, error) {
 		HTMLURL:         d.ObjectAttributes.URL,
 		Branch:          d.ObjectAttributes.SourceBranch,
 		HeadSHA:         d.ObjectAttributes.LastCommit.ID,
+		BaseBranch:      d.ObjectAttributes.TargetBranch,
+		MergeCommitSHA:  d.ObjectAttributes.MergeCommitSHA,
 		AuthorLogin:     d.User.Username,
 		AuthorAvatarURL: d.User.AvatarURL,
 		CreatedAt:       normalizeGitLabTime(d.ObjectAttributes.CreatedAt),

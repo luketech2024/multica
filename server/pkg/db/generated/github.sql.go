@@ -116,7 +116,7 @@ func (q *Queries) DeletePendingGitHubInstallation(ctx context.Context, installat
 }
 
 const findGitHubPullRequestByURL = `-- name: FindGitHubPullRequestByURL :one
-SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at FROM github_pull_request
+SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at, base_branch, merge_commit_sha FROM github_pull_request
 WHERE workspace_id = $1
   AND lower(rtrim(html_url, '/')) = lower($2::text)
 ORDER BY pr_updated_at DESC
@@ -162,6 +162,8 @@ func (q *Queries) FindGitHubPullRequestByURL(ctx context.Context, arg FindGitHub
 		&i.ChecksRollupState,
 		&i.SnapshotHeadSha,
 		&i.SnapshotFetchedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
@@ -189,7 +191,7 @@ func (q *Queries) GetGitHubInstallationByID(ctx context.Context, id pgtype.UUID)
 }
 
 const getGitHubPullRequest = `-- name: GetGitHubPullRequest :one
-SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at FROM github_pull_request
+SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at, base_branch, merge_commit_sha FROM github_pull_request
 WHERE workspace_id = $1 AND repo_owner = $2 AND repo_name = $3 AND pr_number = $4
 `
 
@@ -237,12 +239,14 @@ func (q *Queries) GetGitHubPullRequest(ctx context.Context, arg GetGitHubPullReq
 		&i.ChecksRollupState,
 		&i.SnapshotHeadSha,
 		&i.SnapshotFetchedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
 
 const getGitHubPullRequestInWorkspace = `-- name: GetGitHubPullRequestInWorkspace :one
-SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at FROM github_pull_request
+SELECT id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at, base_branch, merge_commit_sha FROM github_pull_request
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -283,6 +287,8 @@ func (q *Queries) GetGitHubPullRequestInWorkspace(ctx context.Context, arg GetGi
 		&i.ChecksRollupState,
 		&i.SnapshotHeadSha,
 		&i.SnapshotFetchedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
@@ -566,7 +572,7 @@ SELECT
     pr.id, pr.workspace_id, pr.installation_id, pr.repo_owner, pr.repo_name,
     pr.pr_number, pr.title, pr.state, pr.html_url, pr.branch, pr.author_login,
     pr.author_avatar_url, pr.merged_at, pr.closed_at, pr.pr_created_at,
-    pr.pr_updated_at, pr.head_sha, pr.mergeable_state,
+    pr.pr_updated_at, pr.head_sha, pr.base_branch, pr.merge_commit_sha, pr.mergeable_state,
     pr.additions, pr.deletions, pr.changed_files,
     pr.api_mergeable, pr.api_merge_state_status, pr.checks_rollup_state,
     pr.snapshot_head_sha, pr.snapshot_fetched_at,
@@ -602,6 +608,8 @@ type ListPullRequestsByIssueRow struct {
 	PrCreatedAt         pgtype.Timestamptz `json:"pr_created_at"`
 	PrUpdatedAt         pgtype.Timestamptz `json:"pr_updated_at"`
 	HeadSha             string             `json:"head_sha"`
+	BaseBranch          string             `json:"base_branch"`
+	MergeCommitSha      string             `json:"merge_commit_sha"`
 	MergeableState      pgtype.Text        `json:"mergeable_state"`
 	Additions           int32              `json:"additions"`
 	Deletions           int32              `json:"deletions"`
@@ -658,6 +666,8 @@ func (q *Queries) ListPullRequestsByIssue(ctx context.Context, issueID pgtype.UU
 			&i.PrCreatedAt,
 			&i.PrUpdatedAt,
 			&i.HeadSha,
+			&i.BaseBranch,
+			&i.MergeCommitSha,
 			&i.MergeableState,
 			&i.Additions,
 			&i.Deletions,
@@ -766,13 +776,13 @@ INSERT INTO github_pull_request (
     title, state, html_url, branch, author_login, author_avatar_url,
     merged_at, closed_at, pr_created_at, pr_updated_at,
     head_sha, mergeable_state,
-    additions, deletions, changed_files
+    additions, deletions, changed_files, base_branch, merge_commit_sha
 ) VALUES (
     $1, $2, $3, $4, $5,
-    $6, $7, $8, $15, $16, $17,
-    $18, $19, $9, $10,
-    $11, $20,
-    $12, $13, $14
+    $6, $7, $8, $17, $18, $19,
+    $20, $21, $9, $10,
+    $11, $22,
+    $12, $13, $14, $15, $16
 )
 ON CONFLICT (workspace_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     installation_id = EXCLUDED.installation_id,
@@ -780,6 +790,10 @@ ON CONFLICT (workspace_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     state = EXCLUDED.state,
     html_url = EXCLUDED.html_url,
     branch = EXCLUDED.branch,
+    base_branch = COALESCE(NULLIF(EXCLUDED.base_branch, ''), github_pull_request.base_branch),
+    merge_commit_sha = CASE WHEN EXCLUDED.state = 'merged'
+        THEN COALESCE(NULLIF(EXCLUDED.merge_commit_sha, ''), github_pull_request.merge_commit_sha)
+        ELSE '' END,
     author_login = EXCLUDED.author_login,
     author_avatar_url = EXCLUDED.author_avatar_url,
     merged_at = EXCLUDED.merged_at,
@@ -787,7 +801,7 @@ ON CONFLICT (workspace_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     pr_updated_at = EXCLUDED.pr_updated_at,
     head_sha = EXCLUDED.head_sha,
     mergeable_state = CASE
-        WHEN COALESCE($21::boolean, FALSE) THEN NULL
+        WHEN COALESCE($23::boolean, FALSE) THEN NULL
         WHEN EXCLUDED.mergeable_state IS NOT NULL THEN EXCLUDED.mergeable_state
         ELSE github_pull_request.mergeable_state
     END,
@@ -796,7 +810,7 @@ ON CONFLICT (workspace_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     changed_files = EXCLUDED.changed_files,
     updated_at = now()
 WHERE EXCLUDED.pr_updated_at >= github_pull_request.pr_updated_at
-RETURNING id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at
+RETURNING id, workspace_id, installation_id, repo_owner, repo_name, pr_number, title, state, html_url, branch, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, created_at, updated_at, head_sha, mergeable_state, additions, deletions, changed_files, api_mergeable, api_merge_state_status, checks_rollup_state, snapshot_head_sha, snapshot_fetched_at, base_branch, merge_commit_sha
 `
 
 type UpsertGitHubPullRequestParams struct {
@@ -814,6 +828,8 @@ type UpsertGitHubPullRequestParams struct {
 	Additions           int32              `json:"additions"`
 	Deletions           int32              `json:"deletions"`
 	ChangedFiles        int32              `json:"changed_files"`
+	BaseBranch          string             `json:"base_branch"`
+	MergeCommitSha      string             `json:"merge_commit_sha"`
 	Branch              pgtype.Text        `json:"branch"`
 	AuthorLogin         pgtype.Text        `json:"author_login"`
 	AuthorAvatarUrl     pgtype.Text        `json:"author_avatar_url"`
@@ -856,6 +872,8 @@ func (q *Queries) UpsertGitHubPullRequest(ctx context.Context, arg UpsertGitHubP
 		arg.Additions,
 		arg.Deletions,
 		arg.ChangedFiles,
+		arg.BaseBranch,
+		arg.MergeCommitSha,
 		arg.Branch,
 		arg.AuthorLogin,
 		arg.AuthorAvatarUrl,
@@ -894,6 +912,8 @@ func (q *Queries) UpsertGitHubPullRequest(ctx context.Context, arg UpsertGitHubP
 		&i.ChecksRollupState,
 		&i.SnapshotHeadSha,
 		&i.SnapshotFetchedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }

@@ -108,6 +108,21 @@ describe("PullRequestList sidebar rows", () => {
 
   const verdict = () => screen.getByTestId("pull-request-verdict");
 
+  it("shows the target branch and confirmed merge commit", async () => {
+    mockPRs = [makePR({ state: "merged", base_branch: "main", merge_commit_sha: "b".repeat(40) })];
+    renderList();
+    await waitForRender();
+    expect(screen.getByText("feat/x → main")).toBeInTheDocument();
+    expect(screen.getByTitle("b".repeat(40))).toHaveTextContent("b".repeat(12));
+  });
+
+  it("does not show a temporary merge commit on an open PR", async () => {
+    mockPRs = [makePR({ merge_commit_sha: "b".repeat(40) })];
+    renderList();
+    await waitForRender();
+    expect(screen.queryByTitle("b".repeat(40))).not.toBeInTheDocument();
+  });
+
   // --- One verdict per PR --------------------------------------------------
 
   it("leads a failed PR with the count and lists what failed under it", async () => {

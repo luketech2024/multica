@@ -68,6 +68,8 @@ type PullRequestEvent struct {
 	HTMLURL         string
 	Branch          string
 	HeadSHA         string
+	BaseBranch      string
+	MergeCommitSHA  string
 	AuthorLogin     string
 	AuthorAvatarURL string
 	Additions       int32

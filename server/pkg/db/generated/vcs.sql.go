@@ -48,7 +48,7 @@ func (q *Queries) DeleteVCSConnection(ctx context.Context, arg DeleteVCSConnecti
 }
 
 const findVCSPullRequestByURL = `-- name: FindVCSPullRequestByURL :one
-SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at FROM vcs_pull_request
+SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at, base_branch, merge_commit_sha FROM vcs_pull_request
 WHERE workspace_id = $1
   AND lower(rtrim(html_url, '/')) = lower($2::text)
 ORDER BY pr_updated_at DESC
@@ -87,6 +87,8 @@ func (q *Queries) FindVCSPullRequestByURL(ctx context.Context, arg FindVCSPullRe
 		&i.ChangedFiles,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
@@ -115,7 +117,7 @@ func (q *Queries) GetVCSConnectionByID(ctx context.Context, id pgtype.UUID) (Vcs
 }
 
 const getVCSPullRequestByKey = `-- name: GetVCSPullRequestByKey :one
-SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at FROM vcs_pull_request
+SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at, base_branch, merge_commit_sha FROM vcs_pull_request
 WHERE connection_id = $1 AND repo_owner = $2 AND repo_name = $3 AND pr_number = $4
 `
 
@@ -160,12 +162,14 @@ func (q *Queries) GetVCSPullRequestByKey(ctx context.Context, arg GetVCSPullRequ
 		&i.ChangedFiles,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
 
 const getVCSPullRequestInWorkspace = `-- name: GetVCSPullRequestInWorkspace :one
-SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at FROM vcs_pull_request
+SELECT id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at, base_branch, merge_commit_sha FROM vcs_pull_request
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -201,6 +205,8 @@ func (q *Queries) GetVCSPullRequestInWorkspace(ctx context.Context, arg GetVCSPu
 		&i.ChangedFiles,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }
@@ -402,7 +408,7 @@ WITH checks AS (
     GROUP BY pr.id
 )
 SELECT
-    pr.id, pr.workspace_id, pr.connection_id, pr.provider, pr.repo_owner, pr.repo_name, pr.pr_number, pr.title, pr.state, pr.html_url, pr.branch, pr.head_sha, pr.author_login, pr.author_avatar_url, pr.merged_at, pr.closed_at, pr.pr_created_at, pr.pr_updated_at, pr.additions, pr.deletions, pr.changed_files, pr.created_at, pr.updated_at,
+    pr.id, pr.workspace_id, pr.connection_id, pr.provider, pr.repo_owner, pr.repo_name, pr.pr_number, pr.title, pr.state, pr.html_url, pr.branch, pr.head_sha, pr.author_login, pr.author_avatar_url, pr.merged_at, pr.closed_at, pr.pr_created_at, pr.pr_updated_at, pr.additions, pr.deletions, pr.changed_files, pr.created_at, pr.updated_at, pr.base_branch, pr.merge_commit_sha,
     COALESCE(ipr.linked_by_type, 'system')::text AS linked_by_type,
     COALESCE(c.total, 0)::bigint   AS checks_total,
     COALESCE(c.passed, 0)::bigint  AS checks_passed,
@@ -439,6 +445,8 @@ type ListVCSPullRequestsByIssueRow struct {
 	ChangedFiles    int32              `json:"changed_files"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	BaseBranch      string             `json:"base_branch"`
+	MergeCommitSha  string             `json:"merge_commit_sha"`
 	LinkedByType    string             `json:"linked_by_type"`
 	ChecksTotal     int64              `json:"checks_total"`
 	ChecksPassed    int64              `json:"checks_passed"`
@@ -484,6 +492,8 @@ func (q *Queries) ListVCSPullRequestsByIssue(ctx context.Context, issueID pgtype
 			&i.ChangedFiles,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.BaseBranch,
+			&i.MergeCommitSha,
 			&i.LinkedByType,
 			&i.ChecksTotal,
 			&i.ChecksPassed,
@@ -655,12 +665,12 @@ INSERT INTO vcs_pull_request (
     workspace_id, connection_id, provider, repo_owner, repo_name, pr_number,
     title, state, html_url, branch, author_login, author_avatar_url,
     merged_at, closed_at, pr_created_at, pr_updated_at,
-    additions, deletions, changed_files, head_sha
+    additions, deletions, changed_files, head_sha, base_branch, merge_commit_sha
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
-    $7, $8, $9, $16, $17, $18,
-    $19, $20, $10, $11,
-    $12, $13, $14, $15
+    $7, $8, $9, $18, $19, $20,
+    $21, $22, $10, $11,
+    $12, $13, $14, $15, $16, $17
 )
 ON CONFLICT (connection_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     workspace_id      = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.workspace_id      ELSE vcs_pull_request.workspace_id      END,
@@ -678,8 +688,13 @@ ON CONFLICT (connection_id, repo_owner, repo_name, pr_number) DO UPDATE SET
     deletions         = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.deletions         ELSE vcs_pull_request.deletions         END,
     changed_files     = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.changed_files     ELSE vcs_pull_request.changed_files     END,
     head_sha          = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at THEN EXCLUDED.head_sha          ELSE vcs_pull_request.head_sha          END,
+    base_branch = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at
+        THEN COALESCE(NULLIF(EXCLUDED.base_branch, ''), vcs_pull_request.base_branch) ELSE vcs_pull_request.base_branch END,
+    merge_commit_sha = CASE WHEN EXCLUDED.pr_updated_at >= vcs_pull_request.pr_updated_at
+        THEN CASE WHEN EXCLUDED.state='merged' THEN COALESCE(NULLIF(EXCLUDED.merge_commit_sha, ''), vcs_pull_request.merge_commit_sha) ELSE '' END
+        ELSE vcs_pull_request.merge_commit_sha END,
     updated_at        = now()
-RETURNING id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at
+RETURNING id, workspace_id, connection_id, provider, repo_owner, repo_name, pr_number, title, state, html_url, branch, head_sha, author_login, author_avatar_url, merged_at, closed_at, pr_created_at, pr_updated_at, additions, deletions, changed_files, created_at, updated_at, base_branch, merge_commit_sha
 `
 
 type UpsertVCSPullRequestParams struct {
@@ -698,6 +713,8 @@ type UpsertVCSPullRequestParams struct {
 	Deletions       int32              `json:"deletions"`
 	ChangedFiles    int32              `json:"changed_files"`
 	HeadSha         string             `json:"head_sha"`
+	BaseBranch      string             `json:"base_branch"`
+	MergeCommitSha  string             `json:"merge_commit_sha"`
 	Branch          pgtype.Text        `json:"branch"`
 	AuthorLogin     pgtype.Text        `json:"author_login"`
 	AuthorAvatarUrl pgtype.Text        `json:"author_avatar_url"`
@@ -731,6 +748,8 @@ func (q *Queries) UpsertVCSPullRequest(ctx context.Context, arg UpsertVCSPullReq
 		arg.Deletions,
 		arg.ChangedFiles,
 		arg.HeadSha,
+		arg.BaseBranch,
+		arg.MergeCommitSha,
 		arg.Branch,
 		arg.AuthorLogin,
 		arg.AuthorAvatarUrl,
@@ -762,6 +781,8 @@ func (q *Queries) UpsertVCSPullRequest(ctx context.Context, arg UpsertVCSPullReq
 		&i.ChangedFiles,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BaseBranch,
+		&i.MergeCommitSha,
 	)
 	return i, err
 }

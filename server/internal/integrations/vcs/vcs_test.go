@@ -108,7 +108,8 @@ func TestForgejoEventKindAndParse(t *testing.T) {
 		"action":"closed",
 		"pull_request":{"number":7,"title":"Fix MUL-1","state":"closed","merged":true,
 			"html_url":"https://g/acme/widget/pulls/7","head":{"ref":"fix","sha":"abc"},
-			"user":{"username":"octo"},"additions":3},
+			"user":{"username":"octo"},"additions":3,"base":{"ref":"main"},
+			"merge_commit_sha":"0123456789012345678901234567890123456789"},
 		"repository":{"name":"widget","owner":{"username":"acme"}}}`))
 	if err != nil {
 		t.Fatalf("ParsePullRequest: %v", err)
@@ -121,6 +122,9 @@ func TestForgejoEventKindAndParse(t *testing.T) {
 	}
 	if pr.AuthorLogin != "octo" || pr.HeadSHA != "abc" {
 		t.Errorf("bad author/sha: %+v", pr)
+	}
+	if pr.BaseBranch != "main" || pr.MergeCommitSHA != "0123456789012345678901234567890123456789" {
+		t.Errorf("missing merge evidence: %+v", pr)
 	}
 	if !pr.Terminal() {
 		t.Error("closed action must be terminal")
@@ -149,6 +153,7 @@ func TestGitlabParse(t *testing.T) {
 		"project":{"path_with_namespace":"group/sub/widget"},
 		"object_attributes":{"iid":42,"title":"Add MUL-9","state":"merged","action":"merge",
 			"source_branch":"feat","url":"https://gl/group/sub/widget/-/merge_requests/42",
+			"target_branch":"release","merge_commit_sha":"0123456789012345678901234567890123456789",
 			"last_commit":{"id":"deadbeef"}}}`))
 	if err != nil {
 		t.Fatalf("ParsePullRequest: %v", err)
@@ -158,6 +163,9 @@ func TestGitlabParse(t *testing.T) {
 	}
 	if pr.Number != 42 || pr.State != "merged" || pr.HeadSHA != "deadbeef" {
 		t.Errorf("bad MR: %+v", pr)
+	}
+	if pr.BaseBranch != "release" || pr.MergeCommitSHA != "0123456789012345678901234567890123456789" {
+		t.Errorf("missing merge evidence: %+v", pr)
 	}
 	if !pr.Terminal() {
 		t.Error("merge action must be terminal")

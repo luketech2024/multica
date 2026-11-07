@@ -67,11 +67,15 @@ func (p forgejoProvider) VerifySignature(secret string, h http.Header, body []by
 type fjPullRequestPayload struct {
 	Action      string `json:"action"`
 	PullRequest struct {
-		Number       int32  `json:"number"`
-		Title        string `json:"title"`
-		Body         string `json:"body"`
-		State        string `json:"state"`
-		Merged       bool   `json:"merged"`
+		Number         int32  `json:"number"`
+		Title          string `json:"title"`
+		Body           string `json:"body"`
+		State          string `json:"state"`
+		Merged         bool   `json:"merged"`
+		MergeCommitSHA string `json:"merge_commit_sha"`
+		Base           struct {
+			Ref string `json:"ref"`
+		} `json:"base"`
 		Draft        bool   `json:"draft"`
 		HTMLURL      string `json:"html_url"`
 		Additions    int32  `json:"additions"`
@@ -123,6 +127,8 @@ func (p forgejoProvider) ParsePullRequest(body []byte) (PullRequestEvent, error)
 		HTMLURL:         d.PullRequest.HTMLURL,
 		Branch:          d.PullRequest.Head.Ref,
 		HeadSHA:         d.PullRequest.Head.Sha,
+		BaseBranch:      d.PullRequest.Base.Ref,
+		MergeCommitSHA:  d.PullRequest.MergeCommitSHA,
 		AuthorLogin:     coalesce(d.PullRequest.User.UserName, d.PullRequest.User.Login),
 		AuthorAvatarURL: d.PullRequest.User.AvatarURL,
 		Additions:       d.PullRequest.Additions,

@@ -469,6 +469,16 @@ function PullRequestRow({
               </p>
               {pill ? <VerdictPill pill={pill} stale={stale} title={staleTitle} /> : null}
             </div>
+            {pr.branch && pr.base_branch && (
+              <p className="mt-1 truncate text-caption text-muted-foreground" title={`${pr.branch} → ${pr.base_branch}`}>
+                {pr.branch} → {pr.base_branch}
+              </p>
+            )}
+            {pr.state === "merged" && pr.merge_commit_sha && (
+              <p className="mt-1 truncate text-caption text-muted-foreground" title={pr.merge_commit_sha}>
+                {t(($) => $.detail.pull_request_merged_commit)} <code>{pr.merge_commit_sha.slice(0, 12)}</code>
+              </p>
+            )}
             {verdict.kind === "failed" ? <PullRequestProblems verdict={verdict} stale={stale} /> : null}
           </div>
         </TooltipTrigger>
@@ -478,6 +488,7 @@ function PullRequestRow({
             {pr.repo_owner}/{pr.repo_name}#{pr.number}
             {pr.author_login ? ` · @${pr.author_login}` : null}
           </span>
+          {pr.head_sha && <span className="text-muted-foreground">{t(($) => $.detail.pull_request_source_commit)} <code>{pr.head_sha}</code></span>}
           {showStats ? (
             <span className="text-muted-foreground tabular-nums">
               +{(pr.additions ?? 0).toLocaleString()} −{(pr.deletions ?? 0).toLocaleString()} ·{" "}
