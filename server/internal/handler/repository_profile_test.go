@@ -68,8 +68,8 @@ func TestRepositoryProfilePersistsWithRevisionAndSurvivesRepositoryEdits(t *test
 	input.ExpectedRevision = 1
 	call(repo, http.StatusConflict)
 	input.ExpectedRevision = 2
-	input.Overrides = map[string]string{"test": "./verify.sh"}
-	if updated := call(repo, http.StatusOK); updated.Revision != 3 || updated.Stack.Overrides["test"].By != "manual" {
+	input.Overrides = map[string]string{"test": "./verify.sh", "build": "./build.sh"}
+	if updated := call(repo, http.StatusOK); updated.Revision != 3 || updated.Stack.Overrides["test"].By != "manual" || updated.Stack.Overrides["build"].Value != "./build.sh" || updated.Stack.Overrides["build"].By != "manual" {
 		t.Fatal("override not saved with provenance")
 	}
 	input.ExpectedRevision = 3

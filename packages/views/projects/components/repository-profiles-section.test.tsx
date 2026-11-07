@@ -67,6 +67,11 @@ it("preserves a stale draft for explicit retry and sends only editable inputs", 
   fireEvent.click(screen.getByRole("checkbox", { name: "java21" }));
   fireEvent.click(screen.getByRole("checkbox", { name: "docker-image" }));
   expect(screen.getByRole("checkbox", { name: "none" })).not.toBeChecked();
+  fireEvent.click(screen.getByText("Manual command overrides"));
+  fireEvent.click(screen.getByRole("checkbox", { name: "build" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "build" }), {
+    target: { value: "./scripts/build.sh" },
+  });
   fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
   await screen.findByText("repository profile changed");
   expect(screen.getByRole("combobox", { name: "Stack template" })).toHaveValue(
@@ -78,7 +83,7 @@ it("preserves a stale draft for explicit retry and sends only editable inputs", 
       template: "java-backend",
       tags: ["java21"],
       delivery: ["docker-image"],
-      overrides: {},
+      overrides: { build: "./scripts/build.sh" },
     }),
   );
 });

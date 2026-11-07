@@ -75,7 +75,7 @@ export type BusinessTemplateAsset = z.infer<typeof BusinessTemplateAssetSchema>;
 export type ProjectTemplate = z.infer<typeof ProjectTemplateSchema>;
 
 const RepositoryCommandsSchema = z.object({
-  install: z.string(), test: z.string(), lint: z.array(z.string()), scan: z.string(),
+  install: z.string(), build: z.string().default(""), test: z.string(), lint: z.array(z.string()), scan: z.string(),
 });
 export const RepositoryStackCatalogSchema = z.object({
   templates: z.array(z.object({id: z.string(), family: z.string(), runtime: z.string(), derived: RepositoryCommandsSchema, requires: z.array(z.string()).default([])})),

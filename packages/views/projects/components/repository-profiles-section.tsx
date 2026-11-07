@@ -214,7 +214,7 @@ function RepositoryProfileEditor({
       <details>
         <summary>{t(($) => $.repository_profile.manual)}</summary>
         <div className="space-y-2 py-2">
-          {["install", "test", "lint", "scan"].map((command) => (
+          {["install", "build", "test", "lint", "scan"].map((command) => (
             <div key={command}>
               <label className="flex items-center gap-2">
                 <input

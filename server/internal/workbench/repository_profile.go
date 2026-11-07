@@ -11,6 +11,7 @@ import (
 
 type RepositoryCommands struct {
 	Install string   `json:"install"`
+	Build   string   `json:"build"`
 	Test    string   `json:"test"`
 	Lint    []string `json:"lint"`
 	Scan    string   `json:"scan"`
@@ -174,7 +175,7 @@ func BuildRepositoryProfile(input RepositoryProfileInput, previous RepositoryPro
 		}
 	}
 	for key, value := range input.Overrides {
-		if !slices.Contains([]string{"install", "test", "lint", "scan"}, key) || len(value) > 4096 || strings.ContainsRune(value, 0) {
+		if !slices.Contains([]string{"install", "build", "test", "lint", "scan"}, key) || len(value) > 4096 || strings.ContainsRune(value, 0) {
 			return RepositoryProfile{}, errors.New("invalid manual command override")
 		}
 		stack.Overrides[key] = ManualRepositoryCommand{Value: value, By: "manual"}

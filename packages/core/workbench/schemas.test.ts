@@ -8,11 +8,19 @@ import {
   ProjectRolesSchema,
   projectRoleOrder,
   ProjectTemplateResponseSchema,
+  RepositoryProfileSchema,
   BusinessTemplateSchema,
   parseWorkbenchResponse,
 } from "./schemas";
 
 describe("workbench configuration responses", () => {
+  it("reads existing repository commands and validates an explicit build command", () => {
+    const schema = RepositoryProfileSchema.shape.stack.shape.derived;
+    const legacy = { install: "pnpm install", test: "pnpm test", lint: [], scan: "" };
+    expect(schema.parse(legacy).build).toBe("");
+    expect(schema.parse({ ...legacy, build: "./build.sh" }).build).toBe("./build.sh");
+    expect(schema.safeParse({ ...legacy, build: 42 }).success).toBe(false);
+  });
   it("fails closed for unknown check states and rejects malformed probe data", () => {
     const check = { status: "future-status", at: "2026-11-07T00:00:00Z", ok: true, ms: 5, detail: "Probe" };
     expect(DeployTargetSchema.shape.last_check.parse(check)?.status).toBe("failed");
