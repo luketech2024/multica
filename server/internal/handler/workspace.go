@@ -598,7 +598,7 @@ type UpdateMemberRequest struct {
 
 func (h *Handler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 	workspaceID := workspaceIDFromURL(r, "id")
-	requester, ok := h.workspaceMember(w, r, workspaceID)
+	requester, ok := h.requireWorkspaceRole(w, r, workspaceID, "workspace not found", "owner", "admin")
 	if !ok {
 		return
 	}
@@ -629,6 +629,24 @@ func (h *Handler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid member role")
 		return
 	}
+	tx, err := h.TxStarter.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to start member update")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	q := h.Queries.WithTx(tx)
+	if _, err := q.LockRuntimeShareMemberRemoval(r.Context(), db.LockRuntimeShareMemberRemovalParams{
+		WorkspaceID: requester.WorkspaceID, UserID: target.UserID,
+	}); err != nil {
+		writeError(w, http.StatusConflict, "member is no longer available")
+		return
+	}
+	target, err = q.GetMember(r.Context(), memberUUID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "member not found")
+		return
+	}
 
 	if (target.Role == "owner" || role == "owner") && requester.Role != "owner" {
 		writeError(w, http.StatusForbidden, "insufficient permissions")
@@ -636,7 +654,7 @@ func (h *Handler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if target.Role == "owner" && role != "owner" {
-		members, err := h.Queries.ListMembers(r.Context(), target.WorkspaceID)
+		members, err := q.ListMembers(r.Context(), target.WorkspaceID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to update member")
 			return
@@ -647,7 +665,7 @@ func (h *Handler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	updatedMember, err := h.Queries.UpdateMemberRole(r.Context(), db.UpdateMemberRoleParams{
+	updatedMember, err := q.UpdateMemberRole(r.Context(), db.UpdateMemberRoleParams{
 		ID:   target.ID,
 		Role: role,
 	})
@@ -656,13 +674,24 @@ func (h *Handler) UpdateMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.MembershipCache.Invalidate(r.Context(), uuidToString(target.UserID), workspaceID)
-
-	user, err := h.Queries.GetUser(r.Context(), updatedMember.UserID)
+	if target.Role != role {
+		if err := writeWorkbenchAudit(r.Context(), q, target.WorkspaceID, requester.UserID, "workspace_member_role_changed", map[string]any{
+			"member_id": uuidToString(target.ID), "user_id": uuidToString(target.UserID), "previous_role": target.Role, "role": role,
+		}); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to record member audit")
+			return
+		}
+	}
+	user, err := q.GetUser(r.Context(), updatedMember.UserID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load member")
 		return
 	}
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to commit member update")
+		return
+	}
+	h.MembershipCache.Invalidate(r.Context(), uuidToString(target.UserID), workspaceID)
 
 	userID := requestUserID(r)
 	h.publish(protocol.EventMemberUpdated, uuidToString(requester.WorkspaceID), "member", userID, map[string]any{

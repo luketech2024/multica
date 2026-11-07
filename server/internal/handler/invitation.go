@@ -542,6 +542,14 @@ func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := writeWorkbenchAudit(r.Context(), qtx, accepted.WorkspaceID, user.ID, "workspace_member_role_changed", map[string]any{
+		"member_id": uuidToString(member.ID), "user_id": uuidToString(user.ID), "previous_role": "", "role": member.Role,
+		"invitation_id": uuidToString(accepted.ID),
+	}); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to record membership audit")
+		return
+	}
+
 	// Accepting an invite marks the invitee as onboarded. The web /
 	// desktop workspace layout has a hard onboarded_at gate; without
 	// this mark, an invitee landing on their first workspace would be

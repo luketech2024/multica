@@ -71,6 +71,10 @@ func (h *Handler) revokeAndRemoveMember(ctx context.Context, workspaceID, userID
 	}); err != nil {
 		return empty, err
 	}
+	member, err := qtx.GetMember(ctx, memberID)
+	if err != nil {
+		return empty, err
+	}
 
 	runtimes, err := qtx.ListAgentRuntimesByOwner(ctx, db.ListAgentRuntimesByOwnerParams{
 		WorkspaceID: workspaceID,
@@ -258,6 +262,11 @@ func (h *Handler) revokeAndRemoveMember(ctx context.Context, workspaceID, userID
 	}
 
 	if err := qtx.DeleteMember(ctx, memberID); err != nil {
+		return empty, err
+	}
+	if err := writeWorkbenchAudit(ctx, qtx, workspaceID, archivedBy, "workspace_member_role_changed", map[string]any{
+		"member_id": uuidToString(memberID), "user_id": uuidToString(userID), "previous_role": member.Role, "role": "",
+	}); err != nil {
 		return empty, err
 	}
 
