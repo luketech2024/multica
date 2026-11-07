@@ -10,7 +10,11 @@
     "no_task": "目前計畫尚未為此階段分配子任務。",
     "next": "下一步",
     "coverage": "由 {{count}} 個子任務覆蓋",
-    "bounds": "範圍邊界"
+    "bounds": "範圍邊界",
+    "empty_title": "還沒有子任務",
+    "empty_description": "拆單後啟用角色的交接會按時間出現在這裡。",
+    "go_plan": "去拆單",
+    "error_impact": "階段狀態可能落後，任務繼續執行。"
   },
   "delivery_review": {
     "title": "成果驗收",
@@ -1936,7 +1940,13 @@
     "missing_repositories": "請為子任務選擇倉庫 {{tasks}}",
     "dependency_cycle": "依賴形成循環 {{path}}",
     "add_existing_dependency": "新增既有任務依賴",
-    "existing_dependency_hint": "選擇同專案任務，完成後才會開始執行。"
+    "existing_dependency_hint": "選擇同專案任務，完成後才會開始執行。",
+    "error_title": "拆單資料載入失敗",
+    "error_impact": "無法確認倉庫覆蓋，暫不能儲存拆單。",
+    "empty_title": "還沒有可拆的任務",
+    "empty_description": "任務通過需求確認後才會出現在這裡。",
+    "open_tasks": "去任務清單",
+    "draft_empty": "新增子任務，為它指定角色、倉庫和覆蓋的驗收條目。"
   },
   "handoff": {
     "title": "子任務交接",

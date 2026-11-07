@@ -10,15 +10,16 @@ import { renderWithI18n } from "../../test/i18n";
 import { ExecutionPlanEditor } from "./execution-plan-editor";
 
 const save = vi.fn();
+const listResources = vi.fn(async () => ({
+  resources: [{ id: "repo", label: "API", resource_type: "github_repo" }],
+}));
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace" }));
 vi.mock("@multica/core/permissions", () => ({
   useCurrentMember: () => ({ role: "owner" }),
 }));
 vi.mock("@multica/core/api", () => ({
   api: {
-    listProjectResources: async () => ({
-      resources: [{ id: "repo", label: "API", resource_type: "github_repo" }],
-    }),
+    listProjectResources: () => listResources(),
     saveExecutionPlan: (...args: unknown[]) => save(...args),
   },
 }));
@@ -65,6 +66,24 @@ vi.mock("../../modals/issue-picker-modal", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+it("shows loading, explains repository failures and retains the draft on retry", async () => {
+  let fail: (reason: Error) => void = () => {};
+  listResources.mockImplementationOnce(() => new Promise((_, reject) => { fail = reject; }));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  renderWithI18n(<QueryClientProvider client={client}><ExecutionPlanEditor issue={issue} /></QueryClientProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Plan subtasks" }));
+  expect(screen.getByRole("status", { name: "Loading repositories…" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Add subtask" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Subtask title" }), { target: { value: "Retained draft" } });
+  fail(new Error("offline"));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Repository coverage cannot be verified");
+  expect(screen.getByRole("button", { name: "Save plan" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Retry repositories" }));
+  await screen.findByRole("option", { name: "API" });
+  expect(screen.getByRole("textbox", { name: "Subtask title" })).toHaveValue("Retained draft");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 const issue: Issue = {
   id: "task",

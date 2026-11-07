@@ -10,7 +10,11 @@
     "no_task": "現在の計画では、このステージにサブタスクが割り当てられていません。",
     "next": "次のステップ",
     "coverage": "{{count}} 件のサブタスクでカバー",
-    "bounds": "対象範囲"
+    "bounds": "対象範囲",
+    "empty_title": "サブタスクはまだありません",
+    "empty_description": "計画後、有効なロールの引き継ぎがここに表示されます。",
+    "go_plan": "サブタスクを計画",
+    "error_impact": "進捗を取得できない間、ステージの状態表示が遅れる場合があります。実行は継続します。"
   },
   "delivery_review": {
     "title": "成果の受け入れ",
@@ -1936,7 +1940,13 @@
     "missing_repositories": "{{tasks}} のリポジトリを選択してください",
     "dependency_cycle": "依存関係の循環 {{path}}",
     "add_existing_dependency": "既存タスクを前提条件に追加",
-    "existing_dependency_hint": "このプロジェクトのタスクを選択してください。完了後に実行を開始します。"
+    "existing_dependency_hint": "このプロジェクトのタスクを選択してください。完了後に実行を開始します。",
+    "error_title": "計画データを読み込めませんでした。",
+    "error_impact": "リポジトリの網羅性を確認できないため、計画を保存できません。",
+    "empty_title": "計画できるタスクはありません",
+    "empty_description": "要件を確認するとタスクを計画できます。",
+    "open_tasks": "タスク一覧へ",
+    "draft_empty": "サブタスクを追加して、ロール、リポジトリ、対応する受け入れ項目を指定してください。"
   },
   "handoff": {
     "title": "サブタスクの引き継ぎ",

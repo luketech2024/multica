@@ -10,7 +10,11 @@
     "no_task": "No subtask is assigned to this stage in the current plan.",
     "next": "Next step",
     "coverage": "Covered by {{count}} subtasks",
-    "bounds": "Boundaries"
+    "bounds": "Boundaries",
+    "empty_title": "No subtasks yet",
+    "empty_description": "Handoffs for enabled roles will appear here after planning.",
+    "go_plan": "Plan subtasks",
+    "error_impact": "Stage status may be delayed while progress is unavailable. Execution continues."
   },
   "delivery_review": {
     "title": "Delivery acceptance",
@@ -2005,7 +2009,13 @@
     "missing_repositories": "Select a repository for {{tasks}}",
     "dependency_cycle": "Dependency cycle {{path}}",
     "add_existing_dependency": "Add existing dependency",
-    "existing_dependency_hint": "Select a task in this project. Execution waits until it is completed."
+    "existing_dependency_hint": "Select a task in this project. Execution waits until it is completed.",
+    "error_title": "Planning data could not be loaded.",
+    "error_impact": "Repository coverage cannot be verified, so the plan cannot be saved yet.",
+    "empty_title": "No tasks ready to plan",
+    "empty_description": "Tasks become available after requirement confirmation.",
+    "open_tasks": "Go to tasks",
+    "draft_empty": "Add a subtask to assign a role, repository and acceptance coverage."
   },
   "handoff": {
     "title": "Subtask handoff",

@@ -16,6 +16,7 @@ vi.mock("@multica/core/issues/canonical-id", () => ({ useCanonicalIssue: () => r
 vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({
   issueDetail: (id: string) => `/workspace/issues/${id}`,
   issuePipeline: (id: string) => `/workspace/issues/${id}/pipeline`,
+  taskList: () => "/workspace/issues?layout=table",
 }) }));
 vi.mock("@multica/core/api", () => ({ api: { listChildIssues: (...args: unknown[]) => list(...args) } }));
 vi.mock("../../navigation", () => ({
@@ -30,7 +31,7 @@ vi.mock("./execution-log-section", () => ({ ExecutionLogSection: () => <div>Exec
 vi.mock("./pull-requests-section", () => ({ PullRequestsSection: () => <div>Pull requests</div> }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-function mount() {
+function mount(configure?: (issue: Issue) => void) {
   resolved = {
     canonicalId: "parent", isResolving: false, notFound: false,
     issue: {
@@ -47,6 +48,7 @@ function mount() {
       },
     },
   };
+  if (configure) configure(resolved.issue!);
   return renderWithI18n(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
     <IssuePipelinePage routeId="parent" />
   </QueryClientProvider>);
@@ -72,8 +74,28 @@ it("shows a retryable error when planned children cannot be loaded", async () =>
   list.mockRejectedValue(new Error("offline"));
   mount();
   expect(await screen.findByRole("alert")).toHaveTextContent("Task progress could not be loaded.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Execution continues.");
   expect(screen.queryByText("Execution records")).not.toBeInTheDocument();
   list.mockResolvedValue({ issues: [] });
   fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-  expect(await screen.findByText("No subtask is assigned to this stage in the current plan.")).toBeVisible();
+  expect(await screen.findByText("No subtasks yet")).toBeVisible();
+});
+
+it("offers planning from an empty pipeline", async () => {
+  list.mockResolvedValue({ issues: [] });
+  mount();
+  expect(await screen.findByText("No subtasks yet")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Plan subtasks" }));
+  expect(replace).toHaveBeenCalledWith("/workspace/issues/parent/pipeline?stage=sched");
+});
+
+it("explains why an unconfirmed task cannot be planned", async () => {
+  navigation.searchParams = new URLSearchParams("stage=sched");
+  mount((issue) => {
+    issue.acceptance_criteria!.gate.spec = null;
+    issue.acceptance_criteria!.plan = undefined;
+  });
+  expect(screen.getByText("No tasks ready to plan")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Go to tasks" })).toHaveAttribute("href", "/workspace/issues?layout=table");
+  navigation.searchParams = new URLSearchParams("stage=test&task=second");
 });

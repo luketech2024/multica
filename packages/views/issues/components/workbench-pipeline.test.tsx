@@ -30,7 +30,7 @@ it("shows loading and retry before linking the real planned child", async () => 
   let reject: (error: Error) => void = () => {};
   listChildren.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
   mount();
-  expect(screen.getByText("Loading task progress…")).toBeVisible();
+  expect(screen.getByRole("status", { name: "Loading task progress…" })).toBeVisible();
   reject(new Error("offline"));
   await screen.findByText("Task progress could not be loaded.");
   listChildren.mockResolvedValue({ issues: [{ id: "child", identifier: "WB-2", title: "Export report", status: "in_progress", workbench_handoff: { role: "dev", requirement_version: 1, superseded: false } }] });

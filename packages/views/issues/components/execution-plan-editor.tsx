@@ -116,9 +116,14 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
         {t(($) => $.execution_plan.open)}
       </legend>
       {resources.isPending && (
-        <p role="status">{t(($) => $.execution_plan.loading)}</p>
+        <div role="status" aria-label={t(($) => $.execution_plan.loading)} className="space-y-2">
+          {[0, 1, 2].map((row) => <div key={row} className="h-10 animate-pulse rounded-xl bg-muted" />)}
+        </div>
       )}
       {resources.isError && (
+        <div role="alert" className="space-y-2 rounded-xl border p-3 text-caption">
+          <p>{t(($) => $.execution_plan.error_title)}</p>
+          <p className="text-muted-foreground">{t(($) => $.execution_plan.error_impact)}</p>
         <Button
           variant="outline"
           size="sm"
@@ -126,6 +131,10 @@ export function ExecutionPlanEditor({ issue }: { issue: Issue }) {
         >
           {t(($) => $.execution_plan.retry)}
         </Button>
+        </div>
+      )}
+      {!resources.isPending && !resources.isError && draft.tasks.length === 0 && (
+        <p className="rounded-xl border bg-surface p-4 text-caption text-muted-foreground">{t(($) => $.execution_plan.draft_empty)}</p>
       )}
       <p role="status" className="text-caption">
         {t(($) => $.execution_plan.coverage_count, {

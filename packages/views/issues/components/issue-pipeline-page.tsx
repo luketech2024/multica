@@ -36,6 +36,7 @@ export function IssuePipelinePage({ routeId }: { routeId: string }) {
   if (notFound || !issue) {
     return <div role="alert" className="space-y-3 p-6">
       <p>{t(($) => $.pipeline.failed)}</p>
+      <p className="text-caption text-muted-foreground">{t(($) => $.pipeline_page.error_impact)}</p>
       <Button variant="outline" onClick={() => void qc.refetchQueries({ queryKey: issueKeys.detail(wsId, canonicalId ?? routeId) })}>
         {t(($) => $.pipeline_page.retry)}
       </Button>
@@ -100,13 +101,24 @@ function PipelineWorkspace({ issue, criteria }: { issue: Issue; criteria: Accept
         {loading && <div role="status" aria-label={t(($) => $.pipeline.loading)} className="h-64 animate-pulse rounded-xl bg-muted" />}
         {children.isError && <div role="alert" className="space-y-3 rounded-xl border p-4">
           <p>{t(($) => $.pipeline.failed)}</p>
+          <p className="text-caption text-muted-foreground">{t(($) => $.pipeline_page.error_impact)}</p>
           <Button variant="outline" onClick={() => void children.refetch()}>{t(($) => $.pipeline_page.retry)}</Button>
         </div>}
         {!loading && !children.isError && stage && <>
+          {plannedChildren.length === 0 && stage.role !== "sched" && <div className="space-y-3 rounded-xl border bg-surface p-4">
+            <h2 className="text-title-sm font-medium">{t(($) => $.pipeline_page.empty_title)}</h2>
+            <p className="text-caption text-muted-foreground">{t(($) => $.pipeline_page.empty_description)}</p>
+            <Button variant="outline" onClick={() => select("sched")}>{t(($) => $.pipeline_page.go_plan)}</Button>
+          </div>}
           <h2 className="text-title-sm font-medium">{projectT(($) => $.roles[stage.role])}</h2>
           {(!criteria.plan || criteria.change || criteria.needs_resplit) && <p className="text-caption text-muted-foreground">{t(($) => $.pipeline.unplanned)}</p>}
           {stage.role === "product" && <RequirementOutput criteria={criteria} tasks={plannedChildren} />}
           {stage.role === "sched" && <>
+            {!criteria.gate.spec && <div className="space-y-3 rounded-xl border bg-surface p-4">
+              <h3 className="text-title-sm font-medium">{t(($) => $.execution_plan.empty_title)}</h3>
+              <p className="text-caption text-muted-foreground">{t(($) => $.execution_plan.empty_description)}</p>
+              <AppLink href={paths.taskList()} className="text-caption text-primary hover:underline">{t(($) => $.execution_plan.open_tasks)}</AppLink>
+            </div>}
             <ExecutionPlanEditor issue={issue} />
             <RequirementOutput criteria={criteria} tasks={plannedChildren} />
             {criteria.plan && <details className="rounded-xl border bg-surface p-3 text-caption">
@@ -122,7 +134,7 @@ function PipelineWorkspace({ issue, criteria }: { issue: Issue; criteria: Accept
               </Button>)}
             </div>
             {selectedTask && <TaskOutput key={selectedTask.id} parent={issue} task={selectedTask} />}
-          </> : <p className="rounded-xl border bg-surface p-4 text-caption text-muted-foreground">{t(($) => $.pipeline_page.no_task)}</p>}
+          </> : plannedChildren.length > 0 && <p className="rounded-xl border bg-surface p-4 text-caption text-muted-foreground">{t(($) => $.pipeline_page.no_task)}</p>}
         </>}
       </section>
       <aside className="min-w-0 space-y-4 lg:col-start-2 xl:col-start-auto" aria-label={t(($) => $.handoff.title)}>

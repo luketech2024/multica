@@ -35,10 +35,13 @@ function PipelineContent({ issue, criteria }: {
       <AppLink href={paths.issuePipeline(issue.id)} className="block text-caption text-primary hover:underline">
         {t(($) => $.pipeline_page.open)}
       </AppLink>
-      {loading && <p role="status" className="text-caption">{t(($) => $.pipeline.loading)}</p>}
+      {loading && <div role="status" aria-label={t(($) => $.pipeline.loading)} className="space-y-2">
+        {[0, 1, 2].map((row) => <div key={row} className="h-10 animate-pulse rounded-xl bg-muted" />)}
+      </div>}
       {children.isError && (
         <div role="alert" className="space-y-2 text-caption">
           <p>{t(($) => $.pipeline.failed)}</p>
+          <p className="text-muted-foreground">{t(($) => $.pipeline_page.error_impact)}</p>
           <Button size="sm" variant="outline" onClick={() => void children.refetch()}>{t(($) => $.pipeline_page.retry)}</Button>
         </div>
       )}

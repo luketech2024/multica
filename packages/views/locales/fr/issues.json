@@ -10,7 +10,11 @@
     "no_task": "Aucune sous-tâche n’est affectée à cette étape dans le plan actuel.",
     "next": "Étape suivante",
     "coverage": "Couvert par {{count}} sous-tâches",
-    "bounds": "Limites du périmètre"
+    "bounds": "Limites du périmètre",
+    "empty_title": "Aucune sous-tâche",
+    "empty_description": "Les transmissions des rôles activés apparaîtront ici après la planification.",
+    "go_plan": "Planifier les sous-tâches",
+    "error_impact": "Les états des étapes peuvent être retardés. L’exécution continue."
   },
   "delivery_review": {
     "title": "Acceptation de la livraison",
@@ -2005,7 +2009,13 @@
     "missing_repositories": "Sélectionnez un dépôt pour {{tasks}}",
     "dependency_cycle": "Cycle de dépendances {{path}}",
     "add_existing_dependency": "Ajouter une dépendance existante",
-    "existing_dependency_hint": "Sélectionnez une tâche de ce projet. Son achèvement est requis pour démarrer."
+    "existing_dependency_hint": "Sélectionnez une tâche de ce projet. Son achèvement est requis pour démarrer.",
+    "error_title": "Les données de planification n’ont pas pu être chargées.",
+    "error_impact": "La couverture des dépôts ne peut pas être vérifiée. Le plan ne peut pas encore être enregistré.",
+    "empty_title": "Aucune tâche prête à planifier",
+    "empty_description": "Les tâches deviennent disponibles après la confirmation des exigences.",
+    "open_tasks": "Voir les tâches",
+    "draft_empty": "Ajoutez une sous-tâche pour attribuer un rôle, un dépôt et les critères couverts."
   },
   "handoff": {
     "title": "Transmission de la sous-tâche",

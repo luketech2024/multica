@@ -10,7 +10,11 @@
     "no_task": "当前计划尚未为此阶段分配子任务。",
     "next": "下一步",
     "coverage": "由 {{count}} 个子任务覆盖",
-    "bounds": "范围边界"
+    "bounds": "范围边界",
+    "empty_title": "还没有子任务",
+    "empty_description": "拆单后启用角色的交接会按时间出现在这里。",
+    "go_plan": "去拆单",
+    "error_impact": "阶段状态可能滞后，任务继续执行。"
   },
   "delivery_review": {
     "title": "成果验收",
@@ -1936,7 +1940,13 @@
     "missing_repositories": "请为子任务选择仓库 {{tasks}}",
     "dependency_cycle": "依赖形成循环 {{path}}",
     "add_existing_dependency": "添加已有任务依赖",
-    "existing_dependency_hint": "选择同项目任务，完成后才会开始执行。"
+    "existing_dependency_hint": "选择同项目任务，完成后才会开始执行。",
+    "error_title": "拆单数据加载失败",
+    "error_impact": "无法确认仓库覆盖，暂不能保存拆单。",
+    "empty_title": "还没有可拆的任务",
+    "empty_description": "任务通过需求确认后才会出现在这里。",
+    "open_tasks": "去任务清单",
+    "draft_empty": "添加子任务，为它指定角色、仓库和覆盖的验收条目。"
   },
   "handoff": {
     "title": "子任务交接",
