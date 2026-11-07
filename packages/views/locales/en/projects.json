@@ -252,7 +252,17 @@
     "deploy": "Deploy",
     "preview": "Preview",
     "staging": "Staging",
-    "prod": "Production"
+    "prod": "Production",
+    "check_target": "Check connection",
+    "check_states": {
+      "incomplete": "Incomplete configuration",
+      "untested": "Not checked",
+      "queued": "Waiting for runtime",
+      "running": "Checking",
+      "passed": "Passed · valid for 24 hours",
+      "failed": "Check failed",
+      "expired": "Check expired"
+    }
   },
   "roles": {
     "title": "Project team",
@@ -429,7 +439,9 @@
       "security_acceptance_expired": "Risk acceptance expired",
       "workspace_member_role_changed": "Member role changed",
       "credential_used": "Credential used",
-      "certificate_renewal_failed": "Certificate renewal failed"
+      "certificate_renewal_failed": "Certificate renewal failed",
+      "deploy_target_check_requested": "Target check requested",
+      "deploy_target_checked": "Target checked"
     }
   }
 }

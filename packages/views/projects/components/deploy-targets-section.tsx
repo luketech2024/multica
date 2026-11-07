@@ -10,6 +10,8 @@ import {
   credentialsOptions,
   deployTargetsOptions,
   deploymentCredentialKind,
+  deploymentCheckStatus,
+  useCheckDeployTarget,
   targetLocationFields,
   useDeleteDeployTarget,
   useSaveDeployTarget,
@@ -39,6 +41,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
   });
   const save = useSaveDeployTarget(wsId, projectId);
   const remove = useDeleteDeployTarget(wsId, projectId);
+  const check = useCheckDeployTarget(wsId, projectId);
   const [editing, setEditing] = useState<{
     id?: string;
     data: DeployTargetInput;
@@ -153,6 +156,11 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
           {t(($) => $.workbench.empty)}
         </p>
       )}
+      {check.isError && (
+        <p role="alert" className="text-caption text-destructive">
+          {check.error.message}
+        </p>
+      )}
       {targets.data?.targets.map((target) => (
         <div key={target.id} className="rounded-xl border bg-surface p-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -162,6 +170,16 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
             </span>
             {canManage && (
               <>
+                {target.channel === "runtime" && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={check.isPending || target.missing_fields.length > 0}
+                    onClick={() => check.mutate({ id: target.id, revision: target.revision })}
+                  >
+                    {t(($) => $.workbench.check_target)}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="xs"
@@ -180,11 +198,16 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
               </>
             )}
           </div>
-          <p className="text-caption text-warning">
-            {target.missing_fields.length
-              ? t(($) => $.workbench.incomplete)
-              : t(($) => $.workbench.untested)}
+          <p className={deploymentCheckStatus(target) === "passed"
+            ? "text-caption text-success"
+            : "text-caption text-warning"}>
+            {t(($) => $.workbench.check_states[deploymentCheckStatus(target)])}
           </p>
+          {target.last_check && (
+            <p className="break-words text-caption text-muted-foreground">
+              {target.last_check.detail}
+            </p>
+          )}
           <p className="break-words text-caption text-muted-foreground">
             {target.location.domain ||
               target.location.host ||

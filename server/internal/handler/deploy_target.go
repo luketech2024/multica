@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -30,6 +31,9 @@ type DeployTargetResponse struct {
 func deployTargetResponse(row db.DeployTarget) DeployTargetResponse {
 	input := workbench.DeployTargetInput{RepoID: uuidToString(row.RepoID), Label: row.Label, Env: row.Env, Kind: row.Kind, Channel: row.Channel, RuntimeID: uuidToPtr(row.RuntimeID), CredentialID: uuidToPtr(row.CredentialID), Location: map[string]string{}}
 	_ = json.Unmarshal(row.Location, &input.Location)
+	if check := workbench.ParseDeployCheck(row.LastCheck); check.ID != "" {
+		row.LastCheck, _ = json.Marshal(check.DisplayAt(time.Now()))
+	}
 	return DeployTargetResponse{ID: uuidToString(row.ID), WorkspaceID: uuidToString(row.WorkspaceID), ProjectID: uuidToString(row.ProjectID), DeployTargetInput: input, Revision: row.Revision, MissingFields: input.MissingFields(), LastCheck: row.LastCheck}
 }
 

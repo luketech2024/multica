@@ -1580,6 +1580,9 @@ func (h *Handler) DaemonHeartbeat(w http.ResponseWriter, r *http.Request) {
 	if len(ack.PendingLocalSkillImports) > 0 {
 		resp["pending_local_skill_imports"] = ack.PendingLocalSkillImports
 	}
+	if ack.PendingDeployCheck != nil {
+		resp["pending_deploy_check"] = ack.PendingDeployCheck
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -1892,6 +1895,13 @@ func (h *Handler) processHeartbeat(ctx context.Context, runtimeID string, suppor
 		}
 	}
 
+	checkContext, cancelCheck := context.WithTimeout(ctx, heartbeatHasPendingTimeout)
+	pendingCheck, checkErr := h.claimRuntimeDeployCheck(checkContext, runtimeID)
+	cancelCheck()
+	if checkErr != nil {
+		slog.Warn("claim deployment check failed", "runtime_id", runtimeID, "error", checkErr)
+	}
+	ack.PendingDeployCheck = pendingCheck
 	return ack, m, nil
 }
 

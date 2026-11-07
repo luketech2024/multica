@@ -252,7 +252,17 @@
     "deploy": "部署",
     "preview": "預覽",
     "staging": "預備",
-    "prod": "正式"
+    "prod": "正式",
+    "check_target": "連通自檢",
+    "check_states": {
+      "incomplete": "設定未完整",
+      "untested": "尚未自檢",
+      "queued": "等待執行環境",
+      "running": "自檢中",
+      "passed": "自檢通過 · 24 小時內有效",
+      "failed": "自檢失敗",
+      "expired": "自檢已過期"
+    }
   },
   "roles": {
     "title": "專案團隊",
@@ -429,7 +439,9 @@
       "security_acceptance_expired": "風險接受到期",
       "workspace_member_role_changed": "成員權限變更",
       "credential_used": "使用憑證",
-      "certificate_renewal_failed": "憑證續期失敗"
+      "certificate_renewal_failed": "憑證續期失敗",
+      "deploy_target_check_requested": "發起部署目標自檢",
+      "deploy_target_checked": "完成部署目標自檢"
     }
   }
 }

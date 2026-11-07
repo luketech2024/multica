@@ -252,7 +252,17 @@
     "deploy": "部署",
     "preview": "预览",
     "staging": "预发",
-    "prod": "生产"
+    "prod": "生产",
+    "check_target": "连通自检",
+    "check_states": {
+      "incomplete": "配置未完整",
+      "untested": "尚未自检",
+      "queued": "等待运行时",
+      "running": "自检中",
+      "passed": "自检通过 · 24 小时内有效",
+      "failed": "自检失败",
+      "expired": "自检已过期"
+    }
   },
   "roles": {
     "title": "项目团队",
@@ -429,7 +439,9 @@
       "security_acceptance_expired": "风险接受到期",
       "workspace_member_role_changed": "成员权限变更",
       "credential_used": "使用凭据",
-      "certificate_renewal_failed": "证书续期失败"
+      "certificate_renewal_failed": "证书续期失败",
+      "deploy_target_check_requested": "发起部署目标自检",
+      "deploy_target_checked": "完成部署目标自检"
     }
   }
 }

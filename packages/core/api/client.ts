@@ -4380,6 +4380,11 @@ export class ApiClient {
     await this.fetch(`/api/projects/${projectId}/deploy-targets/${id}?expected_revision=${revision}`, { method: "DELETE" });
   }
 
+  async checkDeployTarget(projectId: string, id: string, revision: number) {
+    const endpoint = `/api/projects/${projectId}/deploy-targets/${id}/check`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST", body: JSON.stringify({ expected_revision: revision }) }), DeployTargetSchema, endpoint);
+  }
+
   async listWorkbenchCredentials() {
     const endpoint = "/api/workbench/credentials";
     return parseWorkbenchResponse(await this.fetch(endpoint), CredentialsSchema, endpoint);

@@ -252,7 +252,17 @@
     "deploy": "デプロイ",
     "preview": "プレビュー",
     "staging": "ステージング",
-    "prod": "本番"
+    "prod": "本番",
+    "check_target": "接続を確認",
+    "check_states": {
+      "incomplete": "設定が未完了",
+      "untested": "未確認",
+      "queued": "ランタイムを待機中",
+      "running": "確認中",
+      "passed": "確認済み · 24時間有効",
+      "failed": "確認失敗",
+      "expired": "確認期限切れ"
+    }
   },
   "roles": {
     "title": "プロジェクトチーム",
@@ -429,7 +439,9 @@
       "security_acceptance_expired": "リスク受容期限切れ",
       "workspace_member_role_changed": "メンバー権限を変更",
       "credential_used": "認証情報を使用",
-      "certificate_renewal_failed": "証明書更新失敗"
+      "certificate_renewal_failed": "証明書更新失敗",
+      "deploy_target_check_requested": "ターゲット確認を依頼",
+      "deploy_target_checked": "ターゲットを確認"
     }
   }
 }

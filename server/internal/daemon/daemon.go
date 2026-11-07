@@ -4548,6 +4548,11 @@ func (d *Daemon) handleHeartbeatActions(ctx context.Context, runtimeID string, r
 	if resp.PendingUpdate != nil {
 		go d.handleUpdate(ctx, runtimeID, resp.PendingUpdate)
 	}
+	if resp.PendingDeployCheck != nil {
+		if rt := d.findRuntime(runtimeID); rt != nil {
+			go d.handleDeployTargetCheck(ctx, *rt, *resp.PendingDeployCheck)
+		}
+	}
 	if resp.PendingModelList != nil {
 		if rt := d.findRuntime(runtimeID); rt != nil {
 			go d.handleModelList(ctx, *rt, resp.PendingModelList.ID)

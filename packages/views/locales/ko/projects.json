@@ -252,7 +252,17 @@
     "deploy": "배포",
     "preview": "미리 보기",
     "staging": "스테이징",
-    "prod": "운영"
+    "prod": "운영",
+    "check_target": "연결 확인",
+    "check_states": {
+      "incomplete": "설정 미완료",
+      "untested": "확인 안 됨",
+      "queued": "런타임 대기 중",
+      "running": "확인 중",
+      "passed": "확인 완료 · 24시간 유효",
+      "failed": "확인 실패",
+      "expired": "확인 만료"
+    }
   },
   "roles": {
     "title": "프로젝트 팀",
@@ -429,7 +439,9 @@
       "security_acceptance_expired": "위험 수락 만료",
       "workspace_member_role_changed": "멤버 역할 변경",
       "credential_used": "자격 증명 사용",
-      "certificate_renewal_failed": "인증서 갱신 실패"
+      "certificate_renewal_failed": "인증서 갱신 실패",
+      "deploy_target_check_requested": "대상 확인 요청",
+      "deploy_target_checked": "대상 확인 완료"
     }
   }
 }

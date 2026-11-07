@@ -12,6 +12,7 @@ import type {
   CredentialInput,
   ProjectRoles,
   ProjectTemplate,
+  DeployTarget,
 } from "./schemas";
 export * from "./schemas";
 export { workbenchPipeline } from "./pipeline";
@@ -158,6 +159,25 @@ export function deployTargetsOptions(wsId: string, projectId: string) {
   return queryOptions({
     queryKey: workbenchKeys.targets(wsId, projectId),
     queryFn: () => api.listDeployTargets(projectId),
+    refetchInterval: (query) => query.state.data?.targets.some((target) => ["queued", "running"].includes(target.last_check?.status ?? "")) ? 5000 : 60000,
+  });
+}
+
+export function deploymentCheckStatus(target: DeployTarget, now = Date.now()) {
+  if (target.missing_fields.length) return "incomplete";
+  const check = target.last_check;
+  if (!check) return "untested";
+  if (check.status !== "passed") return check.status;
+  const age = now - Date.parse(check.at);
+  if (!check.ok || !Number.isFinite(age) || age < 0) return "failed";
+  return age < 24 * 60 * 60 * 1000 ? "passed" : "expired";
+}
+
+export function useCheckDeployTarget(wsId: string, projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, revision }: { id: string; revision: number }) => api.checkDeployTarget(projectId, id, revision),
+    onSuccess: () => qc.invalidateQueries({ queryKey: workbenchKeys.targets(wsId, projectId) }),
   });
 }
 export function credentialsOptions(wsId: string) {

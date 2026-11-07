@@ -118,6 +118,7 @@ export const DeployTargetSchema = z.object({
   missing_fields: z.array(z.string()),
   last_check: z
     .object({
+      status: z.enum(["queued", "running", "passed", "failed", "expired"]).catch("failed").default("failed"),
       at: z.string(),
       ok: z.boolean(),
       ms: z.number(),

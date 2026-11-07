@@ -11,6 +11,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimRuntimeDeployTargetCheck = `-- name: ClaimRuntimeDeployTargetCheck :one
+WITH candidate AS (
+    SELECT target.id FROM deploy_targets target
+    JOIN agent_runtime runtime ON runtime.id=target.runtime_id AND runtime.workspace_id=target.workspace_id
+    JOIN member requester ON requester.workspace_id=target.workspace_id AND requester.user_id::text=target.last_check->>'requested_by'
+    WHERE runtime.id= $1 AND runtime.owner_id IS NOT NULL AND target.channel='runtime' AND requester.role IN ('owner','admin')
+      AND (runtime.owner_id=requester.user_id OR runtime.visibility='public' OR requester.user_id=ANY(runtime.shared_with))
+      AND (target.last_check->>'at')::timestamptz>now()-interval '2 minutes'
+      AND (target.last_check->>'status'='queued' OR (target.last_check->>'status'='running'
+           AND (target.last_check->>'dispatched_at')::timestamptz<now()-interval '1 minute'))
+    ORDER BY target.updated_at,target.id LIMIT 1 FOR UPDATE OF target SKIP LOCKED
+)
+UPDATE deploy_targets SET last_check=last_check || jsonb_build_object('status','running','dispatched_at',now())
+WHERE id IN (SELECT id FROM candidate) RETURNING id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at
+`
+
+func (q *Queries) ClaimRuntimeDeployTargetCheck(ctx context.Context, runtimeID pgtype.UUID) (DeployTarget, error) {
+	row := q.db.QueryRow(ctx, claimRuntimeDeployTargetCheck, runtimeID)
+	var i DeployTarget
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.RepoID,
+		&i.Label,
+		&i.Env,
+		&i.Kind,
+		&i.Channel,
+		&i.RuntimeID,
+		&i.CredentialID,
+		&i.Location,
+		&i.LastCheck,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const countDeployTargetsForResource = `-- name: CountDeployTargetsForResource :one
 SELECT count(*) FROM deploy_targets WHERE workspace_id=$1 AND repo_id=$2
 `
@@ -117,6 +156,47 @@ func (q *Queries) DeleteProjectDeployTargets(ctx context.Context, arg DeleteProj
 	return err
 }
 
+const finishRuntimeDeployTargetCheck = `-- name: FinishRuntimeDeployTargetCheck :one
+UPDATE deploy_targets SET last_check= $1, revision=revision+1, updated_at=now()
+WHERE workspace_id= $2 AND id= $3 AND last_check->>'id'= $4::text
+RETURNING id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at
+`
+
+type FinishRuntimeDeployTargetCheckParams struct {
+	CheckResult []byte      `json:"check_result"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ID          pgtype.UUID `json:"id"`
+	CheckID     string      `json:"check_id"`
+}
+
+func (q *Queries) FinishRuntimeDeployTargetCheck(ctx context.Context, arg FinishRuntimeDeployTargetCheckParams) (DeployTarget, error) {
+	row := q.db.QueryRow(ctx, finishRuntimeDeployTargetCheck,
+		arg.CheckResult,
+		arg.WorkspaceID,
+		arg.ID,
+		arg.CheckID,
+	)
+	var i DeployTarget
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.RepoID,
+		&i.Label,
+		&i.Env,
+		&i.Kind,
+		&i.Channel,
+		&i.RuntimeID,
+		&i.CredentialID,
+		&i.Location,
+		&i.LastCheck,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getDeployTarget = `-- name: GetDeployTarget :one
 SELECT id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at FROM deploy_targets WHERE workspace_id=$1 AND project_id=$2 AND id=$3
 `
@@ -129,6 +209,39 @@ type GetDeployTargetParams struct {
 
 func (q *Queries) GetDeployTarget(ctx context.Context, arg GetDeployTargetParams) (DeployTarget, error) {
 	row := q.db.QueryRow(ctx, getDeployTarget, arg.WorkspaceID, arg.ProjectID, arg.ID)
+	var i DeployTarget
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.RepoID,
+		&i.Label,
+		&i.Env,
+		&i.Kind,
+		&i.Channel,
+		&i.RuntimeID,
+		&i.CredentialID,
+		&i.Location,
+		&i.LastCheck,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getRuntimeDeployTargetCheck = `-- name: GetRuntimeDeployTargetCheck :one
+SELECT id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at FROM deploy_targets WHERE workspace_id=$1 AND runtime_id=$2 AND id=$3 FOR UPDATE
+`
+
+type GetRuntimeDeployTargetCheckParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	RuntimeID   pgtype.UUID `json:"runtime_id"`
+	ID          pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) GetRuntimeDeployTargetCheck(ctx context.Context, arg GetRuntimeDeployTargetCheckParams) (DeployTarget, error) {
+	row := q.db.QueryRow(ctx, getRuntimeDeployTargetCheck, arg.WorkspaceID, arg.RuntimeID, arg.ID)
 	var i DeployTarget
 	err := row.Scan(
 		&i.ID,
@@ -193,6 +306,49 @@ func (q *Queries) ListDeployTargets(ctx context.Context, arg ListDeployTargetsPa
 		return nil, err
 	}
 	return items, nil
+}
+
+const startDeployTargetCheck = `-- name: StartDeployTargetCheck :one
+UPDATE deploy_targets SET last_check= $1, revision=revision+1, updated_at=now()
+WHERE workspace_id= $2 AND project_id= $3 AND id= $4 AND revision= $5
+RETURNING id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at
+`
+
+type StartDeployTargetCheckParams struct {
+	CheckResult      []byte      `json:"check_result"`
+	WorkspaceID      pgtype.UUID `json:"workspace_id"`
+	ProjectID        pgtype.UUID `json:"project_id"`
+	ID               pgtype.UUID `json:"id"`
+	ExpectedRevision int64       `json:"expected_revision"`
+}
+
+func (q *Queries) StartDeployTargetCheck(ctx context.Context, arg StartDeployTargetCheckParams) (DeployTarget, error) {
+	row := q.db.QueryRow(ctx, startDeployTargetCheck,
+		arg.CheckResult,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.ID,
+		arg.ExpectedRevision,
+	)
+	var i DeployTarget
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.RepoID,
+		&i.Label,
+		&i.Env,
+		&i.Kind,
+		&i.Channel,
+		&i.RuntimeID,
+		&i.CredentialID,
+		&i.Location,
+		&i.LastCheck,
+		&i.Revision,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateDeployTarget = `-- name: UpdateDeployTarget :one

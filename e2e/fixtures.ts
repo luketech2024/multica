@@ -503,6 +503,23 @@ export class TestApiClient {
     return response.json();
   }
 
+  async createDeployTarget(projectId: string, input: Record<string, unknown>) {
+    const response = await this.authedFetch(`/api/projects/${projectId}/deploy-targets`, { method: "POST", body: JSON.stringify(input) });
+    if (!response.ok) throw new Error(`create target failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
+  async reportRuntimeDeployProbe(runtimeId: string, targetId: string) {
+    const heartbeat = await this.authedFetch("/api/daemon/heartbeat", { method: "POST", body: JSON.stringify({ runtime_id: runtimeId }) });
+    if (!heartbeat.ok) throw new Error(`heartbeat failed: ${heartbeat.status} ${await heartbeat.text()}`);
+    const { pending_deploy_check: check } = await heartbeat.json();
+    if (check?.target_id !== targetId) throw new Error("Expected target check was not delivered to its runtime");
+    const response = await this.authedFetch(`/api/daemon/runtimes/${runtimeId}/deploy-targets/${targetId}/checks/${check.check_id}`, {
+      method: "POST", body: JSON.stringify({ directory_ready: true, tool_ready: true, ms: 12 }),
+    });
+    if (!response.ok) throw new Error(`report target probe failed: ${response.status} ${await response.text()}`);
+  }
+
   async listSecurityChecks(projectId: string) {
     const response = await this.authedFetch(`/api/security/checks?project_id=${encodeURIComponent(projectId)}`);
     if (!response.ok) throw new Error(`list security checks failed: ${response.status} ${await response.text()}`);

@@ -1660,6 +1660,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		r.Post("/runtimes/{runtimeId}/models/{requestId}/result", h.ReportModelListResult)
 		r.Post("/runtimes/{runtimeId}/local-skills/{requestId}/result", h.ReportLocalSkillListResult)
 		r.Post("/runtimes/{runtimeId}/local-skills/import/{requestId}/result", h.ReportLocalSkillImportResult)
+		r.Post("/runtimes/{runtimeId}/deploy-targets/{targetId}/checks/{checkId}", h.ReportDeployTargetCheck)
 
 		r.Get("/tasks/{taskId}/status", h.GetTaskStatus)
 		r.Post("/tasks/{taskId}/start", h.StartTask)
@@ -2263,6 +2264,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Get("/business-template", h.GetProjectBusinessTemplate)
 					r.Put("/business-template", h.SaveProjectBusinessTemplate)
 					r.Post("/deploy-targets", h.SaveDeployTarget)
+					r.Post("/deploy-targets/{targetId}/check", h.CheckDeployTarget)
 					r.Put("/deploy-targets/{targetId}", h.SaveDeployTarget)
 					r.Delete("/deploy-targets/{targetId}", h.DeleteDeployTarget)
 					r.Get("/resources", h.ListProjectResources)

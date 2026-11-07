@@ -4,6 +4,7 @@ import {
   CredentialSchema,
   CredentialsSchema,
   DeployTargetsSchema,
+  DeployTargetSchema,
   ProjectRolesSchema,
   projectRoleOrder,
   ProjectTemplateResponseSchema,
@@ -12,6 +13,12 @@ import {
 } from "./schemas";
 
 describe("workbench configuration responses", () => {
+  it("fails closed for unknown check states and rejects malformed probe data", () => {
+    const check = { status: "future-status", at: "2026-11-07T00:00:00Z", ok: true, ms: 5, detail: "Probe" };
+    expect(DeployTargetSchema.shape.last_check.parse(check)?.status).toBe("failed");
+    expect(DeployTargetSchema.shape.last_check.safeParse({ ...check, ok: "true" }).success).toBe(false);
+    expect(DeployTargetSchema.shape.last_check.safeParse({ ...check, ms: "five" }).success).toBe(false);
+  });
   it("counts template limits in Unicode characters", () => {
     const content = { v: 1, name: "😀".repeat(80), background: [], audience: [], scope_out: [], ac_skeleton: ["😀".repeat(120)], forbidden: [], dod: [], resources: [], terms: {} };
     expect(BusinessTemplateSchema.safeParse(content).success).toBe(true);
