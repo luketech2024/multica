@@ -220,5 +220,21 @@
     "go_to_slide": "Go to slide {{index}}",
     "previous": "Previous",
     "next": "Next"
+  },
+  "workbench_nav": {
+    "groups": {
+      "pinned": "Pinned",
+      "personal": "Personal",
+      "work": "Work",
+      "team": "AI team",
+      "system": "System"
+    },
+    "board": "Task board",
+    "chat": "Agent chat",
+    "pin": "Pin {{name}}",
+    "unpin": "Unpin {{name}}",
+    "pin_limit": "Unpin an entry before pinning another. Up to 3 entries.",
+    "choose_project": "Choose a project",
+    "project_unavailable": "Could not load the project. Retry or select another project."
   }
 }

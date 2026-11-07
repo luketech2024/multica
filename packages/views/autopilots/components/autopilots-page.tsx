@@ -200,20 +200,20 @@ function ModeCell({ autopilot }: { autopilot: Autopilot }) {
 
 // Page
 
-export function AutopilotsPage() {
+export function AutopilotsPage({projectId}: {projectId?: string} = {}) {
   const navigation = useNavigation();
   const wsId = useWorkspaceId();
-  if (isWakeupsTab(navigation.searchParams)) {
+  if (!projectId && isWakeupsTab(navigation.searchParams)) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <WorkspaceWakeups key={wsId} />
       </div>
     );
   }
-  return <AutopilotList />;
+  return <AutopilotList key={projectId ?? "workspace"} projectId={projectId} />;
 }
 
-function AutopilotList() {
+function AutopilotList({projectId}: {projectId?:string}) {
   const navigation = useNavigation();
   const { t } = useT("autopilots");
   const { t: tLayout } = useT("layout");
@@ -221,7 +221,7 @@ function AutopilotList() {
   const wsId = useWorkspaceId();
   const wsPaths = useWorkspacePaths();
   const {
-    data: autopilots = [],
+    data: allAutopilots = [],
     isLoading,
     error: listError,
     refetch: refetchList,
@@ -229,6 +229,7 @@ function AutopilotList() {
     ...autopilotListOptions(wsId),
     enabled: !!wsId,
   });
+  const autopilots=useMemo(()=>projectId?allAutopilots.filter(row=>row.project_id===projectId):allAutopilots,[allAutopilots,projectId]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
@@ -556,8 +557,9 @@ function AutopilotList() {
                   // since it's injected directly into the agent task.
                   title: t(($) => $.templates[selectedTemplate.id].title),
                   description: selectedTemplate.prompt,
+                  project_id: projectId,
                 }
-              : undefined
+              : projectId ? {project_id:projectId} : undefined
           }
           initialSchedule={
             selectedTemplate ? selectedTemplate.schedule : undefined

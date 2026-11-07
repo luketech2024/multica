@@ -521,6 +521,7 @@ vi.mock("@base-ui/react/accordion", () => ({
 // Render every item inline so the virtualized board columns expose their
 // cards to the DOM, matching the non-virtualized behavior these tests assert.
 vi.mock("react-virtuoso", () => ({
+  VirtuosoGrid: ({data,itemContent}:any) => <div>{(data ?? []).map((item:any,index:number)=><div key={index}>{itemContent(index,item)}</div>)}</div>,
   Virtuoso: ({ data, itemContent, components }: any) => (
     <div data-testid="virtuoso-mock">
       {(data ?? []).map((item: any, i: number) => (
@@ -747,7 +748,7 @@ describe("IssuesPage (shared)", () => {
 
     renderWithQuery(<IssuesPage />);
 
-    await screen.findByText("Todo");
+    await screen.findAllByText("Todo");
     expect(screen.getAllByText("Todo").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("In Progress").length).toBeGreaterThanOrEqual(1);
   });

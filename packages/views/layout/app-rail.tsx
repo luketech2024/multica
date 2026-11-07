@@ -1,168 +1,34 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Settings, Users, type IconComponent } from "@multica/ui/icons";
-import { useChatStore } from "@multica/core/chat";
+import { useChatStore, useRecentContextStore } from "@multica/core/chat";
 import { chatSessionsOptions } from "@multica/core/chat/queries";
 import { countUnreadChatMessages } from "@multica/core/chat/unread";
-import { useInboxUnreadCount } from "@multica/core/inbox/queries";
-import {
-  RAIL_SPACES,
-  useCurrentWorkspace,
-  useWorkspacePaths,
-  type AppSpaceId,
-  type RailSpaceId,
-} from "@multica/core/paths";
-import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { CappedNumberFlow } from "@multica/ui/components/ui/number-flow";
+import { Pin, PinOff, LayoutDashboard } from "@multica/ui/icons";
+import { useInboxUnreadCount } from "@multica/core/inbox/queries";
+import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
+import {
+  WORKBENCH_NAVIGATION,
+  useWorkbenchNavigationStore,
+  type WorkbenchNavID,
+} from "@multica/core/workbench/navigation";
+import { useSidebar } from "@multica/ui/components/ui/sidebar";
+import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { cn } from "@multica/ui/lib/utils";
-import { useAppForeground } from "../common/use-app-foreground";
 import { useT } from "../i18n";
 import { AppLink, useNavigation } from "../navigation";
 import { WhatsNewLauncher } from "../whats-new/whats-new-launcher";
 import { AccountMenu } from "./account-menu";
-import { useAppShell } from "./app-shell-context";
 import { NewIssueButton, SearchButton } from "./global-actions";
 import { HelpLauncher } from "./help-launcher";
 import { isPathWithin } from "./panel-nav";
-import { useTeamAgentStatus } from "./panels/team-status";
 import { RAIL_ICON_BUTTON_CLASS } from "./rail-styles";
 import { RailWorkspaces } from "./rail-workspaces";
 import { routeIconForPath } from "./route-icon-components";
+import { useTeamAgentStatus } from "./panels/team-status";
+import { useAppForeground } from "../common/use-app-foreground";
 
-type RailBadge =
-  | { kind: "count"; value: number; tone: "brand" | "neutral" }
-  | { kind: "dot" };
-
-/**
- * Rail badges. Inbox and Chat count unread; Team only flags that something
- * needs a look — the panel says what. A dot must be something the user can
- * clear, so a failed autopilot run is shown in the Autopilots panel only.
- */
-function useRailBadges(): Partial<Record<RailSpaceId, RailBadge>> {
-  const wsId = useCurrentWorkspace()?.id;
-  const p = useWorkspacePaths();
-  const { pathname } = useNavigation();
-  const inboxUnread = useInboxUnreadCount(wsId);
-
-  const { data: chatSessions = [] } = useQuery({
-    ...chatSessionsOptions(wsId ?? ""),
-    enabled: !!wsId,
-  });
-  // The session the user is reading right now must not count: its row shows 0
-  // (auto mark-read is about to clear it) and a reply landing there would
-  // flash a count with no matching row. "Reading" = a session is active, a
-  // chat surface shows it (the chat route or the floating window), and the
-  // app is in the foreground. Backgrounded, auto mark-read is suppressed
-  // (MUL-4485), so the reply stays unread and must count.
-  const activeChatSessionId = useChatStore((s) => s.activeSessionId);
-  const floatingChatOpen = useChatStore((s) => s.isOpen);
-  const appForeground = useAppForeground();
-  const viewedChatSessionId =
-    appForeground && (floatingChatOpen || isPathWithin(pathname, p.chat()))
-      ? activeChatSessionId
-      : null;
-  const chatUnread = useMemo(
-    () => countUnreadChatMessages(chatSessions, viewedChatSessionId),
-    [chatSessions, viewedChatSessionId],
-  );
-
-  const { stuck } = useTeamAgentStatus(wsId);
-
-  const badges: Partial<Record<RailSpaceId, RailBadge>> = {};
-  if (inboxUnread > 0) badges.inbox = { kind: "count", value: inboxUnread, tone: "brand" };
-  if (chatUnread > 0) badges.chat = { kind: "count", value: chatUnread, tone: "neutral" };
-  if (stuck.length > 0) badges.team = { kind: "dot" };
-  return badges;
-}
-
-function RailBadgeMark({ badge }: { badge: RailBadge }) {
-  // The ring cuts the badge out of whatever the item is painted with.
-  const ring = "ring-2 ring-app-shell group-aria-[current=page]:ring-sidebar-accent";
-  if (badge.kind === "dot") {
-    return (
-      <span
-        aria-hidden
-        className={cn(
-          "absolute top-1.5 right-3.5 size-2 rounded-full bg-warning",
-          ring,
-        )}
-      />
-    );
-  }
-  return (
-    <CappedNumberFlow
-      value={badge.value}
-      animated={false}
-      className={cn(
-        "absolute top-0.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-medium tabular-nums",
-        ring,
-        badge.tone === "brand" ? "bg-brand text-brand-foreground" : "bg-foreground text-background",
-      )}
-    />
-  );
-}
-
-/** Hover previews of a collapsed nav. Mouse only: a touch tap navigates. */
-function usePeekHandlers(space: AppSpaceId, peekable: boolean) {
-  const shell = useAppShell();
-  return {
-    onPointerEnter: (e: React.PointerEvent) => {
-      if (!shell || e.pointerType !== "mouse") return;
-      if (peekable && shell.navCollapsed) shell.requestPeek(space);
-      else if (shell.peekSpace) shell.releasePeek();
-    },
-    onPointerLeave: (e: React.PointerEvent) => {
-      if (shell && e.pointerType === "mouse") shell.releasePeek();
-    },
-  };
-}
-
-function RailSpaceLink({
-  space,
-  href,
-  icon: Icon,
-  label,
-  fullLabel,
-  active,
-  badge,
-}: {
-  space: RailSpaceId;
-  href: string;
-  icon: IconComponent;
-  label: string;
-  fullLabel: string;
-  active: boolean;
-  badge?: RailBadge;
-}) {
-  const peekHandlers = usePeekHandlers(space, true);
-  return (
-    <li>
-      <TooltipHint label={label === fullLabel ? null : fullLabel} side="right">
-        <AppLink
-          href={href}
-          data-space={space}
-          newTabTitle={fullLabel}
-          aria-current={active ? "page" : undefined}
-          {...peekHandlers}
-          className="group relative flex h-[52px] w-[52px] flex-col items-center justify-center gap-1 rounded-xl text-muted-foreground transition-colors outline-none hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-sidebar-accent-foreground"
-        >
-          <Icon className="size-5" />
-          <span className="max-w-full truncate px-1 text-micro leading-[14px]">{label}</span>
-          {badge && <RailBadgeMark badge={badge} />}
-        </AppLink>
-      </TooltipHint>
-    </li>
-  );
-}
-
-/**
- * The app rail: workspaces, New issue and search, the five spaces, then help,
- * settings and the account. It sits on the app shell, outside the content
- * card, and stays put while the panel beside it collapses. Desktop passes
- * `globalActions={false}`: its title bar carries New issue and search.
- */
 export function AppRail({
   topSlot,
   globalActions = true,
@@ -173,92 +39,227 @@ export function AppRail({
   className?: string;
 }) {
   const { t } = useT("layout");
-  const p = useWorkspacePaths();
-  const shell = useAppShell();
-  const badges = useRailBadges();
-  const space = shell?.space ?? null;
-  const settingsPeek = usePeekHandlers("settings", space === "settings");
-
-  const items: Record<RailSpaceId, { href: string; icon: IconComponent; label: string; fullLabel: string }> = {
-    inbox: {
-      href: p.inbox(),
-      icon: routeIconForPath(p.inbox()),
-      label: t(($) => $.rail.inbox),
-      fullLabel: t(($) => $.nav.inbox),
-    },
-    work: {
-      href: p.issues(),
-      icon: routeIconForPath(p.issues()),
-      label: t(($) => $.rail.work),
-      fullLabel: t(($) => $.spaces.work),
-    },
-    team: {
-      href: p.agents(),
-      icon: Users,
-      label: t(($) => $.rail.team),
-      fullLabel: t(($) => $.spaces.team),
-    },
-    chat: {
-      href: p.chat(),
-      icon: routeIconForPath(p.chat()),
-      label: t(($) => $.rail.chat),
-      fullLabel: t(($) => $.nav.chat),
-    },
-    autopilots: {
-      href: p.autopilots(),
-      icon: routeIconForPath(p.autopilots()),
-      label: t(($) => $.rail.autopilots),
-      fullLabel: t(($) => $.nav.autopilots),
-    },
+  const paths = useWorkspacePaths();
+  const workspace = useCurrentWorkspace();
+  const { pathname, searchParams } = useNavigation();
+  const { open, isCompact } = useSidebar();
+  const expanded = open || isCompact;
+  const pinned = useWorkbenchNavigationStore((state) => state.pinned);
+  const togglePin = useWorkbenchNavigationStore((state) => state.togglePin);
+  const lastProject = useRecentContextStore(
+    (state) =>
+      state.byWorkspace[workspace?.id ?? ""]?.find(
+        (entry) => entry.type === "project",
+      )?.id ?? "",
+  );
+  const unread = useInboxUnreadCount(workspace?.id);
+  const { data: sessions = [] } = useQuery({
+    ...chatSessionsOptions(workspace?.id ?? ""),
+    enabled: !!workspace?.id,
+  });
+  const activeSession = useChatStore((state) => state.activeSessionId);
+  const chatOpen = useChatStore((state) => state.isOpen);
+  const foreground = useAppForeground();
+  const chatUnread = countUnreadChatMessages(
+    sessions,
+    foreground && (chatOpen || isPathWithin(pathname, paths.chat()))
+      ? activeSession
+      : null,
+  );
+  const { stuck } = useTeamAgentStatus(workspace?.id);
+  const projectPrefix = paths.projects() + "/";
+  const projectId = pathname.startsWith(projectPrefix)
+    ? decodeURIComponent(
+        pathname.slice(projectPrefix.length).split("/")[0] ?? "",
+      )
+    : "";
+  const hrefs: Record<WorkbenchNavID, string> = {
+    inbox: paths.inbox(),
+    my_issues: paths.myIssues(),
+    issues: paths.taskList(),
+    chat: paths.chat(),
+    projects: paths.projects(),
+    board: paths.taskBoard(projectId || lastProject),
+    releases: paths.releases(),
+    agents: paths.agents(),
+    squads: paths.squads(),
+    skills: paths.skills(),
+    runtimes: paths.runtimes(),
+    security: paths.security(),
+    usage: paths.usage(),
+    settings: paths.settings(),
   };
-
+  const groups = ["pinned", "personal", "work", "team", "system"] as const;
+  const active = (id: WorkbenchNavID) => {
+    if (id === "board")
+      return (
+        pathname === paths.issues() && searchParams.get("layout") === "board"
+      );
+    if (id === "issues")
+      return (
+        isPathWithin(pathname, paths.issues()) &&
+        searchParams.get("layout") !== "board"
+      );
+    return isPathWithin(pathname, hrefs[id]);
+  };
   return (
     <nav
       aria-label={t(($) => $.rail.label)}
       data-slot="app-rail"
+      data-expanded={expanded}
       className={cn(
-        "flex h-full w-16 shrink-0 flex-col items-center overflow-y-auto overflow-x-hidden pt-3 pb-2.5 [scrollbar-width:none]",
+        "flex h-full shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r bg-sidebar py-2 text-sidebar-foreground",
+        expanded ? "w-[240px]" : "w-16",
         className,
       )}
     >
       {topSlot}
-      <RailWorkspaces />
-      {globalActions ? (
-        <div className="my-2 flex flex-col items-center gap-1">
-          <NewIssueButton className={RAIL_ICON_BUTTON_CLASS} tooltipSide="right" />
-          <SearchButton className={RAIL_ICON_BUTTON_CLASS} tooltipSide="right" />
-        </div>
-      ) : (
-        <div className="h-2 shrink-0" />
-      )}
-      <ul className="flex flex-col items-center gap-0.5">
-        {RAIL_SPACES.map((id) => (
-          <RailSpaceLink
-            key={id}
-            space={id}
-            {...items[id]}
-            href={shell?.spaceHref(id, items[id].href) ?? items[id].href}
-            active={space === id}
-            badge={badges[id]}
+      <div className="flex items-center gap-2 px-2">
+        <RailWorkspaces />
+        {expanded && (
+          <span className="min-w-0 truncate text-caption font-semibold">
+            {workspace?.name}
+          </span>
+        )}
+      </div>
+      {globalActions && (
+        <div
+          className={cn(
+            "my-2 flex items-center gap-1 px-1",
+            expanded ? "flex-row" : "flex-col",
+          )}
+        >
+          <NewIssueButton
+            className={RAIL_ICON_BUTTON_CLASS}
+            tooltipSide="right"
           />
-        ))}
-      </ul>
-      <div className="mt-auto flex flex-col items-center gap-1 pt-2">
+          <SearchButton
+            className={RAIL_ICON_BUTTON_CLASS}
+            tooltipSide="right"
+          />
+        </div>
+      )}
+      <div className="flex-1 space-y-3 px-1 py-2" data-workbench-navigation>
+        {groups.map((group) => {
+          const entries =
+            group === "pinned"
+              ? pinned.map(
+                  (id) =>
+                    WORKBENCH_NAVIGATION.find((entry) => entry.id === id)!,
+                )
+              : WORKBENCH_NAVIGATION.filter(
+                  (entry) =>
+                    entry.group === group && !pinned.includes(entry.id),
+                );
+          if (entries.length === 0) return null;
+          return (
+            <section
+              key={group}
+              aria-label={t(($) => $.workbench_nav.groups[group])}
+            >
+              {expanded && (
+                <h2 className="px-2 pb-1 text-micro text-muted-foreground">
+                  {t(($) => $.workbench_nav.groups[group])}
+                </h2>
+              )}
+              <ul className="space-y-0.5">
+                {entries.map((entry) => {
+                  const selected = active(entry.id);
+                  const isPinned = pinned.includes(entry.id);
+                  const full = !isPinned && pinned.length >= 3;
+                  const count =
+                    entry.id === "inbox"
+                      ? unread
+                      : entry.id === "chat"
+                        ? chatUnread
+                        : 0;
+                  const label =
+                    entry.id === "board"
+                      ? t(($) => $.workbench_nav.board)
+                      : entry.id === "chat"
+                        ? t(($) => $.workbench_nav.chat)
+                        : t(($) => $.nav[entry.id]);
+                  const Icon =
+                    entry.id === "board"
+                      ? LayoutDashboard
+                      : routeIconForPath(hrefs[entry.id].split("?")[0]!);
+                  return (
+                    <li key={entry.id} className="group relative">
+                      <TooltipHint label={label} side="right">
+                        <AppLink
+                          href={hrefs[entry.id]}
+                          aria-label={label}
+                          aria-current={selected ? "page" : undefined}
+                          className={cn(
+                            "flex h-8 items-center gap-2 rounded-xl px-2 outline-none hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
+                            selected &&
+                              "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent",
+                            expanded && "pr-8",
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                          {expanded && (
+                            <span className="min-w-0 flex-1 truncate text-caption">
+                              {label}
+                            </span>
+                          )}
+                          {count > 0 && (
+                            <CappedNumberFlow
+                              value={count}
+                              animated={false}
+                              className="rounded-full bg-brand px-1 text-micro text-brand-foreground"
+                            />
+                          )}
+                          {entry.id === "agents" && stuck.length > 0 && (
+                            <span
+                              aria-hidden
+                              className="size-2 shrink-0 rounded-full bg-warning"
+                            />
+                          )}
+                        </AppLink>
+                      </TooltipHint>
+                      {expanded && (
+                        <button
+                          type="button"
+                          disabled={full}
+                          title={
+                            full
+                              ? t(($) => $.workbench_nav.pin_limit)
+                              : undefined
+                          }
+                          aria-label={t(
+                            ($) =>
+                              isPinned
+                                ? $.workbench_nav.unpin
+                                : $.workbench_nav.pin,
+                            { name: label },
+                          )}
+                          onClick={() => togglePin(entry.id)}
+                          className="absolute top-1 right-1 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 disabled:cursor-not-allowed"
+                        >
+                          {isPinned ? (
+                            <PinOff className="size-3" />
+                          ) : (
+                            <Pin className="size-3" />
+                          )}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+      <div
+        className={cn(
+          "flex items-center gap-1 px-1",
+          expanded ? "flex-row" : "flex-col",
+        )}
+      >
         <WhatsNewLauncher />
         <HelpLauncher />
-        <TooltipHint label={t(($) => $.nav.settings)} side="right">
-          <AppLink
-            href={shell?.spaceHref("settings", p.settings()) ?? p.settings()}
-            aria-label={t(($) => $.nav.settings)}
-            aria-current={space === "settings" ? "page" : undefined}
-            // Settings has no standalone preview; it only floats its own
-            // list column while open.
-            {...settingsPeek}
-            className={RAIL_ICON_BUTTON_CLASS}
-          >
-            <Settings />
-          </AppLink>
-        </TooltipHint>
         <AccountMenu />
       </div>
     </nav>

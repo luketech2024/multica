@@ -40,10 +40,10 @@ const LIST_COLUMN_WIDTH_STORAGE_KEY = "list_column_width"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_DRAG_THRESHOLD = 2
-// Tailwind `md`–`lg`: wide enough to keep a two-pane list/detail surface, too
+// Below 1280px: wide enough to keep a two-pane list/detail surface, too
 // narrow to also spend the panel's width on the nav by default. The nav starts
 // collapsed here and the header's trigger docks it back.
-const SIDEBAR_AUTO_COLLAPSE_QUERY = "(min-width: 768px) and (max-width: 1023px)"
+const SIDEBAR_AUTO_COLLAPSE_QUERY = "(min-width: 768px) and (max-width: 1279px)"
 
 /**
  * Paints an element with whatever the sidebar wrapper is currently filled with.

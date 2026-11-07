@@ -10,7 +10,6 @@ import { CompactNavSheet } from "./compact-nav-sheet";
 import { DashboardGuard } from "./dashboard-guard";
 import { NavigationProgress } from "./navigation-progress";
 import { ShellRouteDataPrefetch } from "./route-data-prefetch";
-import { SpacePanel } from "./space-panel";
 import { WorkspacePresencePrefetch } from "./workspace-presence-prefetch";
 import { GlobalShortcuts } from "./global-shortcuts";
 
@@ -30,7 +29,6 @@ interface DashboardLayoutProps {
 export function AppShellCard({ children }: { children: ReactNode }) {
   return (
     <main className="relative flex min-w-0 flex-1 flex-row overflow-hidden bg-page-canvas md:my-2 md:mr-2 md:rounded-xl md:shadow-[var(--surface-shadow)] md:ring-1 md:ring-surface-border">
-      <SpacePanel />
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
     </main>
   );

@@ -49,7 +49,7 @@ function state() {
   return screen.getByTestId("state").textContent;
 }
 
-describe("sidebar auto-collapse between md and lg", () => {
+describe("sidebar auto-collapse between 768px and 1279px", () => {
   beforeEach(() => {
     queries.clear();
     window.matchMedia = ((query: string) => {
@@ -87,10 +87,8 @@ describe("sidebar auto-collapse between md and lg", () => {
     expect(state()).toBe("expanded");
   });
 
-  it("keeps the nav open in a laptop-sized window", () => {
-    // The rail stays on screen beside the panel, so a window just under the
-    // desktop default of 1280 has room for both.
-    setWidth(1100);
+  it("keeps the nav open from 1280px", () => {
+    setWidth(1280);
     renderWithI18n(
       <SidebarProvider>
         <Probe />

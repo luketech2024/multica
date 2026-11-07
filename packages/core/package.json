@@ -13,6 +13,7 @@
     "./workbench/keyboard": "./workbench/keyboard.ts",
     "./workbench/security": "./workbench/security.ts",
     "./workbench/releases": "./workbench/releases.ts",
+    "./workbench/navigation": "./workbench/navigation.ts",
     "./workbench/audit": "./workbench/audit.ts",
     ".": "./index.ts",
     "./markdown": "./markdown/index.ts",

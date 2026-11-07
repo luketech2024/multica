@@ -212,5 +212,21 @@
     "go_to_slide": "转到第 {{index}} 张",
     "previous": "上一张",
     "next": "下一张"
+  },
+  "workbench_nav": {
+    "groups": {
+      "pinned": "置顶",
+      "personal": "个人",
+      "work": "工作",
+      "team": "AI 团队",
+      "system": "系统"
+    },
+    "board": "任务看板",
+    "chat": "Agent 对话",
+    "pin": "置顶{{name}}",
+    "unpin": "取消置顶{{name}}",
+    "pin_limit": "最多置顶3个入口，请先取消一个置顶。",
+    "choose_project": "选择项目",
+    "project_unavailable": "项目无法加载，请重试或选择其他项目。"
   }
 }

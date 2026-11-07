@@ -220,5 +220,21 @@
     "go_to_slide": "Aller à la diapositive {{index}}",
     "previous": "Précédent",
     "next": "Suivant"
+  },
+  "workbench_nav": {
+    "groups": {
+      "pinned": "Épinglés",
+      "personal": "Personnel",
+      "work": "Travail",
+      "team": "Équipe IA",
+      "system": "Système"
+    },
+    "board": "Tableau des tâches",
+    "chat": "Discussion avec les agents",
+    "pin": "Épingler {{name}}",
+    "unpin": "Désépingler {{name}}",
+    "pin_limit": "Désépinglez une entrée avant d’en ajouter une. Maximum 3.",
+    "choose_project": "Choisir un projet",
+    "project_unavailable": "Impossible de charger le projet. Réessayez ou choisissez un autre projet."
   }
 }

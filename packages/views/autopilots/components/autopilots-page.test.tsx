@@ -33,8 +33,8 @@ vi.mock("./workspace-wakeups", () => ({
   WorkspaceWakeups: () => <div>Wakeup inventory</div>,
 }));
 vi.mock("./autopilot-dialog", () => ({
-  AutopilotDialog: ({ initial }: { initial?: { title: string } }) => (
-    <div role="dialog">{initial?.title ?? "Blank autopilot"}</div>
+  AutopilotDialog: ({ initial }: { initial?: { title?: string;project_id?:string } }) => (
+    <div role="dialog" data-project={initial?.project_id}>{initial?.title ?? "Blank autopilot"}</div>
   ),
 }));
 // jsdom has no layout, so the virtualizer would otherwise render no rows.
@@ -74,7 +74,7 @@ function autopilot(id: string, title: string, status: Autopilot["status"]): Auto
 
 let currentPath = "";
 
-function Harness({ initialPath }: { initialPath: string }) {
+function Harness({ initialPath,projectId }: { initialPath: string;projectId?:string }) {
   const [path, setPath] = useState(initialPath);
   currentPath = path;
   const url = new URL(path, "https://example.test");
@@ -90,16 +90,16 @@ function Harness({ initialPath }: { initialPath: string }) {
         getShareableUrl: (v) => v,
       }}
     >
-      <AutopilotsPage />
+      <AutopilotsPage projectId={projectId} />
     </NavigationProvider>
   );
 }
 
-function mount(initialPath = "/ws/autopilots") {
+function mount(initialPath = "/ws/autopilots",projectId?:string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return renderWithI18n(
     <QueryClientProvider client={client}>
-      <Harness initialPath={initialPath} />
+      <Harness initialPath={initialPath} projectId={projectId} />
     </QueryClientProvider>,
   );
 }
@@ -198,4 +198,17 @@ describe("AutopilotsPage", () => {
     expect(await screen.findByText("Autopilots unavailable")).toBeVisible();
     expect(screen.getByRole("button", { name: "New autopilot" })).toBeVisible();
   });
+});
+
+it("filters embedded automation by project and prefills creation",async()=>{
+  const user=userEvent.setup();
+  vi.mocked(api.listAutopilots).mockResolvedValue({autopilots:[
+    {...autopilot("a1","Project automation","active"),project_id:"p1"},
+    {...autopilot("a2","Other automation","active"),project_id:"p2"},
+  ],total:2});
+  mount("/ws/projects/p1?tab=autopilots","p1");
+  expect(await screen.findByText("Project automation")).toBeVisible();
+  expect(screen.queryByText("Other automation")).toBeNull();
+  await user.click(screen.getByRole("button",{name:"New autopilot"}));
+  expect(await screen.findByRole("dialog")).toHaveAttribute("data-project","p1");
 });

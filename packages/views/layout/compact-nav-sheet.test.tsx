@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("../navigation", () => ({
-  useNavigation: () => ({ pathname: state.pathname }),
+  useNavigation: () => ({ pathname: state.pathname, searchParams:new URLSearchParams() }),
 }));
 vi.mock("@multica/ui/components/ui/sidebar", () => ({
   useSidebar: () => ({
@@ -56,11 +56,11 @@ describe("CompactNavSheet dismissal", () => {
 });
 
 describe("CompactNavSheet content", () => {
-  it("holds the rail and the current space's panel", () => {
+  it("holds the unified navigation", () => {
     state.openMobile = true;
-    const { getByTestId } = renderWithI18n(<CompactNavSheet />);
+    const { getByTestId,queryByTestId } = renderWithI18n(<CompactNavSheet />);
     expect(getByTestId("rail")).toBeInTheDocument();
-    expect(getByTestId("panel-work")).toBeInTheDocument();
+    expect(queryByTestId("panel-work")).toBeNull();
   });
 
   it("renders nothing above the compact breakpoint", () => {

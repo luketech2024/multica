@@ -44,6 +44,8 @@ function workspaceScoped(slug: string) {
     releases: () => `${ws}/releases`,
     releaseDetail: (id: string) => `${ws}/releases/${encode(id)}`,
     issues: () => `${ws}/issues`,
+    taskList: () => `${ws}/issues?layout=table`,
+    taskBoard: (projectId = "") => `${ws}/issues?layout=board${projectId ? `&project=${encode(projectId)}` : ""}`,
     issueDetail: (id: string) => `${ws}/issues/${encode(id)}`,
     issuePipeline: (id: string) => `${ws}/issues/${encode(id)}/pipeline`,
     projects: () => `${ws}/projects`,

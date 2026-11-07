@@ -30,6 +30,7 @@ import { ProjectResourcesSection } from "./project-resources-section";
 import { deployTargetsOptions } from "@multica/core/workbench/configuration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
 import { DeployTargetsSection } from "./deploy-targets-section";
+import { AutopilotsPage } from "../../autopilots/components/autopilots-page";
 import { RepositoryProfilesSection } from "./repository-profiles-section";
 import { ProjectRolesSection } from "./project-roles-section";
 import { ProjectBusinessTemplateSection } from "./project-business-template-section";
@@ -118,12 +119,14 @@ function ProjectWorkflowPropRow({ project }: { project: Project }) {
 
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const { t } = useT("projects");
+  const { t: tLayout } = useT("layout");
   const statusLabels = useProjectStatusLabels();
   const priorityLabels = useProjectPriorityLabels();
   const wsId = useWorkspaceId();
   const wsPaths = useWorkspacePaths();
   const router = useNavigation();
-  const projectTab = router.searchParams.get("tab") === "deployment" ? "deployment" : "tasks";
+  const requestedTab = router.searchParams.get("tab");
+  const projectTab = requestedTab === "deployment" || requestedTab === "autopilots" ? requestedTab : "tasks";
   const targets = useQuery(deployTargetsOptions(wsId, projectId));
   const selectProjectTab = (value: string) => {
     const params = new URLSearchParams(router.searchParams);
@@ -530,6 +533,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <Tabs value={projectTab} onValueChange={(value) => selectProjectTab(String(value))} className="h-full min-h-0 gap-0">
             <TabsList className="mx-4 my-2" aria-label={project.title}>
               <TabsTrigger value="tasks">{t(($) => $.deployment.tasks)}</TabsTrigger>
+              <TabsTrigger value="autopilots">{tLayout(($) => $.nav.autopilots)}</TabsTrigger>
               <TabsTrigger value="deployment">
                 {t(($) => $.deployment.title)}
                 {targets.data && <span className="text-caption tabular-nums">{targets.data.targets.length}</span>}
@@ -537,6 +541,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </TabsList>
             <TabsContent value="deployment" className="min-h-0 overflow-auto p-4">
               <DeployTargetsSection key={projectId} projectId={projectId} />
+            </TabsContent>
+            <TabsContent value="autopilots" className="flex min-h-0 flex-col">
+              <AutopilotsPage projectId={projectId} />
             </TabsContent>
             <TabsContent value="tasks" className="flex min-h-0 flex-col">
           <IssueSurface

@@ -20,7 +20,6 @@ import {
   NewIssueButton,
   SearchButton,
   ShellRouteDataPrefetch,
-  SpacePanel,
 } from "@multica/views/layout";
 import { SearchCommand } from "@multica/views/search";
 import { FloatingChat } from "@multica/views/chat";
@@ -139,7 +138,6 @@ function MainCanvas({
         railMounted && !isCompact ? "ml-0" : "ml-2",
       )}
     >
-      {railMounted && <SpacePanel />}
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         {children}
       </div>

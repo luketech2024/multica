@@ -212,5 +212,21 @@
     "go_to_slide": "{{index}} 枚目に移動",
     "previous": "前へ",
     "next": "次へ"
+  },
+  "workbench_nav": {
+    "groups": {
+      "pinned": "固定",
+      "personal": "個人",
+      "work": "業務",
+      "team": "AI チーム",
+      "system": "システム"
+    },
+    "board": "タスクボード",
+    "chat": "エージェントチャット",
+    "pin": "{{name}}を固定",
+    "unpin": "{{name}}の固定を解除",
+    "pin_limit": "固定は3件までです。先に1件の固定を解除してください。",
+    "choose_project": "プロジェクトを選択",
+    "project_unavailable": "プロジェクトを読み込めません。再試行するか別のプロジェクトを選択してください。"
   }
 }

@@ -161,7 +161,7 @@ describe("DesktopShell workspace gating", () => {
     const { queryByRole, queryByTestId } = renderShell();
 
     expect(queryByTestId("app-rail")).not.toBeNull();
-    expect(queryByTestId("space-panel")).not.toBeNull();
+    expect(queryByTestId("space-panel")).toBeNull();
     expect(queryByTestId("search-command")).not.toBeNull();
     expect(queryByTestId("title-bar-new-issue")).not.toBeNull();
     expect(queryByTestId("title-bar-search")).not.toBeNull();
