@@ -265,6 +265,10 @@
     }
   },
   "roles": {
+    "default_runtime": "Default team runtime",
+    "initialize": "Create default team",
+    "initializing": "Creating team...",
+    "initialize_hint": "Creates role agents for enabled, unassigned roles and keeps completed agents for retry. Save the project to apply the bindings.",
     "title": "Project team",
     "sched": "Scheduling",
     "product": "Product",

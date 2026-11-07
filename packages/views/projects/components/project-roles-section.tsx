@@ -23,9 +23,10 @@ export function ProjectRolesSection({ projectId }: { projectId: string }) {
   const save = useSaveProjectRoles(wsId, projectId);
   const [draft, setDraft] = useState<ProjectRoles>();
   const [error, setError] = useState<string>();
+  const [initializing, setInitializing] = useState(false);
   const current = draft ?? saved.data;
   const submit = async () => {
-    if (!draft) return;
+    if (!draft || initializing) return;
     setError(undefined);
     try {
       await save.mutateAsync(draft);
@@ -56,9 +57,10 @@ export function ProjectRolesSection({ projectId }: { projectId: string }) {
         </p>
       )}
       {current && (
-        <fieldset disabled={!canEdit || save.isPending} className="space-y-2">
+        <fieldset disabled={!canEdit || save.isPending || initializing} className="space-y-2">
           <ProjectRolesFields
             config={current.config}
+            onBusyChange={setInitializing}
             disabled={!canEdit || save.isPending}
             onChange={(config) => setDraft({ ...current, config })}
           />

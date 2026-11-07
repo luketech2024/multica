@@ -435,6 +435,19 @@ export class TestApiClient {
     }
   }
 
+  /** Remove only agents bound to a runtime created for a team fixture. */
+  async cleanupRuntimeTeamFixture(runtimeId: string) {
+    const response = await this.authedFetch(`/api/agents?workspace_id=${this.workspaceId}`);
+    if (!response.ok) throw new Error("Failed to list fixture agents");
+    const agents = await response.json() as {id: string; runtime_id: string}[];
+    for (const agent of agents.filter(agent => agent.runtime_id === runtimeId)) {
+      const deleted = await this.authedFetch(`/api/agents/${agent.id}/archive`, {method:"POST"});
+      if (!deleted.ok) throw new Error("Failed to remove fixture agent");
+    }
+    const deleted = await this.authedFetch(`/api/runtimes/${runtimeId}`, {method:"DELETE"});
+    if (!deleted.ok) throw new Error("Failed to remove fixture runtime");
+  }
+
   /** Adds an existing user to this client's workspace and returns the member id. */
   async addMemberByEmail(email: string, role: "admin" | "member" = "member"): Promise<string> {
     if (!this.workspaceId) throw new Error("Cannot add a member before a workspace is selected");

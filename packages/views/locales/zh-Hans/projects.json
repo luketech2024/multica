@@ -265,6 +265,10 @@
     }
   },
   "roles": {
+    "default_runtime": "默认团队运行时",
+    "initialize": "创建默认团队",
+    "initializing": "正在创建团队...",
+    "initialize_hint": "为已启用且未绑定的角色创建智能体，已完成的智能体可在重试时复用。保存项目后绑定生效。",
     "title": "项目团队",
     "sched": "调度",
     "product": "产品",

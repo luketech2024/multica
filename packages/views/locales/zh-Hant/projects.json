@@ -265,6 +265,10 @@
     }
   },
   "roles": {
+    "default_runtime": "預設團隊執行環境",
+    "initialize": "建立預設團隊",
+    "initializing": "正在建立團隊...",
+    "initialize_hint": "為已啟用且未綁定的角色建立智慧體，已完成的智慧體可在重試時重用。儲存專案後綁定生效。",
     "title": "專案團隊",
     "sched": "排程",
     "product": "產品",

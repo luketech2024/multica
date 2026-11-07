@@ -11,6 +11,7 @@ const apiRepoDescription = "API and daemon runtime";
 const webRepoUrl = "https://github.com/multica-ai/web";
 
 vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useQuery: (options: { queryKey?: unknown[] }) => ({
     data: options.queryKey?.[0] === "repository-stacks" ? { templates: [{ id: "custom" }, { id: "java-backend" }], tags: [{ id: "java21" }], deliveries: ["none", "docker-image"] } : options.queryKey?.[0] === "workbench" ? { templates: [] } : options.queryKey?.[0] === "projects" ? [{ id: "existing", title: "Existing project" }] : [],
   }),
@@ -47,6 +48,7 @@ vi.mock("@multica/core/hooks", () => ({
 }));
 
 vi.mock("@multica/core/paths", () => ({
+  useWorkspaceSlug: () => "workspace",
   useCurrentWorkspace: () => ({
     id: "workspace-1",
     name: "Test Workspace",

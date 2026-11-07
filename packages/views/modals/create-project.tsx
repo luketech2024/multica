@@ -196,6 +196,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const [dueDatePickerOpen, setDueDatePickerOpen] = useState(false);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [initializingTeam, setInitializingTeam] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   // Repos selected to attach as github_repo resources after the project is
   // created. Stored as URLs (not full ProjectResource rows) — they're not
@@ -374,7 +375,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = async () => {
     // Checked here as well as on the button: TitleEditor's onSubmit calls this
     // directly, so a disabled button alone leaves the keyboard path open.
-    if (!validBasics || submitting) return;
+    if (!validBasics || submitting || initializingTeam) return;
     if (step > 0 && hasInvalidProfile) return;
     if (sourceMode === "repos" && hasRejectedRepoRef) return;
     if (step < 2) {
@@ -1028,7 +1029,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
               count: sourceMode === "repos" ? selectedRepos.length : Number(!!selectedLocalPath),
             })}
           </p>
-          <ProjectRolesFields config={team} disabled={submitting} onChange={(config) => {
+          <ProjectRolesFields config={team} disabled={submitting} onBusyChange={setInitializingTeam} onChange={(config) => {
             setTeam(config);
             setDraft({ workbenchRoles: config });
           }} />
@@ -1232,7 +1233,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
         {/* Footer action bar — primary action in its own strip, matching
             create-issue. */}
         <div className="flex items-center justify-end gap-2 border-t px-4 py-3 shrink-0">
-          {step > 0 && <Button variant="outline" size="sm" disabled={submitting} onClick={() => setStep(step - 1)}>
+          {step > 0 && <Button variant="outline" size="sm" disabled={submitting || initializingTeam} onClick={() => setStep(step - 1)}>
             {tProjects(($) => $.wizard.back)}
           </Button>}
           <Button
@@ -1241,6 +1242,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             disabled={
               !validBasics ||
               submitting ||
+              initializingTeam ||
               (sourceMode === "repos" && hasRejectedRepoRef) || (step > 0 && hasInvalidProfile)
             }
             className="shrink-0"

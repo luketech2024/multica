@@ -265,6 +265,10 @@
     }
   },
   "roles": {
+    "default_runtime": "Runtime de l’équipe par défaut",
+    "initialize": "Créer l’équipe par défaut",
+    "initializing": "Création de l’équipe...",
+    "initialize_hint": "Crée les agents des rôles actifs non attribués et réutilise ceux déjà créés en cas de nouvel essai. Enregistrez le projet pour appliquer les affectations.",
     "title": "Équipe du projet",
     "sched": "Planification",
     "product": "Produit",

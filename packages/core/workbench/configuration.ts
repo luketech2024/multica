@@ -272,3 +272,4 @@ export function useDeleteWorkbenchCredential(wsId: string) {
 }
 
 export { templateMergeFields, mergeBusinessTemplateFields, type TemplateMergeField } from "./template-merge";
+export { initializeDefaultTeam } from "./default-team";
