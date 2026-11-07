@@ -144,7 +144,7 @@ export const appRoutes: RouteObject[] = [
         path: ":workspaceSlug",
         element: <WorkspaceRouteLayout />,
         children: [
-          // A bare `/{slug}` URL is normalized to `/{slug}/issues` by
+          // A bare `/{slug}` URL is normalized to `/{slug}/projects` by
           // sanitizeTabPath before it ever becomes a session, so the index
           // route is unreachable in practice; null keeps it a harmless
           // safety net instead of an in-router <Navigate> (MUL-4741

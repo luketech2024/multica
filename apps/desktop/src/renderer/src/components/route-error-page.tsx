@@ -1,3 +1,4 @@
+import { paths } from "@multica/core/paths";
 import { useMemo } from "react";
 import { isRouteErrorResponse, useLocation, useRouteError } from "react-router-dom";
 import { AlertTriangle, Compass, RotateCw, Send, X } from "@multica/ui/icons";
@@ -37,7 +38,7 @@ export function createRouteErrorFeedbackContext({
  */
 function useRecoveryRoute(): string | null {
   const activeWorkspaceSlug = useTabStore((state) => state.activeWorkspaceSlug);
-  return activeWorkspaceSlug ? `/${activeWorkspaceSlug}/issues` : null;
+  return activeWorkspaceSlug ? paths.workspace(activeWorkspaceSlug).root() : null;
 }
 
 export function DesktopRouteErrorPage() {

@@ -54,7 +54,7 @@ beforeEach(() => {
   overlay.overlay = null;
   auth.logout.mockReset();
   useTabStore.getState().reset();
-  useTabStore.getState().switchWorkspace("acme"); // default tab /acme/issues
+  useTabStore.getState().switchWorkspace("acme", "/acme/issues"); // default tab /acme/issues
   Object.defineProperty(window, "desktopAPI", {
     configurable: true,
     value: {
@@ -160,18 +160,18 @@ describe("push", () => {
   });
 
   // The workspace switchers (sidebar dropdown, Mod+K palette) push the
-  // target's Issues root, which is where web lands. On desktop that resumes
+  // target's default root, which is where web lands. On desktop that resumes
   // the workspace where the user left it instead. NoAccessPage recovers with
   // replace() to the same kind of path, so both methods are covered.
   it.each(["push", "replace"] as const)(
-    "%s to another workspace's Issues root restores its last active tab",
+    "%s to another workspace's default root restores its last active tab",
     (method) => {
       const store = useTabStore.getState();
       store.switchWorkspace("butter", "/butter/projects");
-      store.switchWorkspace("acme");
+      store.switchWorkspace("acme", "/acme/issues");
       const getAdapter = renderProvider();
 
-      getAdapter()[method]("/butter/issues");
+      getAdapter()[method]("/butter/projects");
 
       const s = useTabStore.getState();
       expect(s.activeWorkspaceSlug).toBe("butter");
@@ -182,18 +182,18 @@ describe("push", () => {
     },
   );
 
-  it("lands on Issues when switching to a workspace with no tabs yet", () => {
+  it("lands on Projects when switching to a workspace with no tabs yet", () => {
     const getAdapter = renderProvider();
 
-    getAdapter().push("/butter/issues");
+    getAdapter().push("/butter/projects");
 
-    expect(getActiveTab(useTabStore.getState())?.url).toBe("/butter/issues");
+    expect(getActiveTab(useTabStore.getState())?.url).toBe("/butter/projects");
   });
 
   it("still opens a deeper cross-workspace path under Issues", () => {
     const store = useTabStore.getState();
     store.switchWorkspace("butter", "/butter/projects");
-    store.switchWorkspace("acme");
+    store.switchWorkspace("acme", "/acme/issues");
     const getAdapter = renderProvider();
 
     getAdapter().push("/butter/issues/BUT-1");
@@ -438,7 +438,7 @@ describe("workspaces shown in another window", () => {
   it("focuses that window without a path for a workspace switcher click", () => {
     const focusWorkspaceWindow = withOtherWindow("butter");
     const adapter = renderProvider();
-    act(() => adapter().push("/butter/issues"));
+    act(() => adapter().push("/butter/projects"));
 
     expect(focusWorkspaceWindow).toHaveBeenCalledWith("butter", undefined);
     expect(useTabStore.getState().activeWorkspaceSlug).toBe("acme");
@@ -447,7 +447,7 @@ describe("workspaces shown in another window", () => {
   it("switches in place when no other window shows the workspace", () => {
     const focusWorkspaceWindow = withOtherWindow("butter");
     const adapter = renderProvider();
-    act(() => adapter().push("/zebra/issues"));
+    act(() => adapter().push("/zebra/projects"));
 
     expect(focusWorkspaceWindow).toHaveBeenCalledWith("zebra", undefined);
     expect(useTabStore.getState().activeWorkspaceSlug).toBe("zebra");

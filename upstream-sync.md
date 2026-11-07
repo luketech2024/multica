@@ -84,3 +84,12 @@ Validation and incomplete scope are tracked in D:\vibe-coding工作台\开发任
 - Workbench board/list surfaces opt into fixed 72px/92px task cards with shared content. Preserve the existing sortable board wrappers, context menus and peek links. Workbench list mode uses a responsive virtual grid (2/3/4 columns at <1280/1280/1600 viewport widths), retains status cursor pagination and ignores legacy list-group collapse preferences. Hide configurable property toggles for these fixed card layouts, while other embedded surfaces retain their configurable cards.
 
 - Workbench keyboard navigation owns ephemeral focus independently of batch selection. Publish row-major board order and card-flow order, register links and virtual-scroller reveal callbacks, and keep a visible selection ring. J/K move, Enter opens, A opens only review tasks, and Escape clears focus or returns task detail to the task list. Existing peek navigation and user-configured global bindings take priority. Help is a configurable global shortcut, and single-key actions defer to text editors, comboboxes, listboxes and portal menus.
+
+
+## T7 默认项目入口（2026-11-07）
+
+- 登录完成、引导结束、新建工作区、邀请加入、工作区菜单和搜索切换统一使用 workspace.root，默认进入项目列表。网页根地址重定向、桌面新标签、错误恢复、空标签组均同步。
+- 桌面跨工作区默认入口恢复已有会话；显式任务地址继续按地址打开。旧任务标签与历史保持原地址，关闭最后一个标签后新建项目列表标签。
+- 核心路径104项、网页代理33项、桌面定向149项、邀请/菜单16项通过。桌面扩展837项首次835通过，2项旧默认页测试调整为显式任务初始页后，该文件5项全部通过。全工作区类型9项及各包定向ESLint通过。
+- Chromium首页跳转、项目列表刷新、旧任务地址与查询参数保留32.9s通过，pageerror 0。首次浏览器启动早于服务就绪，连接拒绝，待受管环境健康后补跑通过。
+- T7其余侧栏分组/置顶、发布入口与最终双端验收仍待完成。

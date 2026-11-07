@@ -38,7 +38,7 @@ export function isMyAgentsSearch(searchParams: URLSearchParams): boolean {
 function workspaceScoped(slug: string) {
   const ws = `/${encode(slug)}`;
   return {
-    root: () => `${ws}/issues`,
+    root: () => `${ws}/projects`,
     usage: () => `${ws}/usage`,
     security: () => `${ws}/security`,
     issues: () => `${ws}/issues`,

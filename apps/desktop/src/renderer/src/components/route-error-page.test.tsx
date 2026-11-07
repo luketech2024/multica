@@ -187,7 +187,7 @@ describe("DesktopRouteErrorPage", () => {
       renderUnmatchedRoute("/Users/whoever/Desktop/shot.png");
 
       fireEvent.click(await screen.findByRole("button", { name: /go to issues/i }));
-      expect(navigateActiveSession).toHaveBeenCalledWith("/acme/issues", {
+      expect(navigateActiveSession).toHaveBeenCalledWith("/acme/projects", {
         replace: true,
       });
       expect(navigateActiveSession).not.toHaveBeenCalledWith(

@@ -48,7 +48,7 @@ beforeEach(() => {
   __resetIssueViewTabsForTests();
   useActiveIssueViewStore.setState({ active: {} });
   useTabStore.getState().reset();
-  useTabStore.getState().switchWorkspace("acme");
+  useTabStore.getState().switchWorkspace("acme", "/acme/issues");
   initIssueViewTabs();
   rendered = [];
 });
