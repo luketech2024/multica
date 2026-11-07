@@ -17,12 +17,15 @@ import { Button } from "@multica/ui/components/ui/button";
 import { Input } from "@multica/ui/components/ui/input";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { ConfigurationSelect } from "../../projects/components/configuration-select";
-import { useT } from "../../i18n";
+import { useLocale, useT } from "../../i18n";
+import { useNavigation } from "../../navigation";
 import { SettingsSection } from "./settings-layout";
 import { downloadBlob } from "../../editor/utils/mermaid-export";
 
 export function WorkbenchCredentials() {
   const { t } = useT("projects");
+  const locale = useLocale();
+  const selectedCredential = useNavigation().searchParams.get("credential");
   const wsId = useWorkspaceId();
   const credentials = useQuery(credentialsOptions(wsId));
   const projects = useQuery(projectListOptions(wsId));
@@ -136,12 +139,17 @@ export function WorkbenchCredentials() {
         {credentials.data?.credentials.map((credential) => (
           <div
             key={credential.id}
-            className="flex flex-wrap items-center gap-2 rounded-xl border bg-surface p-3"
+            className={`flex flex-wrap items-center gap-2 rounded-xl border bg-surface p-3 ${selectedCredential === credential.id ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <span className="font-medium">{credential.label}</span>
             <span className="text-caption text-muted-foreground">
               ••••{credential.last_four}
             </span>
+            {credential.expires_at && (
+              <span className="text-caption text-muted-foreground">
+                {t(($) => $.workbench.expires)} {new Date(credential.expires_at).toLocaleDateString(locale)}
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"

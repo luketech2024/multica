@@ -12,6 +12,7 @@ import {
 } from "./inbox-display";
 
 it("opens security reminders at the risk while preserving task destinations", () => {
+  expect(inboxDestination(item({ issue_id: null, details: { source: "workbench_credential", credential_id: "credential-1" } }), "acme")).toBe("/acme/security?tab=credentials&credential=credential-1");
   expect(inboxDestination(item({ issue_id: null, details: { source: "workbench_audit_export", export_id: "export-1" } }), "acme")).toBe("/acme/security?tab=audit&export=export-1");
   expect(inboxDestination(item({ issue_id: null, details: { source: "workbench_security", check_id: "risk-1" } }), "acme")).toBe("/acme/security?check=risk-1");
   expect(inboxDestination(item({ issue_id: "task-1" }), "acme")).toBe("/acme/issues/task-1");

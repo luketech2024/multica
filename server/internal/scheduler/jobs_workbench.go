@@ -13,6 +13,21 @@ type SecurityAcceptanceReconciler interface {
 	ReconcileSecurityAcceptances(context.Context) error
 }
 
+type CredentialExpiryReconciler interface {
+	RemindExpiringCredentials(context.Context) error
+}
+
+func CredentialExpiryJob(reconciler CredentialExpiryReconciler) JobSpec {
+	return JobSpec{
+		Name: "workbench_credential_expiry", Cadence: time.Hour, CatchUpMode: CatchUpLatestOnly, CatchUpWindow: 24 * time.Hour,
+		RunTimeout: 10 * time.Minute, StaleTimeout: 15 * time.Minute, HeartbeatInterval: 30 * time.Second,
+		AllowStaleReentry: true, MaxAttempts: 3, Scopes: StaticScopes(ScopeGlobal),
+		Handler: func(ctx context.Context, _ HandlerInput) (HandlerResult, error) {
+			return HandlerResult{}, reconciler.RemindExpiringCredentials(ctx)
+		},
+	}
+}
+
 func SecurityAcceptanceJob(reconciler SecurityAcceptanceReconciler) JobSpec {
 	return JobSpec{
 		Name: "security_acceptance_expiry", Cadence: time.Hour, CatchUpMode: CatchUpLatestOnly, CatchUpWindow: 24 * time.Hour,

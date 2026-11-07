@@ -618,6 +618,54 @@ func (q *Queries) ListInboxItems(ctx context.Context, arg ListInboxItemsParams) 
 	return items, nil
 }
 
+const listInboxSecurityActions = `-- name: ListInboxSecurityActions :many
+SELECT i.id, 'credential'::text AS action, c.expires_at AS expires_at
+FROM inbox_item i
+JOIN member m ON m.workspace_id=i.workspace_id AND m.user_id=i.recipient_id AND m.role IN ('owner','admin')
+JOIN credentials c ON c.workspace_id=i.workspace_id AND c.id::text=i.details->>'credential_id'
+WHERE i.workspace_id = $1 AND i.id=ANY($2::uuid[]) AND i.archived=false
+  AND i.details->>'source'='workbench_credential' AND c.expires_at<=now()+interval '7 days'
+UNION ALL
+SELECT i.id, 'security'::text AS action, s.accepted_until AS expires_at
+FROM inbox_item i
+JOIN member m ON m.workspace_id=i.workspace_id AND m.user_id=i.recipient_id AND m.role IN ('owner','admin')
+JOIN security_checks s ON s.workspace_id=i.workspace_id AND s.id::text=i.details->>'check_id'
+WHERE i.workspace_id = $1 AND i.id=ANY($2::uuid[]) AND i.archived=false
+  AND i.details->>'source'='workbench_security' AND s.status IN ('accepted','unresolved')
+  AND s.accepted_until<=now()+interval '72 hours'
+`
+
+type ListInboxSecurityActionsParams struct {
+	WorkspaceID pgtype.UUID   `json:"workspace_id"`
+	ItemIds     []pgtype.UUID `json:"item_ids"`
+}
+
+type ListInboxSecurityActionsRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Action    string             `json:"action"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) ListInboxSecurityActions(ctx context.Context, arg ListInboxSecurityActionsParams) ([]ListInboxSecurityActionsRow, error) {
+	rows, err := q.db.Query(ctx, listInboxSecurityActions, arg.WorkspaceID, arg.ItemIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListInboxSecurityActionsRow{}
+	for rows.Next() {
+		var i ListInboxSecurityActionsRow
+		if err := rows.Scan(&i.ID, &i.Action, &i.ExpiresAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listInboxWorkbenchIssues = `-- name: ListInboxWorkbenchIssues :many
 SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
 WHERE workspace_id = $1 AND id = ANY($2::uuid[])

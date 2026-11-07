@@ -5,12 +5,42 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
+
+func TestWorkbenchCredentialInboxActionTracksExpiryAndPermission(t *testing.T) {
+	workspace := dbfx.Workspace(t, "Credential inbox", "credential-inbox-"+uuid.NewString())
+	dbfx.Member(t, workspace, testUserID, "owner")
+	expires := time.Now().UTC().Truncate(time.Microsecond).Add(6 * 24 * time.Hour)
+	credential := dbfx.Insert(t, "credentials", testutil.Cols{
+		"workspace_id": workspace, "label": "Deployment key", "kind": "token", "usage": []string{"deploy"},
+		"secret_enc": []byte("encrypted"), "wrapped_key": []byte("wrapped"), "last_four": "1234", "expires_at": expires,
+	})
+	details, _ := json.Marshal(map[string]string{"source": "workbench_credential", "credential_id": credential, "expires_at": expires.Format(time.RFC3339Nano)})
+	notice := dbfx.Insert(t, "inbox_item", testutil.Cols{
+		"workspace_id": workspace, "recipient_type": "member", "recipient_id": testUserID,
+		"title": "Rotate key", "type": "review_requested", "severity": "action_required", "details": details, "read": true,
+	})
+	read := func(want string) {
+		t.Helper()
+		var items []InboxItemResponse
+		testutil.Call(t, inboxWorkspaceHandler(testHandler.ListInbox), inboxRequest("GET", "/api/inbox", workspace)).Want(200).JSON(&items)
+		if len(items) != 1 || items[0].ID != notice || items[0].WorkbenchAction != want || !items[0].Read {
+			t.Fatalf("credential action=%+v, want %s with read preserved", items, want)
+		}
+	}
+	read("credential")
+	dbfx.Exec(t, "UPDATE credentials SET expires_at=expires_at+interval '1 day' WHERE id=$1", credential)
+	read("")
+	dbfx.Exec(t, "UPDATE credentials SET expires_at=$2 WHERE id=$1", credential, expires)
+	dbfx.Exec(t, "UPDATE member SET role='member' WHERE workspace_id=$1 AND user_id=$2", workspace, testUserID)
+	read("")
+}
 
 func TestWorkbenchInboxCreationMarksAllSourcesAndQuietsRoutineStatus(t *testing.T) {
 	workspace := dbfx.Workspace(t, "Workbench notice policy", "workbench-policy-"+uuid.NewString())

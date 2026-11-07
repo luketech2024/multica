@@ -107,7 +107,8 @@
     "autopilot_quota_blocked": "執行已被阻止：額度已用完",
     "children_done_stage": "第 {{stage}} 階段的子任務已全部結束",
     "security_expiring": "風險接受將在 3 天內到期，請複檢",
-    "audit_export_ready": "稽核匯出已完成，24 小時內可下載"
+    "audit_export_ready": "稽核匯出已完成，24 小時內可下載",
+    "credential_expiring": "憑據即將到期，請及時輪換"
   },
   "toasts": {
     "source_context_retry_started": "已使用原始上下文開始重試",

@@ -11,6 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const archiveCredentialExpiryNotices = `-- name: ArchiveCredentialExpiryNotices :many
+UPDATE inbox_item SET archived=true
+WHERE workspace_id= $1 AND details->>'source'='workbench_credential' AND details->>'credential_id'= $2::text AND archived=false
+RETURNING id,recipient_id
+`
+
+type ArchiveCredentialExpiryNoticesParams struct {
+	WorkspaceID  pgtype.UUID `json:"workspace_id"`
+	CredentialID string      `json:"credential_id"`
+}
+
+type ArchiveCredentialExpiryNoticesRow struct {
+	ID          pgtype.UUID `json:"id"`
+	RecipientID pgtype.UUID `json:"recipient_id"`
+}
+
+func (q *Queries) ArchiveCredentialExpiryNotices(ctx context.Context, arg ArchiveCredentialExpiryNoticesParams) ([]ArchiveCredentialExpiryNoticesRow, error) {
+	rows, err := q.db.Query(ctx, archiveCredentialExpiryNotices, arg.WorkspaceID, arg.CredentialID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ArchiveCredentialExpiryNoticesRow{}
+	for rows.Next() {
+		var i ArchiveCredentialExpiryNoticesRow
+		if err := rows.Scan(&i.ID, &i.RecipientID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createWorkbenchCredential = `-- name: CreateWorkbenchCredential :one
 INSERT INTO credentials (id,workspace_id,project_id,label,kind,usage,secret_enc,wrapped_key,last_four,expires_at)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
@@ -179,6 +215,32 @@ func (q *Queries) GetWorkbenchCredentialForUpdate(ctx context.Context, arg GetWo
 	return i, err
 }
 
+const hasCredentialExpiryNotice = `-- name: HasCredentialExpiryNotice :one
+SELECT EXISTS(SELECT 1 FROM inbox_item
+WHERE workspace_id= $1 AND recipient_id= $2
+  AND details->>'source'='workbench_credential'
+  AND details->>'credential_id'= $3::text AND details->>'expires_at'= $4::text)
+`
+
+type HasCredentialExpiryNoticeParams struct {
+	WorkspaceID  pgtype.UUID `json:"workspace_id"`
+	RecipientID  pgtype.UUID `json:"recipient_id"`
+	CredentialID string      `json:"credential_id"`
+	ExpiresAt    string      `json:"expires_at"`
+}
+
+func (q *Queries) HasCredentialExpiryNotice(ctx context.Context, arg HasCredentialExpiryNoticeParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasCredentialExpiryNotice,
+		arg.WorkspaceID,
+		arg.RecipientID,
+		arg.CredentialID,
+		arg.ExpiresAt,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listCredentialTargets = `-- name: ListCredentialTargets :many
 SELECT id, workspace_id, project_id, repo_id, label, env, kind, channel, runtime_id, credential_id, location, last_check, revision, created_at, updated_at FROM deploy_targets WHERE workspace_id=$1 AND credential_id=$2 ORDER BY project_id,label
 `
@@ -214,6 +276,44 @@ func (q *Queries) ListCredentialTargets(ctx context.Context, arg ListCredentialT
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExpiringWorkbenchCredentials = `-- name: ListExpiringWorkbenchCredentials :many
+SELECT id,workspace_id,project_id FROM credentials
+WHERE expires_at > $1 AND expires_at <= $2 AND id > $3
+ORDER BY id LIMIT 100
+`
+
+type ListExpiringWorkbenchCredentialsParams struct {
+	NowAt   pgtype.Timestamptz `json:"now_at"`
+	UntilAt pgtype.Timestamptz `json:"until_at"`
+	AfterID pgtype.UUID        `json:"after_id"`
+}
+
+type ListExpiringWorkbenchCredentialsRow struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+}
+
+func (q *Queries) ListExpiringWorkbenchCredentials(ctx context.Context, arg ListExpiringWorkbenchCredentialsParams) ([]ListExpiringWorkbenchCredentialsRow, error) {
+	rows, err := q.db.Query(ctx, listExpiringWorkbenchCredentials, arg.NowAt, arg.UntilAt, arg.AfterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListExpiringWorkbenchCredentialsRow{}
+	for rows.Next() {
+		var i ListExpiringWorkbenchCredentialsRow
+		if err := rows.Scan(&i.ID, &i.WorkspaceID, &i.ProjectID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

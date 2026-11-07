@@ -109,7 +109,8 @@
     "autopilot_quota_blocked": "Run blocked because the limit was reached",
     "children_done_stage": "Stage {{stage}}'s sub-issues finished",
     "security_expiring": "Risk acceptance expires within 3 days",
-    "audit_export_ready": "Audit export ready · download within 24 hours"
+    "audit_export_ready": "Audit export ready · download within 24 hours",
+    "credential_expiring": "Credential expires soon · rotate it before expiry"
   },
   "toasts": {
     "source_context_retry_started": "Retry started with the original context",

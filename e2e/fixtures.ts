@@ -376,6 +376,33 @@ export class TestApiClient {
     }
   }
 
+  async seedCredentialExpiryNotice(projectId: string) {
+    if (!this.workspaceId || !this.email) throw new Error("Select a workspace before seeding a credential reminder");
+    const client = new pg.Client(DATABASE_URL);
+    await client.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query(
+        `INSERT INTO credentials (workspace_id,project_id,label,kind,usage,secret_enc,wrapped_key,last_four,expires_at)
+         VALUES ($1,$2,'Staging deployment key','token',ARRAY['deploy'],$3,$4,'1234',date_trunc('milliseconds',now())+interval '6 days') RETURNING id,expires_at`,
+        [this.workspaceId, projectId, Buffer.from("test-encrypted-value"), Buffer.from("test-wrapped-key")],
+      );
+      const credential = result.rows[0];
+      await client.query(
+        `INSERT INTO inbox_item (workspace_id,recipient_type,recipient_id,type,severity,title,actor_type,details)
+         SELECT $1,'member',id,'review_requested','action_required','Staging deployment key','system',$3 FROM "user" WHERE email=$2`,
+        [this.workspaceId, this.email, JSON.stringify({ source: "workbench_credential", workbench: "true", credential_id: credential.id, expires_at: credential.expires_at })],
+      );
+      await client.query("COMMIT");
+      return credential.id as string;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      await client.end();
+    }
+  }
+
   /** Seed an owned runtime without launching an actual agent tool. */
   async seedRuntime(name: string): Promise<string> {
     if (!this.workspaceId || !this.email) throw new Error("Select a workspace before seeding a runtime");

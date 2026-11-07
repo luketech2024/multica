@@ -14,7 +14,7 @@ export function inboxCategoryItems(items: InboxItem[], category: InboxCategory):
   }
   const grouped = deduplicateInboxItems(items);
   if (category === "pending") {
-    return grouped.filter((item) => item.workbench && ["requirements", "delivery", "blocked"].includes(item.workbench_action ?? ""));
+    return grouped.filter((item) => item.workbench && ["requirements", "delivery", "blocked", "credential", "security"].includes(item.workbench_action ?? ""));
   }
   return category === "unread" ? grouped.filter((item) => !item.read) : grouped;
 }

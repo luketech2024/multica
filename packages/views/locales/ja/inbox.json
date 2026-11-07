@@ -107,7 +107,8 @@
     "autopilot_quota_blocked": "上限に達したため実行をブロックしました",
     "children_done_stage": "ステージ {{stage}} のサブタスクがすべて終わりました",
     "security_expiring": "リスク受容期限が3日以内に切れます",
-    "audit_export_ready": "監査のエクスポートが完了しました。24時間以内にダウンロードできます"
+    "audit_export_ready": "監査のエクスポートが完了しました。24時間以内にダウンロードできます",
+    "credential_expiring": "認証情報の有効期限が近づいています · 期限前に更新してください"
   },
   "toasts": {
     "source_context_retry_started": "元のコンテキストで再試行を開始しました",

@@ -110,7 +110,17 @@ func TestWorkbenchCredentialEncryptionRotationAndReferenceGuard(t *testing.T) {
 		req := testutil.WithURLParams(newRequest("PUT", "/api/workbench/credentials/"+credential.ID, map[string]any{"secret": "rotated-secret-5678", "expected_revision": revision}), "credentialId", credential.ID)
 		testutil.Call(t, h.SaveWorkbenchCredential, req).Want(status)
 	}
+	notice := dbfx.Insert(t, "inbox_item", testutil.Cols{
+		"workspace_id": testWorkspaceID, "recipient_type": "member", "recipient_id": testUserID,
+		"title": "Rotate deployment key", "type": "review_requested", "severity": "action_required",
+		"details": `{"source":"workbench_credential","credential_id":"` + credential.ID + `"}`,
+	})
 	rotate(credential.Revision, http.StatusOK)
+	var archived bool
+	dbfx.QueryRow(t, "SELECT archived FROM inbox_item WHERE id=$1", notice).Scan(&archived)
+	if !archived {
+		t.Fatal("rotation left the old expiry reminder pending")
+	}
 	rotate(credential.Revision, http.StatusConflict)
 	var targetRevision int64
 	dbfx.QueryRow(t, `SELECT revision FROM deploy_targets WHERE id=$1`, target.ID).Scan(&targetRevision)

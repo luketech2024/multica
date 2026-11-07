@@ -59,6 +59,10 @@ export function InboxDetailLabel({ item }: { item: InboxItem }) {
   const statusLabelOf = useStatusLabel(item.workspace_id);
   const details = item.details ?? {};
 
+  if (details.source === "workbench_credential") {
+    return <span>{t(($) => $.labels.credential_expiring)}</span>;
+  }
+
   if (details.source === "workbench_audit_export") {
     return <span>{t(($) => $.labels.audit_export_ready)}</span>;
   }

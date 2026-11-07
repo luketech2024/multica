@@ -14,6 +14,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/dbid"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
 func (h *Handler) workbenchAdmin(w http.ResponseWriter, r *http.Request) (db.Member, bool) {
@@ -145,9 +146,14 @@ func (h *Handler) SaveWorkbenchCredential(w http.ResponseWriter, r *http.Request
 		writeError(w, 500, "failed to save credential")
 		return
 	}
+	var settled []db.ArchiveCredentialExpiryNoticesRow
 	if rotating {
 		if _, err = tx.Exec(r.Context(), `UPDATE deploy_targets SET last_check=NULL, revision=revision+1, updated_at=now() WHERE workspace_id=$1 AND credential_id=$2`, member.WorkspaceID, id); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to invalidate credential checks")
+			return
+		}
+		if settled, err = q.ArchiveCredentialExpiryNotices(r.Context(), db.ArchiveCredentialExpiryNoticesParams{WorkspaceID: member.WorkspaceID, CredentialID: uuidToString(id)}); err != nil {
+			writeError(w, 500, "failed to settle credential reminders")
 			return
 		}
 	}
@@ -159,6 +165,7 @@ func (h *Handler) SaveWorkbenchCredential(w http.ResponseWriter, r *http.Request
 		writeError(w, 500, "failed to commit credential")
 		return
 	}
+	h.publishCredentialReminderArchives(member, settled)
 	writeJSON(w, 200, response)
 }
 
@@ -197,6 +204,11 @@ func (h *Handler) DeleteWorkbenchCredential(w http.ResponseWriter, r *http.Reque
 		writeError(w, 409, "credential is referenced, updated or deleted; unbind it before deleting")
 		return
 	}
+	settled, err := q.ArchiveCredentialExpiryNotices(r.Context(), db.ArchiveCredentialExpiryNoticesParams{WorkspaceID: member.WorkspaceID, CredentialID: uuidToString(id)})
+	if err != nil {
+		writeError(w, 500, "failed to settle credential reminders")
+		return
+	}
 	if err = writeWorkbenchAudit(r.Context(), q, member.WorkspaceID, member.UserID, "credential_deleted", map[string]string{"credential_id": uuidToString(id)}); err != nil {
 		writeError(w, 500, "failed to record credential audit")
 		return
@@ -205,7 +217,16 @@ func (h *Handler) DeleteWorkbenchCredential(w http.ResponseWriter, r *http.Reque
 		writeError(w, 500, "failed to commit credential deletion")
 		return
 	}
+	h.publishCredentialReminderArchives(member, settled)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) publishCredentialReminderArchives(member db.Member, notices []db.ArchiveCredentialExpiryNoticesRow) {
+	for _, notice := range notices {
+		h.publish(protocol.EventInboxArchived, uuidToString(member.WorkspaceID), "member", uuidToString(member.UserID), map[string]any{
+			"item_id": uuidToString(notice.ID), "issue_id": nil, "recipient_id": uuidToString(notice.RecipientID),
+		})
+	}
 }
 
 func (h *Handler) ListWorkbenchCredentialReferences(w http.ResponseWriter, r *http.Request) {

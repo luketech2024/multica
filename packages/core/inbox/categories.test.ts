@@ -19,6 +19,9 @@ it("keeps read pending work until the server clears its action", () => {
   expect(inboxCategoryItems([{ ...pending, workbench_action: "" }], "pending")).toEqual([]);
   expect(inboxCategoryItems([item({ workbench_action: "future" })], "pending")).toEqual([]);
   expect(inboxCategory("unknown")).toBe("all");
+  for (const workbench_action of ["credential", "security"]) {
+    expect(inboxCategoryItems([item({ issue_id: null, read: true, workbench_action })], "pending")).toHaveLength(1);
+  }
 });
 
 it("retains older mentions when a newer notification exists on the same task", () => {

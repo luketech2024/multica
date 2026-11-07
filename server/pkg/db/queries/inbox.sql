@@ -11,6 +11,22 @@ ORDER BY i.created_at DESC;
 SELECT * FROM issue
 WHERE workspace_id = @workspace_id AND id = ANY(@issue_ids::uuid[]);
 
+-- name: ListInboxSecurityActions :many
+SELECT i.id, 'credential'::text AS action, c.expires_at AS expires_at
+FROM inbox_item i
+JOIN member m ON m.workspace_id=i.workspace_id AND m.user_id=i.recipient_id AND m.role IN ('owner','admin')
+JOIN credentials c ON c.workspace_id=i.workspace_id AND c.id::text=i.details->>'credential_id'
+WHERE i.workspace_id = @workspace_id AND i.id=ANY(@item_ids::uuid[]) AND i.archived=false
+  AND i.details->>'source'='workbench_credential' AND c.expires_at<=now()+interval '7 days'
+UNION ALL
+SELECT i.id, 'security'::text AS action, s.accepted_until AS expires_at
+FROM inbox_item i
+JOIN member m ON m.workspace_id=i.workspace_id AND m.user_id=i.recipient_id AND m.role IN ('owner','admin')
+JOIN security_checks s ON s.workspace_id=i.workspace_id AND s.id::text=i.details->>'check_id'
+WHERE i.workspace_id = @workspace_id AND i.id=ANY(@item_ids::uuid[]) AND i.archived=false
+  AND i.details->>'source'='workbench_security' AND s.status IN ('accepted','unresolved')
+  AND s.accepted_until<=now()+interval '72 hours';
+
 -- name: ListWorkbenchRequirementNotices :many
 SELECT * FROM inbox_item
 WHERE workspace_id = @workspace_id AND issue_id = @issue_id

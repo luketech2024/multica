@@ -26,3 +26,19 @@ AND NOT EXISTS (SELECT 1 FROM deploy_targets WHERE credential_id=credentials.id)
 
 -- name: ListCredentialTargets :many
 SELECT * FROM deploy_targets WHERE workspace_id=$1 AND credential_id=$2 ORDER BY project_id,label;
+
+-- name: ListExpiringWorkbenchCredentials :many
+SELECT id,workspace_id,project_id FROM credentials
+WHERE expires_at > @now_at AND expires_at <= @until_at AND id > @after_id
+ORDER BY id LIMIT 100;
+
+-- name: HasCredentialExpiryNotice :one
+SELECT EXISTS(SELECT 1 FROM inbox_item
+WHERE workspace_id= @workspace_id AND recipient_id= @recipient_id
+  AND details->>'source'='workbench_credential'
+  AND details->>'credential_id'= @credential_id::text AND details->>'expires_at'= @expires_at::text);
+
+-- name: ArchiveCredentialExpiryNotices :many
+UPDATE inbox_item SET archived=true
+WHERE workspace_id= @workspace_id AND details->>'source'='workbench_credential' AND details->>'credential_id'= @credential_id::text AND archived=false
+RETURNING id,recipient_id;

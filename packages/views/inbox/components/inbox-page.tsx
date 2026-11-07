@@ -433,6 +433,11 @@ export function InboxPage() {
   // by issue) and a fresh mount with a cleared memento entry lands by itself.
   const [highlightRequestToken, setHighlightRequestToken] = useState(0);
   const handleSelect = (item: InboxItem) => {
+    if (item.details?.source === "workbench_credential" && item.details.credential_id) {
+      if (!item.read) markReadMutation.mutate(item.id);
+      push(`${wsPaths.security()}?tab=credentials&credential=${encodeURIComponent(item.details.credential_id)}`);
+      return;
+    }
     if (item.details?.source === "workbench_audit_export" && item.details.export_id) {
       if (!item.read) markReadMutation.mutate(item.id);
       push(`${wsPaths.security()}?tab=audit&export=${encodeURIComponent(item.details.export_id)}`);

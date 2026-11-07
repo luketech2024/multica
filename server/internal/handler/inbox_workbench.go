@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/workbench"
@@ -29,9 +31,39 @@ func applyInboxWorkbench(item *InboxItemResponse, issue db.Issue) {
 
 func (h *Handler) enrichInboxWorkbench(ctx context.Context, workspaceID pgtype.UUID, items []InboxItemResponse) error {
 	ids := make([]pgtype.UUID, 0, len(items))
+	securityIDs := make([]pgtype.UUID, 0)
+	byItemID := make(map[string]*InboxItemResponse)
 	for _, item := range items {
 		if item.IssueID != nil {
 			ids = append(ids, parseUUID(*item.IssueID))
+		} else {
+			securityIDs = append(securityIDs, parseUUID(item.ID))
+		}
+	}
+	if len(securityIDs) > 0 {
+		for index := range items {
+			byItemID[items[index].ID] = &items[index]
+		}
+		actions, err := h.Queries.ListInboxSecurityActions(ctx, db.ListInboxSecurityActionsParams{WorkspaceID: workspaceID, ItemIds: securityIDs})
+		if err != nil {
+			return err
+		}
+		for _, action := range actions {
+			item := byItemID[uuidToString(action.ID)]
+			var details struct {
+				ExpiresAt     time.Time `json:"expires_at"`
+				AcceptedUntil time.Time `json:"accepted_until"`
+			}
+			if item == nil || json.Unmarshal(item.Details, &details) != nil {
+				continue
+			}
+			expires := details.ExpiresAt
+			if action.Action == "security" {
+				expires = details.AcceptedUntil
+			}
+			if action.ExpiresAt.Valid && action.ExpiresAt.Time.Equal(expires) {
+				item.Workbench, item.WorkbenchAction = true, action.Action
+			}
 		}
 	}
 	if len(ids) == 0 {

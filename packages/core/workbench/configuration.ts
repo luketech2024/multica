@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { api } from "../api";
 import { issueKeys } from "../issues/queries";
+import { inboxKeys } from "../inbox/queries";
 import { projectResourceKeys } from "../projects/resource-queries";
 import type {
   DeployTargetInput,
@@ -210,8 +211,11 @@ export function useSaveWorkbenchCredential(wsId: string) {
         data.secret = "";
       }
     },
-    onSuccess: () =>
+    onSuccess: () => Promise.all([
       qc.invalidateQueries({ queryKey: workbenchKeys.credentials(wsId) }),
+      qc.invalidateQueries({ queryKey: inboxKeys.all(wsId) }),
+      qc.invalidateQueries({ queryKey: inboxKeys.unreadSummary() }),
+    ]),
     gcTime: 0,
   });
 }
@@ -220,7 +224,10 @@ export function useDeleteWorkbenchCredential(wsId: string) {
   return useMutation({
     mutationFn: ({ id, revision }: { id: string; revision: number }) =>
       api.deleteWorkbenchCredential(id, revision),
-    onSuccess: () =>
+    onSuccess: () => Promise.all([
       qc.invalidateQueries({ queryKey: workbenchKeys.credentials(wsId) }),
+      qc.invalidateQueries({ queryKey: inboxKeys.all(wsId) }),
+      qc.invalidateQueries({ queryKey: inboxKeys.unreadSummary() }),
+    ]),
   });
 }
