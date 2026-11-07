@@ -68,7 +68,7 @@ func TestReleaseSecurityGateBindsRepositoryVersionAndCommit(t *testing.T) {
 	issue := dbfx.Issue(t, "Release scan", testutil.Cols{"project_id": project})
 	commit := strings.Repeat("a", 40)
 	raw, _ := json.Marshal(workbench.ReleaseManifest{Repositories: []workbench.ReleaseRepositorySnapshot{{RepoID: repo, Tag: "v1", Merges: []workbench.ReleaseMerge{{RepoID: repo, MergeCommit: commit}}}}})
-	order := db.WorkbenchReleaseOrder{WorkspaceID: parseUUID(testWorkspaceID), ProjectID: parseUUID(project), Env: "staging", Manifest: raw, Confirmations: []byte("{}")}
+	order := db.WorkbenchReleaseOrder{WorkspaceID: parseUUID(testWorkspaceID), ProjectID: parseUUID(project), Env: "prod", Manifest: raw, Confirmations: []byte("{}")}
 	check := func() workbench.ReleaseGate {
 		t.Helper()
 		gates, err := readReleaseGates(context.Background(), testHandler.Queries, order)
@@ -147,5 +147,24 @@ func TestReleaseTargetGateRequiresEveryDeliveryAndFreshCheck(t *testing.T) {
 	gate := check()
 	if gate.Passed || len(gate.Blockers) != 1 || gate.Blockers[0].Code != "target_check" {
 		t.Fatalf("stale target passed: %+v", gate)
+	}
+}
+
+func TestReleaseStagingRequiresAcceptanceAndTargetsWithoutProductionConfirmations(t *testing.T) {
+	project, repo := deployConfigFixture(t)
+	raw, _ := json.Marshal(workbench.ReleaseManifest{Repositories: []workbench.ReleaseRepositorySnapshot{{RepoID: repo, Tag: "v1"}}})
+	order := db.WorkbenchReleaseOrder{WorkspaceID: parseUUID(testWorkspaceID), ProjectID: parseUUID(project), Env: "staging", Manifest: raw, Confirmations: []byte("{}")}
+	gates, err := readReleaseGates(context.Background(), testHandler.Queries, order)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, gate := range gates {
+		if gate.ID == "security" || gate.ID == "changes" {
+			if gate.Required || !gate.Passed || len(gate.Blockers) != 0 {
+				t.Fatalf("production-only gate applied to staging: %+v", gate)
+			}
+		} else if !gate.Required || gate.Passed {
+			t.Fatalf("missing acceptance or target was allowed: %+v", gate)
+		}
 	}
 }

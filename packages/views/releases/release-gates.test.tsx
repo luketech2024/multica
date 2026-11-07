@@ -75,3 +75,22 @@ it("requires explicit confirmations and preserves them on a failed save", async 
     security_waiver: true,
   });
 });
+
+it("shows production-only gates as optional and omits confirmations for staging", () => {
+  const id = "00000000-0000-4000-8000-000000000001";
+  const order = ReleaseOrderSchema.parse({
+    id, workspace_id: id, project_id: id, identifier: "REL-02", env: "staging",
+    status: "draft", revision: 1, created_by: id, created_at: "now", updated_at: "now",
+    manifest: { tasks: [], repositories: [] },
+    gates: [
+      { id: "security", passed: true, required: false, blockers: [] },
+      { id: "changes", passed: true, required: false, blockers: [] },
+      { id: "targets", passed: false, required: true, blockers: [{ code: "target_missing" }] },
+    ],
+  });
+  renderWithI18n(<QueryClientProvider client={new QueryClient()}><ReleaseGates wsId={id} order={order} /></QueryClientProvider>);
+  expect(screen.getByRole("heading", { name: "Security · Not required for staging" })).toBeVisible();
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Save confirmations" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Environment and deployment" })).toHaveAttribute("href", `/acme/projects/${id}?tab=deployment`);
+});

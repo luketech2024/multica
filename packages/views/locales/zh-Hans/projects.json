@@ -531,7 +531,8 @@
         "target_check": "需要24小时内成功的目标自检",
         "target_credential": "部署凭据缺失、过期或用途类型不符",
         "target_missing": "请为每种交付类型配置目标"
-      }
+      },
+      "not_required": "预发无需此项"
     }
   }
 }

@@ -23,7 +23,9 @@ export function ReleaseGates({
   const [changes, setChanges] = useState(order.confirmations.changes);
   const [migration, setMigration] = useState(order.confirmations.migration);
   const [waiver, setWaiver] = useState(order.confirmations.security_waiver);
-  const editable = ["draft", "prechecking", "ready"].includes(order.status);
+  const editable =
+    order.env === "prod" &&
+    ["draft", "prechecking", "ready"].includes(order.status);
   const waiverRequired =
     order.gates?.some((gate) =>
       gate.blockers.some((blocker) => blocker.code === "security_waiver"),
@@ -42,9 +44,11 @@ export function ReleaseGates({
           <div key={gate.id} className="space-y-1">
             <h3 className="text-caption font-medium">
               {t(($) => $.releases.gates.names[gate.id])} ·{" "}
-              {gate.passed
-                ? t(($) => $.releases.gates.passed)
-                : t(($) => $.releases.gates.blocked)}
+              {!gate.required
+                ? t(($) => $.releases.gates.not_required)
+                : gate.passed
+                  ? t(($) => $.releases.gates.passed)
+                  : t(($) => $.releases.gates.blocked)}
             </h3>
             <ul className="space-y-1 text-caption text-muted-foreground">
               {gate.blockers.map((blocker, index) => (

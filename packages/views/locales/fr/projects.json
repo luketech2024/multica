@@ -531,7 +531,8 @@
         "target_check": "Un contrôle réussi datant de moins de 24 h est requis",
         "target_credential": "Identifiant de déploiement absent, expiré ou incompatible",
         "target_missing": "Configurez une cible pour chaque type de livraison"
-      }
+      },
+      "not_required": "Non requis en préproduction"
     }
   }
 }

@@ -205,7 +205,7 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 	if stored["identifier"] != order["identifier"] || stored["manifest"] == nil {
 		t.Fatal("release snapshot did not survive reread")
 	}
-	verifyReleaseConfirmations(t,order["id"].(string),project)
+	verifyReleaseConfirmations(t, production["id"].(string), project)
 	outsider := dbfx.User(t, "Release outsider", "release-outsider-"+project+"@example.test")
 	outsiderRequest := testutil.WithURLParams(newRequest("GET", "/api/releases/"+order["id"].(string), nil), "releaseId", order["id"].(string))
 	outsiderRequest.Header.Set("X-User-ID", outsider)

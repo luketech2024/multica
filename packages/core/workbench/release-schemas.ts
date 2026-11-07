@@ -4,6 +4,7 @@ import { ReleaseReadinessSchema } from "./delivery";
 export const ReleaseGateSchema = z.object({
   id: z.enum(["acceptance", "security", "changes", "targets"]),
   passed: z.boolean(),
+  required: z.boolean().default(true),
   blockers: z.array(
     z.object({ code: z.string(), resource_id: z.string().optional() }),
   ),

@@ -41,6 +41,10 @@ it("rejects missing release snapshots and malformed merge evidence", () => {
 });
 
 it("rejects malformed gate states and preserves unknown blocker codes", () => {
+  const gate = { id: "security", passed: true, blockers: [] };
+  expect(ReleaseGateSchema.parse(gate).required).toBe(true);
+  expect(ReleaseGateSchema.parse({ ...gate, required: false }).required).toBe(false);
+  expect(ReleaseGateSchema.safeParse({ ...gate, required: "false" }).success).toBe(false);
   expect(
     ReleaseGateSchema.safeParse({
       id: "security",

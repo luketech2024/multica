@@ -531,7 +531,8 @@
         "target_check": "Run a successful target check within 24 hours",
         "target_credential": "Deployment credential is missing, expired or incompatible",
         "target_missing": "Configure a target for each delivery type"
-      }
+      },
+      "not_required": "Not required for staging"
     }
   }
 }

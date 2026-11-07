@@ -71,11 +71,12 @@ func readReleaseGates(ctx context.Context, q *db.Queries, order db.WorkbenchRele
 		}
 	}
 	security := workbench.NewReleaseGate("security")
-	if !roles.Config.Roles["sec"].Enabled && (!confirmation.SecurityWaiver || confirmation.RoleRevision != roles.Revision || confirmation.By == "") {
+	security.Required = order.Env == "prod"
+	if security.Required && !roles.Config.Roles["sec"].Enabled && (!confirmation.SecurityWaiver || confirmation.RoleRevision != roles.Revision || confirmation.By == "") {
 		security.Block("security_waiver", "")
 	}
 	for _, repo := range manifest.Repositories {
-		if !roles.Config.Roles["sec"].Enabled {
+		if !security.Required || !roles.Config.Roles["sec"].Enabled {
 			continue
 		}
 		id := parseUUID(repo.RepoID)
@@ -102,7 +103,8 @@ func readReleaseGates(ctx context.Context, q *db.Queries, order db.WorkbenchRele
 		}
 	}
 	changes := workbench.NewReleaseGate("changes")
-	if !confirmation.Changes || !confirmation.Migration || confirmation.By == "" {
+	changes.Required = order.Env == "prod"
+	if changes.Required && (!confirmation.Changes || !confirmation.Migration || confirmation.By == "") {
 		changes.Block("change_confirmation", "")
 	}
 	targets, err := readReleaseTargetGate(ctx, q, order, manifest)

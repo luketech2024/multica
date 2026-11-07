@@ -31,6 +31,8 @@ test.describe("Workbench release orders", () => {
     await page.goto(`/${slug}/releases?project=${project.id}`);
     await page.getByRole("button",{name:"New release",exact:true}).click();
     const dialog=page.getByRole("dialog");
+    await dialog.getByRole("combobox", { name: "Environment", exact: true }).click();
+    await page.getByRole("option", { name: "Production", exact: true }).click();
     await expect(dialog.getByRole("checkbox")).toBeChecked();
     await dialog.getByRole("button",{name:"New release",exact:true}).click();
     await expect(page.getByRole("heading",{name:"Release gates",exact:true})).toBeVisible({timeout:30000});
@@ -47,6 +49,15 @@ test.describe("Workbench release orders", () => {
     await page.setViewportSize({width:1024,height:720});
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:".preview/release-gates.png",fullPage:true});
+    await page.goto(`/${slug}/releases?project=${project.id}`);
+    await page.getByRole("button", { name: "New release", exact: true }).click();
+    await expect(dialog.getByRole("checkbox")).toBeChecked();
+    await dialog.getByRole("button", { name: "New release", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Security · Not required for staging", exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("heading", { name: "Changes and migrations · Not required for staging", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Acceptance · Passed", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Deployment targets · Blocked", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save confirmations" })).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 

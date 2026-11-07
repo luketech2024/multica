@@ -17,11 +17,12 @@ type ReleaseGateBlocker struct {
 type ReleaseGate struct {
 	ID       string               `json:"id"`
 	Passed   bool                 `json:"passed"`
+	Required bool                 `json:"required"`
 	Blockers []ReleaseGateBlocker `json:"blockers"`
 }
 
 func NewReleaseGate(id string) ReleaseGate {
-	return ReleaseGate{ID: id, Passed: true, Blockers: []ReleaseGateBlocker{}}
+	return ReleaseGate{ID: id, Passed: true, Required: true, Blockers: []ReleaseGateBlocker{}}
 }
 
 func (gate *ReleaseGate) Block(code, resourceID string) {
