@@ -169,7 +169,7 @@ export function deploymentCheckStatus(target: DeployTarget, now = Date.now()) {
   if (!check) return "untested";
   if (check.status !== "passed") return check.status;
   const age = now - Date.parse(check.at);
-  if (!check.ok || !Number.isFinite(age) || age < 0) return "failed";
+  if (!check.ok || !check.free_bytes || !Number.isFinite(age) || age < 0) return "failed";
   return age < 24 * 60 * 60 * 1000 ? "passed" : "expired";
 }
 

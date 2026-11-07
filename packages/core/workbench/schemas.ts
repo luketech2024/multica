@@ -123,6 +123,7 @@ export const DeployTargetSchema = z.object({
       ok: z.boolean(),
       ms: z.number(),
       detail: z.string(),
+      free_bytes: z.number().int().nonnegative().nullable().catch(null).default(null),
     })
     .nullable()
     .default(null),

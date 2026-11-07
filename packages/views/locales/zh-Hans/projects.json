@@ -450,6 +450,7 @@
     "summary": "{{repositories}} 个仓库 · 已绑 {{targets}} 个目标 · {{pending}} 个待自检",
     "bind": "绑定目标",
     "unbound": "绑定目标后，此仓库才能发布到该环境。",
-    "duration": "{{ms}} ms"
+    "duration": "{{ms}} ms",
+    "disk_free": "可用磁盘空间 · {{mb}} MiB"
   }
 }

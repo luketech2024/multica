@@ -462,9 +462,10 @@ type DaemonDeployCheck struct {
 }
 
 type DaemonDeployCheckResult struct {
-	DirectoryReady bool  `json:"directory_ready"`
-	ToolReady      bool  `json:"tool_ready"`
-	MS             int64 `json:"ms"`
+	FreeBytes      *uint64 `json:"free_bytes,omitempty"`
+	DirectoryReady bool    `json:"directory_ready"`
+	ToolReady      bool    `json:"tool_ready"`
+	MS             int64   `json:"ms"`
 }
 
 // HeartbeatStatusRuntimeGone is the ack Status used when the runtime row no

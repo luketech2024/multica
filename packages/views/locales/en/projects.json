@@ -450,6 +450,7 @@
     "summary": "{{repositories}} repositories · {{targets}} targets · {{pending}} awaiting check",
     "bind": "Bind target",
     "unbound": "Bind a target before releasing this repository to this environment.",
-    "duration": "{{ms}} ms"
+    "duration": "{{ms}} ms",
+    "disk_free": "Available disk space · {{mb}} MiB"
   }
 }

@@ -450,6 +450,7 @@
     "summary": "{{repositories}} dépôts · {{targets}} cibles · {{pending}} à vérifier",
     "bind": "Associer une cible",
     "unbound": "Associez une cible avant de publier ce dépôt dans cet environnement.",
-    "duration": "{{ms}} ms"
+    "duration": "{{ms}} ms",
+    "disk_free": "Espace disque disponible · {{mb}} MiB"
   }
 }

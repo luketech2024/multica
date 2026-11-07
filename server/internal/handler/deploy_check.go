@@ -158,8 +158,12 @@ func (h *Handler) ReportDeployTargetCheck(w http.ResponseWriter, r *http.Request
 		return
 	}
 	check.At, check.MS = time.Now().UTC(), result.MS
-	check.OK = result.DirectoryReady && result.ToolReady
-	check.Status, check.Detail = "passed", "deployment directory and required runtime tools are ready"
+	check.FreeBytes = result.FreeBytes
+	check.OK = result.DirectoryReady && result.ToolReady && result.FreeBytes != nil && *result.FreeBytes > 0
+	check.Status, check.Detail = "passed", "deployment directory, available disk capacity and required runtime tools are ready"
+	if result.FreeBytes == nil || *result.FreeBytes == 0 {
+		check.Status, check.Detail = "failed", "deployment disk capacity is unavailable or exhausted"
+	}
 	if !result.DirectoryReady {
 		check.Status, check.Detail = "failed", "deployment directory is missing or not writable"
 	}

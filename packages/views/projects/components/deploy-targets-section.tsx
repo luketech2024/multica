@@ -248,6 +248,11 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
               {target.last_check.detail} · {new Date(target.last_check.at).toLocaleString()} · {t(($) => $.deployment.duration, { ms: target.last_check.ms })}
             </p>
           )}
+          {target.last_check?.free_bytes != null && (
+            <p className="text-caption text-muted-foreground">
+              {t(($) => $.deployment.disk_free, { mb: Math.floor(target.last_check.free_bytes / (1024 * 1024)).toLocaleString() })}
+            </p>
+          )}
           <dl className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-3 gap-y-1 text-caption">
             <dt className="text-muted-foreground">{t(($) => $.workbench.channel)}</dt>
             <dd className="break-words">{target.channel}</dd>

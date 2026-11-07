@@ -29,6 +29,7 @@ func probeDeploymentTarget(ctx context.Context, check protocol.DaemonDeployCheck
 	started := time.Now()
 	result := protocol.DaemonDeployCheckResult{}
 	if filepath.IsAbs(check.Directory) {
+		result.FreeBytes, _ = deploymentFreeBytes(check.Directory)
 		file, err := os.CreateTemp(check.Directory, ".multica-deploy-check-*")
 		if err == nil {
 			_, writeErr := file.Write([]byte("deployment check"))

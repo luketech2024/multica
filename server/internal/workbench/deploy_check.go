@@ -9,6 +9,7 @@ const DeployCheckValidity = 24 * time.Hour
 const DeployCheckTimeout = 2 * time.Minute
 
 type DeployCheck struct {
+	FreeBytes   *uint64   `json:"free_bytes,omitempty"`
 	ID          string    `json:"id"`
 	Status      string    `json:"status"`
 	At          time.Time `json:"at"`
@@ -25,7 +26,7 @@ func ParseDeployCheck(raw []byte) DeployCheck {
 }
 
 func (check DeployCheck) ValidAt(now time.Time) bool {
-	return check.Status == "passed" && check.OK && !check.At.After(now) && check.At.After(now.Add(-DeployCheckValidity))
+	return check.Status == "passed" && check.OK && check.FreeBytes != nil && *check.FreeBytes > 0 && !check.At.After(now) && check.At.After(now.Add(-DeployCheckValidity))
 }
 
 func (check DeployCheck) DisplayAt(now time.Time) DeployCheck {

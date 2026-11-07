@@ -515,7 +515,7 @@ export class TestApiClient {
     const { pending_deploy_check: check } = await heartbeat.json();
     if (check?.target_id !== targetId) throw new Error("Expected target check was not delivered to its runtime");
     const response = await this.authedFetch(`/api/daemon/runtimes/${runtimeId}/deploy-targets/${targetId}/checks/${check.check_id}`, {
-      method: "POST", body: JSON.stringify({ directory_ready: true, tool_ready: true, ms: 12 }),
+      method: "POST", body: JSON.stringify({ directory_ready: true, tool_ready: true, ms: 12, free_bytes: 1024 * 1024 * 1024 }),
     });
     if (!response.ok) throw new Error(`report target probe failed: ${response.status} ${await response.text()}`);
   }

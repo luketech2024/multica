@@ -16,6 +16,9 @@ describe("workbench configuration responses", () => {
   it("fails closed for unknown check states and rejects malformed probe data", () => {
     const check = { status: "future-status", at: "2026-11-07T00:00:00Z", ok: true, ms: 5, detail: "Probe" };
     expect(DeployTargetSchema.shape.last_check.parse(check)?.status).toBe("failed");
+    expect(DeployTargetSchema.shape.last_check.parse(check)?.free_bytes).toBeNull();
+    expect(DeployTargetSchema.shape.last_check.parse({ ...check, free_bytes: -1 })?.free_bytes).toBeNull();
+    expect(DeployTargetSchema.shape.last_check.parse({ ...check, free_bytes: "unknown" })?.free_bytes).toBeNull();
     expect(DeployTargetSchema.shape.last_check.safeParse({ ...check, ok: "true" }).success).toBe(false);
     expect(DeployTargetSchema.shape.last_check.safeParse({ ...check, ms: "five" }).success).toBe(false);
   });

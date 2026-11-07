@@ -37,7 +37,7 @@ func TestDeployCheckProbesDirectoryWithoutStartingService(t *testing.T) {
 	}
 	check := protocol.DaemonDeployCheck{Kind: "service-process", Directory: directory, StartCommand: strconv.Quote(executable) + " --never-execute"}
 	result := probeDeploymentTarget(context.Background(), check)
-	if !result.DirectoryReady || !result.ToolReady {
+	if !result.DirectoryReady || !result.ToolReady || result.FreeBytes == nil || *result.FreeBytes == 0 {
 		t.Fatalf("probe failed: %+v", result)
 	}
 	entries, err := os.ReadDir(directory)
@@ -47,7 +47,7 @@ func TestDeployCheckProbesDirectoryWithoutStartingService(t *testing.T) {
 	check.Directory = filepath.Join(directory, "missing")
 	check.StartCommand = filepath.Join(directory, "missing-program")
 	result = probeDeploymentTarget(context.Background(), check)
-	if result.DirectoryReady || result.ToolReady {
+	if result.DirectoryReady || result.ToolReady || result.FreeBytes != nil {
 		t.Fatal("missing directory/tool passed")
 	}
 }

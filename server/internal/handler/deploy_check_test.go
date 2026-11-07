@@ -64,8 +64,9 @@ func TestDeployCheckClaimsOnceAndRejectsStaleReports(t *testing.T) {
 	if count != 1 {
 		t.Fatalf("claimed %d times", count)
 	}
+	free := uint64(1024 * 1024)
 	report := func(runtimeID, checkID string, status int) {
-		req := withURLParams(newOwnerDaemonRequest("POST", "/api/daemon/check", protocol.DaemonDeployCheckResult{DirectoryReady: true, ToolReady: true, MS: 10}), "runtimeId", runtimeID, "targetId", target.ID, "checkId", checkID)
+		req := withURLParams(newOwnerDaemonRequest("POST", "/api/daemon/check", protocol.DaemonDeployCheckResult{DirectoryReady: true, ToolReady: true, MS: 10, FreeBytes: &free}), "runtimeId", runtimeID, "targetId", target.ID, "checkId", checkID)
 		result := testutil.Call(t, testHandler.ReportDeployTargetCheck, req).Want(status)
 		if status == 200 {
 			result.JSON(&target)
@@ -85,6 +86,16 @@ func TestDeployCheckClaimsOnceAndRejectsStaleReports(t *testing.T) {
 	request(target.Revision, 202)
 	report(runtime, check.ID, 409)
 	current := workbench.ParseDeployCheck(target.LastCheck)
+	if _, err := testHandler.claimRuntimeDeployCheck(context.Background(), runtime); err != nil {
+		t.Fatal(err)
+	}
+	free = 0
+	report(runtime, current.ID, 200)
+	if workbench.ParseDeployCheck(target.LastCheck).OK {
+		t.Fatal("zero available disk space passed")
+	}
+	request(target.Revision, 202)
+	current = workbench.ParseDeployCheck(target.LastCheck)
 	dbfx.Exec(t, "UPDATE deploy_targets SET last_check=NULL,revision=revision+1 WHERE id=$1", target.ID)
 	report(runtime, current.ID, 409)
 }

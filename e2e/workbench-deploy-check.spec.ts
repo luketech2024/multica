@@ -45,6 +45,7 @@ test.describe("Deployment target checks", () => {
     expect((await automatic).status()).toBe(202);
     await api.reportRuntimeDeployProbe(runtimeId, target.id);
     await expect(section.getByText("Passed · valid for 24 hours", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(section.getByText("Available disk space · 1,024 MiB", { exact: true })).toBeVisible();
     await page.screenshot({ path: ".preview/deployment-pane.png", fullPage: true });
     expect(errors).toEqual([]);
   });
