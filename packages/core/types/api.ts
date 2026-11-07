@@ -350,7 +350,15 @@ export interface IssueTableFilterCondition {
   values: PropertyFilterValue[];
 }
 
+export interface WorkbenchBandFilter {
+  band: "all" | "running" | "review" | "today";
+  only_mine: boolean;
+  start: string;
+  end: string;
+}
+
 export interface IssueTableFilters {
+  workbench?: WorkbenchBandFilter;
   statuses?: IssueStatus[];
   priorities?: IssuePriority[];
   assignees?: IssueActorRef[];
@@ -380,7 +388,7 @@ export interface IssueTableFilters {
    *  equality / "No value", operator objects narrow scalar matches. */
   properties?: Record<string, PropertyFilterValue[]>;
   date?: {
-    field: "created_at" | "updated_at";
+    field: "created_at" | "updated_at" | "completed_at";
     start: string;
     end: string;
   };

@@ -167,7 +167,7 @@ UPDATE issue AS target SET
     ) ELSE target.position END,
     revision = target.revision + 1, updated_at = now(), last_activity_at = now()
 WHERE target.id = $4 AND target.workspace_id = $3 AND target.revision = $5
-RETURNING target.id, target.workspace_id, target.title, target.description, target.status, target.priority, target.assignee_type, target.assignee_id, target.creator_type, target.creator_id, target.parent_issue_id, target.acceptance_criteria, target.context_refs, target.position, target.due_date, target.created_at, target.updated_at, target.number, target.project_id, target.origin_type, target.origin_id, target.first_executed_at, target.start_date, target.metadata, target.stage, target.properties, target.revision, target.last_activity_at, target.triage_state, target.duplicate_of_issue_id, target.external_ticket_no
+RETURNING target.id, target.workspace_id, target.title, target.description, target.status, target.priority, target.assignee_type, target.assignee_id, target.creator_type, target.creator_id, target.parent_issue_id, target.acceptance_criteria, target.context_refs, target.position, target.due_date, target.created_at, target.updated_at, target.number, target.project_id, target.origin_type, target.origin_id, target.first_executed_at, target.start_date, target.metadata, target.stage, target.properties, target.revision, target.last_activity_at, target.triage_state, target.duplicate_of_issue_id, target.external_ticket_no, target.completed_at
 `
 
 type UpdateWorkbenchPauseParams struct {
@@ -219,6 +219,7 @@ func (q *Queries) UpdateWorkbenchPause(ctx context.Context, arg UpdateWorkbenchP
 		&i.TriageState,
 		&i.DuplicateOfIssueID,
 		&i.ExternalTicketNo,
+		&i.CompletedAt,
 	)
 	return i, err
 }

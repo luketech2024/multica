@@ -540,6 +540,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </TabsContent>
             <TabsContent value="tasks" className="flex min-h-0 flex-col">
           <IssueSurface
+            enableWorkbenchBand
             scope={issueScope}
             modes={["board", "list", "table", "swimlane", "gantt"]}
             renderHeader={({ controller }) => (

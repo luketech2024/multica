@@ -1,5 +1,8 @@
 "use client";
 
+import { workbenchBandQuery } from "@multica/core/workbench/status-band";
+import type { WorkbenchBandFilter } from "@multica/core/types";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hashKey, keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@multica/core/api";
@@ -80,6 +83,7 @@ import {
 } from "./use-issue-group-branches";
 
 interface UseIssueSurfaceControllerInput {
+  workbench?: WorkbenchBandFilter;
   scope: IssueScope;
   modes: IssueSurfaceMode[];
   createDefaults?: IssueCreateDefaults;
@@ -131,6 +135,7 @@ export interface IssueSurfaceController {
   tableSearch: string;
   /** Canonical server-owned Table membership. */
   tableQuerySpec: IssueTableQuerySpec;
+  workbenchBaseQuery: IssueTableQuerySpec;
   /** Exact disjunctive counts for the active server-backed filter submenu. */
   tableFacetCounts?: IssueTableFacetsResponse;
   /** Whether scopedIssues is a complete client window for local count use. */
@@ -239,6 +244,7 @@ export function useIssueSurfaceController({
   modes,
   createDefaults,
   search = "",
+  workbench,
 }: UseIssueSurfaceControllerInput): IssueSurfaceController {
   const wsId = useWorkspaceId();
   const queryPlan = useMemo<IssueSurfaceQueryPlan>(
@@ -715,7 +721,8 @@ export function useIssueSurfaceController({
   // the Table's own `useQueries` list — keys off this object's identity. Pin it
   // to the content so an unstable dependency upstream cannot rebuild all of
   // them for a query that did not change.
-  const tableQuerySpec = useStableByContent(derivedTableQuerySpec);
+  const workbenchBaseQuery = useStableByContent(derivedTableQuerySpec);
+  const tableQuerySpec = useStableByContent(workbenchBandQuery(workbenchBaseQuery, workbench));
 
   const [activeTableFacet, setActiveTableFacet] =
     useState<IssueTableFacetSpec | null>(null);
@@ -1067,7 +1074,8 @@ export function useIssueSurfaceController({
     isLoading:
       data.isLoading || workingFilterPending || (unreadFilterUnresolved && !unreadFilterError),
     workingAgents,
-    hasActiveFilters,
+    hasActiveFilters: hasActiveFilters || !!workbench?.only_mine || (!!workbench && workbench.band !== "all"),
+    workbenchBaseQuery,
     statusPagination: usesServerStatusSurface
       ? data.statusPagination
       : undefined,

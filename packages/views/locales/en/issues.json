@@ -2066,5 +2066,14 @@
       "unknown": "Outcome unknown",
       "resuming": "Resuming"
     }
+  },
+  "workbench_band": {
+    "title": "Task status",
+    "all": "All",
+    "running": "Running",
+    "review": "Awaiting acceptance",
+    "today": "Completed today",
+    "mine": "Assigned to me",
+    "retry": "Retry counts"
   }
 }

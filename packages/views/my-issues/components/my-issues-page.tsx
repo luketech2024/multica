@@ -23,6 +23,7 @@ export function MyIssuesPage() {
     <div className="flex flex-1 min-h-0 flex-col">
       {user ? (
         <IssueSurface
+        enableWorkbenchBand
           scope={{
             type: "my",
             userId: user.id,

@@ -45,6 +45,7 @@ vi.mock("@multica/core/paths", async () => {
 
 // Mock @multica/views/navigation (AppLink + useNavigation)
 vi.mock("../../navigation", () => ({
+  useOptionalNavigation: () => null,
   AppLink: ({ children, href, ...props }: any) => (
     <a href={href} {...props}>
       {children}

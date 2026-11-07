@@ -667,7 +667,7 @@ func (q *Queries) ListInboxSecurityActions(ctx context.Context, arg ListInboxSec
 }
 
 const listInboxWorkbenchIssues = `-- name: ListInboxWorkbenchIssues :many
-SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
+SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at FROM issue
 WHERE workspace_id = $1 AND id = ANY($2::uuid[])
 `
 
@@ -717,6 +717,7 @@ func (q *Queries) ListInboxWorkbenchIssues(ctx context.Context, arg ListInboxWor
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}

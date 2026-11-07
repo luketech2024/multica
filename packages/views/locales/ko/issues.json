@@ -1997,5 +1997,14 @@
       "unknown": "결과 불명",
       "resuming": "재개 중"
     }
+  },
+  "workbench_band": {
+    "title": "작업 상태",
+    "all": "전체",
+    "running": "진행 중",
+    "review": "검수 대기",
+    "today": "오늘 완료",
+    "mine": "나에게 할당됨",
+    "retry": "집계 다시 시도"
   }
 }

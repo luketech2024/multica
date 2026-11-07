@@ -80,14 +80,22 @@ type issueTableDateFilterRequest struct {
 	End   string `json:"end"`
 }
 
+type issueTableWorkbenchFilter struct {
+	Band     string `json:"band"`
+	OnlyMine bool   `json:"only_mine"`
+	Start    string `json:"start"`
+	End      string `json:"end"`
+}
+
 type issueTableFiltersRequest struct {
-	Statuses          []string             `json:"statuses,omitempty"`
-	Priorities        []string             `json:"priorities,omitempty"`
-	Assignees         []issueTableActorRef `json:"assignees,omitempty"`
-	IncludeNoAssignee bool                 `json:"include_no_assignee,omitempty"`
-	Creators          []issueTableActorRef `json:"creators,omitempty"`
-	ProjectIDs        []string             `json:"project_ids,omitempty"`
-	IncludeNoProject  bool                 `json:"include_no_project,omitempty"`
+	Workbench         *issueTableWorkbenchFilter `json:"workbench,omitempty"`
+	Statuses          []string                   `json:"statuses,omitempty"`
+	Priorities        []string                   `json:"priorities,omitempty"`
+	Assignees         []issueTableActorRef       `json:"assignees,omitempty"`
+	IncludeNoAssignee bool                       `json:"include_no_assignee,omitempty"`
+	Creators          []issueTableActorRef       `json:"creators,omitempty"`
+	ProjectIDs        []string                   `json:"project_ids,omitempty"`
+	IncludeNoProject  bool                       `json:"include_no_project,omitempty"`
 	// ProjectStatuses filters on the parent project's lifecycle status
 	// (`validProjectStatuses`), independently of ProjectIDs.
 	ProjectStatuses []string `json:"project_statuses,omitempty"`
@@ -817,7 +825,7 @@ func (h *Handler) compileIssueTableQuery(w http.ResponseWriter, r *http.Request,
 	if spec.Filters.Date != nil {
 		column := ""
 		switch spec.Filters.Date.Field {
-		case "created_at", "updated_at":
+		case "created_at", "updated_at", "completed_at":
 			column = spec.Filters.Date.Field
 		default:
 			writeError(w, http.StatusBadRequest, "invalid filters.date.field")
@@ -830,6 +838,39 @@ func (h *Handler) compileIssueTableQuery(w http.ResponseWriter, r *http.Request,
 			return issueTableSQL{}, false
 		}
 		where = append(where, fmt.Sprintf("i.%s >= %s AND i.%s < %s", column, addArg(start), column, addArg(end)))
+	}
+
+	if band := spec.Filters.Workbench; band != nil {
+		switch band.Band {
+		case "all":
+		case "running":
+			where = append(where, "i.status='in_progress'")
+		case "review":
+			where = append(where, "i.status='in_review'")
+		case "today":
+			start, startErr := time.Parse(time.RFC3339Nano, band.Start)
+			end, endErr := time.Parse(time.RFC3339Nano, band.End)
+			if startErr != nil || endErr != nil || !start.Before(end) || end.Sub(start) > 26*time.Hour {
+				writeError(w, 400, "invalid workbench completion day")
+				return issueTableSQL{}, false
+			}
+			where = append(where, fmt.Sprintf("i.completed_at >= %s AND i.completed_at < %s", addArg(start), addArg(end)))
+		default:
+			writeError(w, 400, "invalid workbench status band")
+			return issueTableSQL{}, false
+		}
+		if band.OnlyMine {
+			userID, ok := requireUserID(w, r)
+			if !ok {
+				return issueTableSQL{}, false
+			}
+			userUUID, err := util.ParseUUID(userID)
+			if err != nil {
+				writeError(w, http.StatusUnauthorized, "user not authenticated")
+				return issueTableSQL{}, false
+			}
+			where = append(where, issueTableRelationPredicate("assigned", addArg(userUUID)))
+		}
 	}
 
 	if spec.Filters.WorkingOnly {

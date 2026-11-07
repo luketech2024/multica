@@ -36,6 +36,7 @@ import {
   type IssueScope,
 } from "@multica/core/issues/surface/scope";
 import type { Issue } from "@multica/core/types";
+import { useWorkbenchBand, WorkbenchStatusBand } from "./workbench-status-band";
 import { BoardView } from "../components/board-view";
 import { BOARD_COL_WIDTH } from "../components/board-column";
 import { BatchActionToolbar } from "../components/batch-action-toolbar";
@@ -62,6 +63,7 @@ export interface IssueSurfaceRenderContext {
 }
 
 interface IssueSurfaceComponentProps extends IssueSurfaceProps {
+  enableWorkbenchBand?: boolean;
   renderHeader?: (context: IssueSurfaceRenderContext) => ReactNode;
   renderEmpty?: (context: IssueSurfaceRenderContext) => ReactNode;
   renderLoading?: (context: IssueSurfaceRenderContext) => ReactNode;
@@ -97,6 +99,7 @@ export function IssueSurface({
   showClientEmpty,
   batchToolbar = "always",
   contentClassName,
+  enableWorkbenchBand,
 }: IssueSurfaceComponentProps) {
   const wsId = useWorkspaceId();
   // Saved views exist on workspace / my / project surfaces only.
@@ -186,6 +189,7 @@ export function IssueSurface({
           modes={modes}
           createDefaults={createDefaults}
           search={search}
+          enableWorkbenchBand={enableWorkbenchBand}
           renderHeader={renderHeader}
           renderEmpty={renderEmpty}
           renderLoading={renderLoading}
@@ -215,12 +219,17 @@ function IssueSurfaceContent({
   showClientEmpty,
   batchToolbar,
   contentClassName,
+  enableWorkbenchBand,
 }: Omit<IssueSurfaceComponentProps, "surfaceKey">) {
   const workspaceId = useWorkspaceId();
   // One polling owner for the whole surface; individual cards only select cache data.
   useQuery({ ...workspaceWakeupSummariesOptions(workspaceId), refetchInterval: 10_000 });
   const { t } = useT("projects");
+  const viewMode = useViewStore((state) => state.viewMode);
+  const workbench = useWorkbenchBand(!!enableWorkbenchBand && viewMode !== "gantt", viewMode === "board");
+  const workbenchActive = !!workbench.selection && (workbench.selection.only_mine || workbench.selection.band !== "all");
   const controller = useIssueSurfaceController({
+    workbench: workbench.selection,
     scope,
     modes,
     createDefaults,
@@ -282,6 +291,7 @@ function IssueSurfaceContent({
       <IssueSurfaceSelectionProvider selection={controller.selection}>
       <ColumnStatusesProvider statuses={controller.columnStatuses}>
         {renderHeader?.(renderContext)}
+        {workbench.selection && <WorkbenchStatusBand workspaceId={workspaceId} query={controller.workbenchBaseQuery} selection={workbench.selection} onSelect={workbench.select} enabled={!controller.isLoading && !controller.isStatusCatalogError} />}
         {/* Every view opens the side peek on Shift+Click. The host wraps the
             loading and empty states too, so a view switch that briefly shows
             a skeleton keeps the peek open. */}
@@ -312,7 +322,7 @@ function IssueSurfaceContent({
           // branch precedes `renderEmpty` on purpose: every surface's own empty
           // copy describes the unfiltered case.
           controller.hasActiveFilters ? (
-            <FilteredEmptyState />
+            <FilteredEmptyState workbenchActive={workbenchActive} clearWorkbench={workbench.clear} />
           ) : renderEmpty ? (
             renderEmpty(renderContext)
           ) : (
@@ -458,7 +468,7 @@ function FilterDependencyErrorState({
   );
 }
 
-function FilteredEmptyState() {
+function FilteredEmptyState({ workbenchActive, clearWorkbench }: { workbenchActive?: boolean; clearWorkbench?: () => void }) {
   const { t } = useT("issues");
   const clearFilters = useViewStore((s) => s.clearFilters);
   const resetFiltersTo = useViewStore((s) => s.resetFiltersTo);
@@ -487,8 +497,8 @@ function FilteredEmptyState() {
           : t(($) => $.filtered_empty.title)
       }
       actions={
-        atBaseline ? undefined : (
-          <Button variant="outline" size="sm" onClick={handleClear}>
+        atBaseline && !workbenchActive ? undefined : (
+          <Button variant="outline" size="sm" onClick={() => { handleClear(); clearWorkbench?.(); }}>
             {t(($) => $.filtered_empty.clear_button)}
           </Button>
         )

@@ -2066,5 +2066,14 @@
       "unknown": "Résultat inconnu",
       "resuming": "Reprise en cours"
     }
+  },
+  "workbench_band": {
+    "title": "État des tâches",
+    "all": "Toutes",
+    "running": "En cours",
+    "review": "En attente de validation",
+    "today": "Terminées aujourd’hui",
+    "mine": "Assignées à moi",
+    "retry": "Réessayer les compteurs"
   }
 }

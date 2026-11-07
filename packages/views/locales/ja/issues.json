@@ -1997,5 +1997,14 @@
       "unknown": "結果不明",
       "resuming": "再開処理中"
     }
+  },
+  "workbench_band": {
+    "title": "タスクの状態",
+    "all": "すべて",
+    "running": "実行中",
+    "review": "検収待ち",
+    "today": "今日完了",
+    "mine": "自分に割り当て",
+    "retry": "件数を再取得"
   }
 }

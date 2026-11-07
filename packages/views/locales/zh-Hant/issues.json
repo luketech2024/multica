@@ -1997,5 +1997,14 @@
       "unknown": "結果未知",
       "resuming": "恢復中"
     }
+  },
+  "workbench_band": {
+    "title": "任務狀態",
+    "all": "全部",
+    "running": "執行中",
+    "review": "待驗收",
+    "today": "今日完成",
+    "mine": "只看我的",
+    "retry": "重試統計"
   }
 }

@@ -901,6 +901,7 @@ type Issue struct {
 	TriageState        pgtype.Text        `json:"triage_state"`
 	DuplicateOfIssueID pgtype.UUID        `json:"duplicate_of_issue_id"`
 	ExternalTicketNo   string             `json:"external_ticket_no"`
+	CompletedAt        pgtype.Timestamptz `json:"completed_at"`
 }
 
 type IssueChildEvent struct {

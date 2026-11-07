@@ -90,6 +90,7 @@ vi.mock("../../i18n", () => ({
 }));
 
 vi.mock("../../navigation", () => ({
+  useOptionalNavigation: () => null,
   AppLink: ({ children, href, ...props }: React.ComponentProps<"a">) => (
     <a href={href} {...props}>
       {children}

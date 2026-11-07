@@ -23,7 +23,7 @@ WITH RECURSIVE dependencies(id) AS (
     ) dependency(id)
     JOIN issue prior ON prior.id::text = dependency.id AND prior.workspace_id = $1
 )
-SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no FROM issue JOIN dependencies ON issue.id = dependencies.id
+SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no, issue.completed_at FROM issue JOIN dependencies ON issue.id = dependencies.id
 `
 
 type ListWorkbenchDependencyIssuesParams struct {
@@ -72,6 +72,7 @@ func (q *Queries) ListWorkbenchDependencyIssues(ctx context.Context, arg ListWor
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -84,7 +85,7 @@ func (q *Queries) ListWorkbenchDependencyIssues(ctx context.Context, arg ListWor
 }
 
 const listWorkbenchDispatchCandidates = `-- name: ListWorkbenchDispatchCandidates :many
-SELECT child.id, child.workspace_id, child.title, child.description, child.status, child.priority, child.assignee_type, child.assignee_id, child.creator_type, child.creator_id, child.parent_issue_id, child.acceptance_criteria, child.context_refs, child.position, child.due_date, child.created_at, child.updated_at, child.number, child.project_id, child.origin_type, child.origin_id, child.first_executed_at, child.start_date, child.metadata, child.stage, child.properties, child.revision, child.last_activity_at, child.triage_state, child.duplicate_of_issue_id, child.external_ticket_no FROM issue child
+SELECT child.id, child.workspace_id, child.title, child.description, child.status, child.priority, child.assignee_type, child.assignee_id, child.creator_type, child.creator_id, child.parent_issue_id, child.acceptance_criteria, child.context_refs, child.position, child.due_date, child.created_at, child.updated_at, child.number, child.project_id, child.origin_type, child.origin_id, child.first_executed_at, child.start_date, child.metadata, child.stage, child.properties, child.revision, child.last_activity_at, child.triage_state, child.duplicate_of_issue_id, child.external_ticket_no, child.completed_at FROM issue child
 JOIN issue parent ON parent.id = child.parent_issue_id AND parent.workspace_id = child.workspace_id
 WHERE child.id > $1 AND child.status = 'todo' AND child.assignee_type = 'agent'
   AND child.properties #>> '{workbench_handoff,v}' = '2'
@@ -148,6 +149,7 @@ func (q *Queries) ListWorkbenchDispatchCandidates(ctx context.Context, afterID p
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -160,7 +162,7 @@ func (q *Queries) ListWorkbenchDispatchCandidates(ctx context.Context, afterID p
 }
 
 const listWorkbenchPlanChildren = `-- name: ListWorkbenchPlanChildren :many
-SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
+SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at FROM issue
 WHERE parent_issue_id = $1 AND workspace_id = $2
 ORDER BY id FOR UPDATE
 `
@@ -211,6 +213,7 @@ func (q *Queries) ListWorkbenchPlanChildren(ctx context.Context, arg ListWorkben
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -223,7 +226,7 @@ func (q *Queries) ListWorkbenchPlanChildren(ctx context.Context, arg ListWorkben
 }
 
 const listWorkbenchRequirementCandidates = `-- name: ListWorkbenchRequirementCandidates :many
-SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no FROM issue
+SELECT issue.id, issue.workspace_id, issue.title, issue.description, issue.status, issue.priority, issue.assignee_type, issue.assignee_id, issue.creator_type, issue.creator_id, issue.parent_issue_id, issue.acceptance_criteria, issue.context_refs, issue.position, issue.due_date, issue.created_at, issue.updated_at, issue.number, issue.project_id, issue.origin_type, issue.origin_id, issue.first_executed_at, issue.start_date, issue.metadata, issue.stage, issue.properties, issue.revision, issue.last_activity_at, issue.triage_state, issue.duplicate_of_issue_id, issue.external_ticket_no, issue.completed_at FROM issue
 WHERE issue.id > $1 AND issue.parent_issue_id IS NULL
   AND jsonb_typeof(issue.acceptance_criteria->'team') = 'object'
   AND (issue.status IN ('todo', 'backlog', 'paused') OR EXISTS (
@@ -275,6 +278,7 @@ func (q *Queries) ListWorkbenchRequirementCandidates(ctx context.Context, afterI
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -287,7 +291,7 @@ func (q *Queries) ListWorkbenchRequirementCandidates(ctx context.Context, afterI
 }
 
 const listWorkbenchReviewCandidates = `-- name: ListWorkbenchReviewCandidates :many
-SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no FROM issue
+SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at FROM issue
 WHERE id > $1 AND parent_issue_id IS NULL AND project_id IS NOT NULL
   AND status IN ('todo', 'in_progress', 'in_review')
   AND acceptance_criteria->'team' IS NOT NULL
@@ -337,6 +341,7 @@ func (q *Queries) ListWorkbenchReviewCandidates(ctx context.Context, afterID pgt
 			&i.TriageState,
 			&i.DuplicateOfIssueID,
 			&i.ExternalTicketNo,
+			&i.CompletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -355,7 +360,7 @@ UPDATE issue SET
     status = CASE WHEN status IN ('done', 'cancelled') THEN status ELSE 'cancelled' END,
     updated_at = now(), revision = revision + 1
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no
+RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at
 `
 
 type SupersedeWorkbenchPlanChildParams struct {
@@ -398,6 +403,7 @@ func (q *Queries) SupersedeWorkbenchPlanChild(ctx context.Context, arg Supersede
 		&i.TriageState,
 		&i.DuplicateOfIssueID,
 		&i.ExternalTicketNo,
+		&i.CompletedAt,
 	)
 	return i, err
 }

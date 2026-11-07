@@ -1,0 +1,56 @@
+import { test, expect } from "@playwright/test";
+import { createTestApi, loginAsDefault } from "./helpers";
+import type { TestApiClient } from "./fixtures";
+
+test.describe("Workbench status band", () => {
+  test.use({ locale: "en-US" });
+  let api: TestApiClient;
+  test.afterEach(async () => { await api?.cleanup(); });
+
+  test("keeps counts, assignment and visible tasks aligned after refresh and reopening", async ({ page }) => {
+    test.setTimeout(120000);
+    api = await createTestApi();
+    const project = await api.createProject("Status band acceptance");
+    const running = await api.createIssue("Band assigned running", { project_id: project.id });
+    const mine = { assignee_type: "member", assignee_id: running.creator_id };
+    await api.updateIssue(running.id, { ...mine, status: "in_progress" });
+    const review = await api.createIssue("Band assigned review", { project_id: project.id });
+    await api.updateIssue(review.id, { ...mine, status: "in_review" });
+    const done = await api.createIssue("Band completed task", { project_id: project.id });
+    await api.updateIssue(done.id, { ...mine, status: "done" });
+    const unassigned = await api.createIssue("Band unassigned running", { project_id: project.id });
+    await api.updateIssue(unassigned.id, { status: "in_progress", assignee_type: null, assignee_id: null });
+    const slug = await loginAsDefault(page);
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+    await page.goto(`/${slug}/projects/${project.id}`);
+    const band = page.getByRole("region", { name: "Task status", exact: true });
+    await expect(band).toBeVisible({ timeout: 30000 });
+    await expect(band.getByRole("checkbox", { name: "Assigned to me" })).toBeChecked();
+    await expect(band.getByRole("button", { name: "Running 1", exact: true })).toBeVisible();
+    await expect(band.getByRole("button", { name: "Awaiting acceptance 1", exact: true })).toBeVisible();
+    await expect(band.getByRole("button", { name: "Completed today 1", exact: true })).toBeVisible();
+    await band.getByRole("button", { name: "Awaiting acceptance 1", exact: true }).click();
+    await expect(page.getByText(review.title, { exact: true })).toBeVisible();
+    await expect(page.getByText(running.title, { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(band.getByRole("button", { name: "Awaiting acceptance 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await band.getByRole("checkbox", { name: "Assigned to me" }).click();
+    await expect(band.getByRole("checkbox", { name: "Assigned to me" })).not.toBeChecked();
+    await band.getByRole("button", { name: "Running 2", exact: true }).click();
+    await expect(page.getByText(unassigned.title, { exact: true })).toBeVisible();
+    await expect(page.getByText(running.title, { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(band.getByRole("checkbox", { name: "Assigned to me" })).not.toBeChecked();
+    await expect(page.getByText(unassigned.title, { exact: true })).toBeVisible();
+    await band.getByRole("button", { name: "Completed today 1", exact: true }).click();
+    await expect(page.getByText(done.title, { exact: true })).toBeVisible();
+    await api.updateIssue(done.id, { status: "todo" });
+    await page.reload();
+    await expect(band.getByRole("button", { name: "Completed today 0", exact: true })).toBeVisible();
+    await expect(page.getByText(done.title, { exact: true })).toHaveCount(0);
+    await page.screenshot({ path: ".preview/workbench-status-band.png", fullPage: true });
+    expect(errors).toEqual([]);
+  });
+});

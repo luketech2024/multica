@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "exports": {
+    "./workbench/status-band": "./workbench/status-band.ts",
     "./workbench/security": "./workbench/security.ts",
     "./workbench/audit": "./workbench/audit.ts",
     ".": "./index.ts",
