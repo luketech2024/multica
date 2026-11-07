@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "发起部署目标自检",
       "deploy_target_checked": "完成部署目标自检"
     }
+  },
+  "deployment": {
+    "tasks": "任务",
+    "title": "环境与部署",
+    "summary": "{{repositories}} 个仓库 · 已绑 {{targets}} 个目标 · {{pending}} 个待自检",
+    "bind": "绑定目标",
+    "unbound": "绑定目标后，此仓库才能发布到该环境。",
+    "duration": "{{ms}} ms"
   }
 }

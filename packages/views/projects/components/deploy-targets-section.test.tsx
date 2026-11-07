@@ -15,7 +15,7 @@ vi.mock("@multica/core/api", () => ({
     listDeployTargets: async () => ({ targets: [] }),
     listProjectResources: async () => ({
       resources: [
-        { id: "repo-1", label: "Application", resource_type: "github_repo" },
+        { id: "repo-1", label: "Application", resource_type: "github_repo", resource_ref: { url: "https://example.test/app.git" } },
       ],
     }),
     listWorkbenchCredentials: async () => ({

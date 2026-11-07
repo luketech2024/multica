@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "Test de cible demandé",
       "deploy_target_checked": "Cible testée"
     }
+  },
+  "deployment": {
+    "tasks": "Tâches",
+    "title": "Environnement et déploiement",
+    "summary": "{{repositories}} dépôts · {{targets}} cibles · {{pending}} à vérifier",
+    "bind": "Associer une cible",
+    "unbound": "Associez une cible avant de publier ce dépôt dans cet environnement.",
+    "duration": "{{ms}} ms"
   }
 }

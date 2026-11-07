@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "ターゲット確認を依頼",
       "deploy_target_checked": "ターゲットを確認"
     }
+  },
+  "deployment": {
+    "tasks": "タスク",
+    "title": "環境とデプロイ",
+    "summary": "リポジトリ {{repositories}} 件 · ターゲット {{targets}} 件 · 未確認 {{pending}} 件",
+    "bind": "ターゲットを関連付け",
+    "unbound": "この環境にリリースする前に、リポジトリにターゲットを関連付けてください。",
+    "duration": "{{ms}} ms"
   }
 }

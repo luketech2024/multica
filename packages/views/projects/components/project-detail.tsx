@@ -27,6 +27,8 @@ import { AppLink, currentPath, useNavigation } from "../../navigation";
 import { TitleEditor, ContentEditor, type ContentEditorRef } from "../../editor";
 import { PriorityIcon } from "../../issues/components/priority-icon";
 import { ProjectResourcesSection } from "./project-resources-section";
+import { deployTargetsOptions } from "@multica/core/workbench/configuration";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
 import { DeployTargetsSection } from "./deploy-targets-section";
 import { RepositoryProfilesSection } from "./repository-profiles-section";
 import { ProjectRolesSection } from "./project-roles-section";
@@ -121,6 +123,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const wsId = useWorkspaceId();
   const wsPaths = useWorkspacePaths();
   const router = useNavigation();
+  const projectTab = router.searchParams.get("tab") === "deployment" ? "deployment" : "tasks";
+  const targets = useQuery(deployTargetsOptions(wsId, projectId));
+  const selectProjectTab = (value: string) => {
+    const params = new URLSearchParams(router.searchParams);
+    params.set("tab", value);
+    router.replace(`${router.pathname}?${params}`);
+  };
   const userId = useAuthStore((s) => s.user?.id);
   const { data: project, isLoading } = useQuery(projectDetailOptions(wsId, projectId));
   useRegisterCommandBarContext(
@@ -508,7 +517,6 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {/* Resources */}
       <ProjectResourcesSection projectId={projectId} />
       <RepositoryProfilesSection key={`profiles-${projectId}`} projectId={projectId} />
-      <DeployTargetsSection key={projectId} projectId={projectId} />
       <ProjectRolesSection key={`roles-${projectId}`} projectId={projectId} />
       <ProjectBusinessTemplateSection key={`template-${projectId}`} projectId={projectId} />
     </div>
@@ -519,6 +527,18 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
       <ResizablePanel id="content" minSize="50%">
         <div ref={rightSidebarShortcutTargetRef} className="flex h-full flex-col">
+          <Tabs value={projectTab} onValueChange={(value) => selectProjectTab(String(value))} className="h-full min-h-0 gap-0">
+            <TabsList className="mx-4 my-2" aria-label={project.title}>
+              <TabsTrigger value="tasks">{t(($) => $.deployment.tasks)}</TabsTrigger>
+              <TabsTrigger value="deployment">
+                {t(($) => $.deployment.title)}
+                {targets.data && <span className="text-caption tabular-nums">{targets.data.targets.length}</span>}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="deployment" className="min-h-0 overflow-auto p-4">
+              <DeployTargetsSection key={projectId} projectId={projectId} />
+            </TabsContent>
+            <TabsContent value="tasks" className="flex min-h-0 flex-col">
           <IssueSurface
             scope={issueScope}
             modes={["board", "list", "table", "swimlane", "gantt"]}
@@ -591,6 +611,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               </ProjectWorkflowMenuHost>
             )}
           />
+            </TabsContent>
+          </Tabs>
           </div>
         </ResizablePanel>
         {!isMobile && <ResizableHandle />}

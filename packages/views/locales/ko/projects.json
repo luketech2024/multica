@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "대상 확인 요청",
       "deploy_target_checked": "대상 확인 완료"
     }
+  },
+  "deployment": {
+    "tasks": "작업",
+    "title": "환경 및 배포",
+    "summary": "저장소 {{repositories}}개 · 대상 {{targets}}개 · 점검 대기 {{pending}}개",
+    "bind": "대상 연결",
+    "unbound": "이 환경에 릴리스하기 전에 저장소에 대상을 연결하세요.",
+    "duration": "{{ms}} ms"
   }
 }

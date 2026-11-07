@@ -42,6 +42,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
   const save = useSaveDeployTarget(wsId, projectId);
   const remove = useDeleteDeployTarget(wsId, projectId);
   const check = useCheckDeployTarget(wsId, projectId);
+  const [environment, setEnvironment] = useState("staging");
   const [editing, setEditing] = useState<{
     id?: string;
     data: DeployTargetInput;
@@ -67,7 +68,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
       (current) =>
         current && { ...current, data: { ...current.data, ...patch } },
     );
-  const start = (target?: DeployTarget) => {
+  const start = (target?: DeployTarget, repoId?: string) => {
     setError(undefined);
     setEditing(
       target
@@ -78,8 +79,8 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
         : {
             data: {
               label: "",
-              repo_id: resources.data?.[0]?.id ?? "",
-              env: "staging",
+              repo_id: repoId ?? resources.data?.[0]?.id ?? "",
+              env: environment,
               kind: "docker-host",
               channel: "runtime",
               runtime_id: null,
@@ -93,8 +94,11 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
     if (!editing) return;
     setError(undefined);
     try {
-      await save.mutateAsync(editing);
+      const saved = await save.mutateAsync(editing);
       setEditing(undefined);
+      if (saved.channel === "runtime" && saved.missing_fields.length === 0) {
+        check.mutate({ id: saved.id, revision: saved.revision });
+      }
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -118,6 +122,14 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
     }
   };
 
+  const repositories = (resources.data ?? []).map((resource) => {
+    const ref = resource.resource_ref;
+    const location = "url" in ref ? ref.url : ref.local_path;
+    return { ...resource, label: resource.label || (typeof location === "string" ? location : resource.id) };
+  });
+  const visibleTargets = (targets.data?.targets ?? []).filter((target) => target.env === environment);
+  const unboundRepositories = repositories.filter((repo) => !visibleTargets.some((target) => target.repo_id === repo.id));
+
   return (
     <section
       className="space-y-3 px-2"
@@ -138,20 +150,36 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
           </Button>
         )}
       </div>
-      {targets.isPending && <Skeleton className="h-16 w-full" />}
-      {targets.isError && (
+      <ConfigurationSelect
+        label={t(($) => $.workbench.environment)}
+        value={environment}
+        items={environments.map((env) => ({ value: env, label: t(($) => $.workbench[env]) }))}
+        onChange={setEnvironment}
+        disabled={!!editing}
+      />
+      {targets.data && (
+        <p className="text-caption text-muted-foreground">
+          {t(($) => $.deployment.summary, {
+            repositories: repositories.length,
+            targets: visibleTargets.length,
+            pending: visibleTargets.filter((target) => deploymentCheckStatus(target) !== "passed").length,
+          })}
+        </p>
+      )}
+      {(targets.isPending || resources.isPending) && <Skeleton className="h-16 w-full" />}
+      {(targets.isError || resources.isError) && (
         <div role="alert" className="text-caption text-destructive">
           {t(($) => $.workbench.load_failed)}{" "}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => void targets.refetch()}
+            onClick={() => { void targets.refetch(); void resources.refetch(); }}
           >
             {t(($) => $.workbench.retry)}
           </Button>
         </div>
       )}
-      {targets.data?.targets.length === 0 && (
+      {targets.data && visibleTargets.length === 0 && (
         <p className="text-caption text-muted-foreground">
           {t(($) => $.workbench.empty)}
         </p>
@@ -161,7 +189,16 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
           {check.error.message}
         </p>
       )}
-      {targets.data?.targets.map((target) => (
+      {environment !== "preview" && targets.data && unboundRepositories.map((repo) => (
+        <div key={repo.id} className="space-y-2 rounded-xl border border-dashed p-3">
+          <p className="font-mono text-caption">{repo.label}</p>
+          <p className="text-caption text-muted-foreground">{t(($) => $.deployment.unbound)}</p>
+          {canManage && <Button variant="outline" size="sm" disabled={!!editing} onClick={() => start(undefined, repo.id)}>
+            {t(($) => $.deployment.bind)}
+          </Button>}
+        </div>
+      ))}
+      {visibleTargets.map((target) => (
         <div key={target.id} className="rounded-xl border bg-surface p-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{target.label}</span>
@@ -198,6 +235,9 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
               </>
             )}
           </div>
+          <p className="font-mono text-caption">
+            {repositories.find((repo) => repo.id === target.repo_id)?.label || target.repo_id}
+          </p>
           <p className={deploymentCheckStatus(target) === "passed"
             ? "text-caption text-success"
             : "text-caption text-warning"}>
@@ -205,14 +245,26 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
           </p>
           {target.last_check && (
             <p className="break-words text-caption text-muted-foreground">
-              {target.last_check.detail}
+              {target.last_check.detail} · {new Date(target.last_check.at).toLocaleString()} · {t(($) => $.deployment.duration, { ms: target.last_check.ms })}
             </p>
           )}
-          <p className="break-words text-caption text-muted-foreground">
-            {target.location.domain ||
-              target.location.host ||
-              target.location.registry}
-          </p>
+          <dl className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-3 gap-y-1 text-caption">
+            <dt className="text-muted-foreground">{t(($) => $.workbench.channel)}</dt>
+            <dd className="break-words">{target.channel}</dd>
+            {Object.entries(target.location).filter(([, value]) => value).map(([field, value]) => (
+              <div key={field} className="contents">
+                <dt className="text-muted-foreground">{fields[field] || field}</dt>
+                <dd className="break-words">{value}</dd>
+              </div>
+            ))}
+            {canManage && target.credential_id && <>
+              <dt className="text-muted-foreground">{t(($) => $.workbench.credential)}</dt>
+              <dd className="break-words">{(() => {
+                const credential = credentials.data?.credentials.find((item) => item.id === target.credential_id);
+                return credential ? `${credential.label} · ••••${credential.last_four}` : t(($) => $.workbench.not_set);
+              })()}</dd>
+            </>}
+          </dl>
         </div>
       ))}
       {deleting && (
@@ -260,7 +312,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
                 value={editing.data.repo_id}
                 items={[
                   none,
-                  ...(resources.data ?? []).map((repo) => ({
+                  ...repositories.map((repo) => ({
                     value: repo.id,
                     label: repo.label || repo.resource_type,
                   })),

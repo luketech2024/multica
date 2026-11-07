@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "Target check requested",
       "deploy_target_checked": "Target checked"
     }
+  },
+  "deployment": {
+    "tasks": "Tasks",
+    "title": "Environment and deployment",
+    "summary": "{{repositories}} repositories · {{targets}} targets · {{pending}} awaiting check",
+    "bind": "Bind target",
+    "unbound": "Bind a target before releasing this repository to this environment.",
+    "duration": "{{ms}} ms"
   }
 }

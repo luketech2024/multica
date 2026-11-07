@@ -49,6 +49,8 @@ vi.mock("@tanstack/react-query", () => ({
   },
 }));
 
+vi.mock("@multica/core/workbench/configuration", () => ({ deployTargetsOptions: () => ({ queryKey: ["deploy-targets"] }) }));
+
 vi.mock("@multica/core/projects/queries", () => ({
   projectDetailOptions: () => ({ queryKey: ["project-detail"] }),
 }));

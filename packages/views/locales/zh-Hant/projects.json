@@ -443,5 +443,13 @@
       "deploy_target_check_requested": "發起部署目標自檢",
       "deploy_target_checked": "完成部署目標自檢"
     }
+  },
+  "deployment": {
+    "tasks": "任務",
+    "title": "環境與部署",
+    "summary": "{{repositories}} 個倉庫 · 已綁 {{targets}} 個目標 · {{pending}} 個待自檢",
+    "bind": "綁定目標",
+    "unbound": "綁定目標後，此倉庫才能發佈到該環境。",
+    "duration": "{{ms}} ms"
   }
 }
