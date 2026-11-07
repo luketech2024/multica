@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "发起部署目标自检",
       "deploy_target_checked": "完成部署目标自检",
       "business_template_published": "发布业务模板",
-      "release_created": "创建发布单"
+      "release_created": "创建发布单",
+      "release_confirmed": "发布确认"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "失败",
       "partial": "部分成功",
       "retrying": "重试中"
+    },
+    "gates": {
+      "title": "发布门禁",
+      "unavailable": "暂不可用",
+      "passed": "通过",
+      "blocked": "阻断",
+      "confirm_changes": "已核对变更清单",
+      "confirm_migration": "已确认数据库迁移，或确认本次无需迁移",
+      "confirm_waiver": "安全角色已关闭，我明确承担本次发布的安全风险",
+      "save": "保存确认",
+      "names": {
+        "acceptance": "任务验收",
+        "security": "安全检查",
+        "changes": "变更与迁移",
+        "targets": "部署目标"
+      },
+      "reasons": {
+        "acceptance": "验收证据缺失或已变化",
+        "merge_changed": "合并证据已变化",
+        "security_waiver": "需要明确确认承担安全风险",
+        "security_risks": "存在未解决的中高风险",
+        "security_scan": "需要针对本次合并提交和版本的成功扫描",
+        "change_confirmation": "请确认变更清单及数据库迁移",
+        "repository_profile": "请配置仓库交付类型",
+        "target_config": "请补齐部署目标配置",
+        "target_check": "需要24小时内成功的目标自检",
+        "target_credential": "部署凭据缺失、过期或用途类型不符",
+        "target_missing": "请为每种交付类型配置目标"
+      }
     }
   }
 }

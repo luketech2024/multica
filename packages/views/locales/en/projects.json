@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "Target check requested",
       "deploy_target_checked": "Target checked",
       "business_template_published": "Business template published",
-      "release_created": "Release created"
+      "release_created": "Release created",
+      "release_confirmed": "Release confirmed"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "Failed",
       "partial": "Partially successful",
       "retrying": "Retrying"
+    },
+    "gates": {
+      "title": "Release gates",
+      "unavailable": "Unavailable",
+      "passed": "Passed",
+      "blocked": "Blocked",
+      "confirm_changes": "I have reviewed the change list",
+      "confirm_migration": "I have confirmed database migrations or verified that none are required",
+      "confirm_waiver": "Security is disabled. I accept responsibility for the release risk",
+      "save": "Save confirmations",
+      "names": {
+        "acceptance": "Acceptance",
+        "security": "Security",
+        "changes": "Changes and migrations",
+        "targets": "Deployment targets"
+      },
+      "reasons": {
+        "acceptance": "Acceptance evidence is missing or changed",
+        "merge_changed": "Merge evidence changed",
+        "security_waiver": "Explicit security risk acceptance is required",
+        "security_risks": "Unresolved medium or high security risks",
+        "security_scan": "A successful scan of this release commit and version is required",
+        "change_confirmation": "Confirm the change list and database migrations",
+        "repository_profile": "Configure repository delivery types",
+        "target_config": "Complete deployment target configuration",
+        "target_check": "Run a successful target check within 24 hours",
+        "target_credential": "Deployment credential is missing, expired or incompatible",
+        "target_missing": "Configure a target for each delivery type"
+      }
     }
   }
 }

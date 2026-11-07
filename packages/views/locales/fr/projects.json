@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "Test de cible demandé",
       "deploy_target_checked": "Cible testée",
       "business_template_published": "Modèle métier publié",
-      "release_created": "Publication créée"
+      "release_created": "Publication créée",
+      "release_confirmed": "Publication confirmée"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "Échec",
       "partial": "Réussite partielle",
       "retrying": "Nouvel essai"
+    },
+    "gates": {
+      "title": "Conditions de publication",
+      "unavailable": "Indisponible",
+      "passed": "Validé",
+      "blocked": "Bloqué",
+      "confirm_changes": "J’ai vérifié la liste des modifications",
+      "confirm_migration": "J’ai confirmé les migrations ou leur absence",
+      "confirm_waiver": "La sécurité est désactivée. J’assume le risque de cette publication",
+      "save": "Enregistrer les confirmations",
+      "names": {
+        "acceptance": "Acceptation",
+        "security": "Sécurité",
+        "changes": "Modifications et migrations",
+        "targets": "Cibles de déploiement"
+      },
+      "reasons": {
+        "acceptance": "Les preuves d’acceptation manquent ou ont changé",
+        "merge_changed": "Les preuves de fusion ont changé",
+        "security_waiver": "Une acceptation explicite du risque est nécessaire",
+        "security_risks": "Risques moyens ou élevés non résolus",
+        "security_scan": "Une analyse réussie de cette version et de ce commit est requise",
+        "change_confirmation": "Confirmez les modifications et migrations",
+        "repository_profile": "Configurez les types de livraison du dépôt",
+        "target_config": "Complétez la configuration de la cible",
+        "target_check": "Un contrôle réussi datant de moins de 24 h est requis",
+        "target_credential": "Identifiant de déploiement absent, expiré ou incompatible",
+        "target_missing": "Configurez une cible pour chaque type de livraison"
+      }
     }
   }
 }

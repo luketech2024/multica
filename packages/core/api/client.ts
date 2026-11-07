@@ -1,5 +1,5 @@
 import type { ZodType } from "zod";
-import { ReleaseOrderSchema, ReleaseOrdersSchema, ReleaseCandidatesSchema, type ReleaseOrder, type ReleaseOrders, type ReleaseCandidates, type ReleaseOrderInput } from "../workbench/release-schemas";
+import { ReleaseOrderSchema, ReleaseOrdersSchema, ReleaseCandidatesSchema, type ReleaseOrder, type ReleaseOrders, type ReleaseCandidates, type ReleaseOrderInput, type ReleaseConfirmationInput } from "../workbench/release-schemas";
 import { DeliveryReviewSchema, ReleaseReadinessSchema, type DeliveryReviewState, type DeliveryReviewInput, type ReleaseReadiness } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
@@ -1662,6 +1662,13 @@ export class ApiClient {
     const endpoint = `/api/releases/${encodeURIComponent(id)}`;
     const result = parseWithFallback<ReleaseOrder | null>(await this.fetch(endpoint), ReleaseOrderSchema, null, { endpoint });
     if (!result) throw new Error("Invalid release order response");
+    return result;
+  }
+
+  async confirmReleaseOrder(id: string, input: ReleaseConfirmationInput): Promise<ReleaseOrder> {
+    const endpoint = `/api/releases/${encodeURIComponent(id)}/confirm`;
+    const result = parseWithFallback<ReleaseOrder | null>(await this.fetch(endpoint, { method: "POST", body: JSON.stringify(input) }), ReleaseOrderSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid release confirmation response");
     return result;
   }
 

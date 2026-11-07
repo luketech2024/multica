@@ -11,9 +11,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const confirmWorkbenchRelease = `-- name: ConfirmWorkbenchRelease :one
+UPDATE workbench_release_orders SET confirmations=$3, revision=revision+1,updated_at=now()
+WHERE workspace_id=$1 AND id=$2 AND revision=$4
+  AND status IN ('draft','prechecking','ready') RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations
+`
+
+type ConfirmWorkbenchReleaseParams struct {
+	WorkspaceID      pgtype.UUID `json:"workspace_id"`
+	ID               pgtype.UUID `json:"id"`
+	Confirmations    []byte      `json:"confirmations"`
+	ExpectedRevision int64       `json:"expected_revision"`
+}
+
+func (q *Queries) ConfirmWorkbenchRelease(ctx context.Context, arg ConfirmWorkbenchReleaseParams) (WorkbenchReleaseOrder, error) {
+	row := q.db.QueryRow(ctx, confirmWorkbenchRelease,
+		arg.WorkspaceID,
+		arg.ID,
+		arg.Confirmations,
+		arg.ExpectedRevision,
+	)
+	var i WorkbenchReleaseOrder
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.Number,
+		&i.Env,
+		&i.Status,
+		&i.RequestID,
+		&i.RequestHash,
+		&i.Manifest,
+		&i.Revision,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Confirmations,
+	)
+	return i, err
+}
+
 const createWorkbenchRelease = `-- name: CreateWorkbenchRelease :one
 INSERT INTO workbench_release_orders (id,workspace_id,project_id,number,env,request_id,request_hash,manifest,created_by)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations
 `
 
 type CreateWorkbenchReleaseParams struct {
@@ -55,12 +95,13 @@ func (q *Queries) CreateWorkbenchRelease(ctx context.Context, arg CreateWorkbenc
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Confirmations,
 	)
 	return i, err
 }
 
 const getWorkbenchRelease = `-- name: GetWorkbenchRelease :one
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at FROM workbench_release_orders WHERE workspace_id=$1 AND id=$2
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders WHERE workspace_id=$1 AND id=$2
 `
 
 type GetWorkbenchReleaseParams struct {
@@ -85,12 +126,13 @@ func (q *Queries) GetWorkbenchRelease(ctx context.Context, arg GetWorkbenchRelea
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Confirmations,
 	)
 	return i, err
 }
 
 const getWorkbenchReleaseByRequest = `-- name: GetWorkbenchReleaseByRequest :one
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at FROM workbench_release_orders WHERE workspace_id=$1 AND request_id=$2
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders WHERE workspace_id=$1 AND request_id=$2
 `
 
 type GetWorkbenchReleaseByRequestParams struct {
@@ -115,6 +157,7 @@ func (q *Queries) GetWorkbenchReleaseByRequest(ctx context.Context, arg GetWorkb
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Confirmations,
 	)
 	return i, err
 }
@@ -241,7 +284,7 @@ func (q *Queries) ListWorkbenchReleaseReservations(ctx context.Context, arg List
 }
 
 const listWorkbenchReleases = `-- name: ListWorkbenchReleases :many
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at FROM workbench_release_orders
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders
 WHERE workspace_id= $1 AND id< $2
     AND ($3::uuid IS NULL OR project_id=$3::uuid)
     AND ($4::text='' OR env= $4)
@@ -283,6 +326,7 @@ func (q *Queries) ListWorkbenchReleases(ctx context.Context, arg ListWorkbenchRe
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Confirmations,
 		); err != nil {
 			return nil, err
 		}

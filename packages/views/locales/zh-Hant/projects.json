@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "發起部署目標自檢",
       "deploy_target_checked": "完成部署目標自檢",
       "business_template_published": "發佈業務範本",
-      "release_created": "建立發布單"
+      "release_created": "建立發布單",
+      "release_confirmed": "發佈確認"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "失敗",
       "partial": "部分成功",
       "retrying": "重試中"
+    },
+    "gates": {
+      "title": "發佈門禁",
+      "unavailable": "暫不可用",
+      "passed": "通過",
+      "blocked": "阻擋",
+      "confirm_changes": "已核對變更清單",
+      "confirm_migration": "已確認資料庫遷移，或確認本次無需遷移",
+      "confirm_waiver": "安全角色已關閉，我明確承擔本次發佈的安全風險",
+      "save": "儲存確認",
+      "names": {
+        "acceptance": "任務驗收",
+        "security": "安全檢查",
+        "changes": "變更與遷移",
+        "targets": "部署目標"
+      },
+      "reasons": {
+        "acceptance": "驗收證據缺失或已變更",
+        "merge_changed": "合併證據已變更",
+        "security_waiver": "需要明確確認承擔安全風險",
+        "security_risks": "存在未解決的中高風險",
+        "security_scan": "需要針對本次合併提交和版本的成功掃描",
+        "change_confirmation": "請確認變更清單及資料庫遷移",
+        "repository_profile": "請設定儲存庫交付類型",
+        "target_config": "請補齊部署目標設定",
+        "target_check": "需要24小時內成功的目標自我檢查",
+        "target_credential": "部署憑證缺失、過期或用途類型不符",
+        "target_missing": "請為每種交付類型設定目標"
+      }
     }
   }
 }

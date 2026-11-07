@@ -1922,19 +1922,20 @@ type WorkbenchReleaseCounter struct {
 }
 
 type WorkbenchReleaseOrder struct {
-	ID          pgtype.UUID        `json:"id"`
-	WorkspaceID pgtype.UUID        `json:"workspace_id"`
-	ProjectID   pgtype.UUID        `json:"project_id"`
-	Number      int64              `json:"number"`
-	Env         string             `json:"env"`
-	Status      string             `json:"status"`
-	RequestID   pgtype.UUID        `json:"request_id"`
-	RequestHash string             `json:"request_hash"`
-	Manifest    []byte             `json:"manifest"`
-	Revision    int64              `json:"revision"`
-	CreatedBy   pgtype.UUID        `json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID            pgtype.UUID        `json:"id"`
+	WorkspaceID   pgtype.UUID        `json:"workspace_id"`
+	ProjectID     pgtype.UUID        `json:"project_id"`
+	Number        int64              `json:"number"`
+	Env           string             `json:"env"`
+	Status        string             `json:"status"`
+	RequestID     pgtype.UUID        `json:"request_id"`
+	RequestHash   string             `json:"request_hash"`
+	Manifest      []byte             `json:"manifest"`
+	Revision      int64              `json:"revision"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Confirmations []byte             `json:"confirmations"`
 }
 
 type WorkbenchReleaseReservation struct {

@@ -23,6 +23,7 @@ import {
 import { ConfigurationSelect } from "../projects/components/configuration-select";
 import { AppLink, useNavigation } from "../navigation";
 import { useT } from "../i18n";
+import { ReleaseGates } from "./release-gates";
 
 export function ReleasesPage() {
   const { t } = useT("projects");
@@ -360,6 +361,11 @@ export function ReleaseDetailPage({ releaseId }: { releaseId: string }) {
               {t(($) => $.releases.status[order.data.status])}
             </p>
           </header>
+          <ReleaseGates
+            key={`${order.data.id}-${order.data.revision}`}
+            wsId={wsId}
+            order={order.data}
+          />
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="space-y-3 rounded-xl border p-4">
               <h2 className="text-title-sm font-medium">

@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "ターゲット確認を依頼",
       "deploy_target_checked": "ターゲットを確認",
       "business_template_published": "業務テンプレートを公開",
-      "release_created": "リリースを作成"
+      "release_created": "リリースを作成",
+      "release_confirmed": "リリース確認"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "失敗",
       "partial": "一部成功",
       "retrying": "再試行中"
+    },
+    "gates": {
+      "title": "リリース条件",
+      "unavailable": "利用できません",
+      "passed": "合格",
+      "blocked": "ブロック中",
+      "confirm_changes": "変更一覧を確認しました",
+      "confirm_migration": "データベース移行を確認、または不要と確認しました",
+      "confirm_waiver": "セキュリティが無効です。このリリースのリスクを引き受けます",
+      "save": "確認を保存",
+      "names": {
+        "acceptance": "受け入れ",
+        "security": "セキュリティ",
+        "changes": "変更と移行",
+        "targets": "デプロイ先"
+      },
+      "reasons": {
+        "acceptance": "受け入れ証跡がないか変更されています",
+        "merge_changed": "マージ証跡が変更されています",
+        "security_waiver": "セキュリティリスクの明示的な承認が必要です",
+        "security_risks": "未解決の中・高リスクがあります",
+        "security_scan": "このコミットとバージョンのスキャン成功が必要です",
+        "change_confirmation": "変更一覧とデータベース移行を確認してください",
+        "repository_profile": "リポジトリの配信タイプを設定してください",
+        "target_config": "デプロイ先の設定を完了してください",
+        "target_check": "24時間以内の正常なセルフチェックが必要です",
+        "target_credential": "デプロイ認証情報がないか、期限切れまたは不適合です",
+        "target_missing": "配信タイプごとにデプロイ先を設定してください"
+      }
     }
   }
 }

@@ -22,6 +22,7 @@ func releaseOrderResponse(row db.WorkbenchReleaseOrder) map[string]any {
 		"id": uuidToString(row.ID), "workspace_id": uuidToString(row.WorkspaceID), "project_id": uuidToString(row.ProjectID),
 		"identifier": fmt.Sprintf("REL-%02d", row.Number), "env": row.Env, "status": row.Status,
 		"manifest": json.RawMessage(row.Manifest), "revision": row.Revision, "created_by": uuidToString(row.CreatedBy),
+		"confirmations": json.RawMessage(row.Confirmations),
 		"created_at": timestampToString(row.CreatedAt), "updated_at": timestampToString(row.UpdatedAt),
 	}
 }
@@ -40,7 +41,14 @@ func (h *Handler) GetReleaseOrder(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "release order not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, releaseOrderResponse(row))
+	gates, err := readReleaseGates(r.Context(), h.Queries, row)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to evaluate release gates")
+		return
+	}
+	response := releaseOrderResponse(row)
+	response["gates"] = gates
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (h *Handler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) {

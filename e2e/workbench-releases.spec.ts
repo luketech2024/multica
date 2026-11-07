@@ -7,6 +7,49 @@ test.describe("Workbench release orders", () => {
   let api: TestApiClient;
   test.afterEach(async () => { await api?.cleanup(); });
 
+  test("creates an accepted release and persists explicit gate confirmations",async({page})=>{
+    test.setTimeout(150000);
+    api=await createTestApi();
+    const roles=Object.fromEntries(["sched","product","dev","test","sec","ops"].map(role=>[role,{enabled:["sched","product","test"].includes(role),agent_id:null,runtime_id:null}]));
+    const project=await api.createProject("Release gate browser check",{description:"Verify release confirmations and refresh persistence.",workbench_roles:{v:1,roles}});
+    const repo=await api.createProjectRepository(project.id,`https://github.com/acme/${project.id}`);
+    let parent=await api.createIssue("Release verified export",{project_id:project.id,acceptance_criteria:{v:1,items:[{id:"",text:"Export all rows"}],bounds:[]}});
+    parent.acceptance_criteria.items[0].checked={at:"",by:""};
+    parent=await api.updateIssue(parent.id,{expected_revision:parent.revision,acceptance_criteria:parent.acceptance_criteria,confirm_requirements:true});
+    parent=await api.saveExecutionPlan(parent.id,{expected_revision:parent.revision,version:1,idempotency_key:crypto.randomUUID(),tasks:[{key:"verify",title:"Verify release export",description:"",role:"test",repo_id:repo.id,covers:["A-01"],depends_on:[],existing_dependencies:[],serial_group:"",expected:["Test report"]}]});
+    parent=await api.updateIssue(parent.id,{status:"in_progress",expected_revision:parent.revision});
+    const child=await api.updateIssue(parent.acceptance_criteria.plan.issues[0],{status:"done"});
+    const source="a".repeat(40);
+    parent=await api.getIssue(parent.id);
+    parent=await api.recordDeliveryEvidence(parent.id,parent.revision,{issue_id:child.id,issue_revision:child.revision,summary:"Export verified",passed:true,commit:source,reports:[{name:"Test report",url:"https://example.test/report"}]});
+    await expect.poll(async()=>{parent=await api.getIssue(parent.id);return parent.status;},{timeout:60000,intervals:[1000]}).toBe("in_review");
+    await api.acceptDelivery(parent.id,parent.revision);
+    await api.seedReleaseMerge(project.id,child.id,source);
+    const slug=await loginAsDefault(page);
+    const errors:string[]=[];
+    page.on("pageerror",error=>errors.push(error.message));
+    await page.goto(`/${slug}/releases?project=${project.id}`);
+    await page.getByRole("button",{name:"New release",exact:true}).click();
+    const dialog=page.getByRole("dialog");
+    await expect(dialog.getByRole("checkbox")).toBeChecked();
+    await dialog.getByRole("button",{name:"New release",exact:true}).click();
+    await expect(page.getByRole("heading",{name:"Release gates",exact:true})).toBeVisible({timeout:30000});
+    await expect(page.getByRole("heading",{name:"Acceptance · Passed",exact:true})).toBeVisible();
+    await expect(page.getByRole("heading",{name:"Security · Blocked",exact:true})).toBeVisible();
+    await page.getByRole("checkbox",{name:"I have reviewed the change list"}).check();
+    await page.getByRole("checkbox",{name:"I have confirmed database migrations or verified that none are required"}).check();
+    await page.getByRole("checkbox",{name:"Security is disabled. I accept responsibility for the release risk"}).check();
+    await page.getByRole("button",{name:"Save confirmations"}).click();
+    await expect(page.getByRole("heading",{name:"Security · Passed",exact:true})).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading",{name:"Changes and migrations · Passed",exact:true})).toBeVisible();
+    await expect(page.getByText("Configure repository delivery types")).toBeVisible();
+    await page.setViewportSize({width:1024,height:720});
+    await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await page.screenshot({path:".preview/release-gates.png",fullPage:true});
+    expect(errors).toEqual([]);
+  });
+
   test("loads the release center and keeps unaccepted tasks out of each environment", async ({ page }) => {
     test.setTimeout(120000);
     api = await createTestApi();

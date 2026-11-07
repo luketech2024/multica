@@ -2289,6 +2289,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 			r.Get("/api/releases/candidates", h.ListReleaseCandidates)
 			r.Post("/api/releases", h.CreateReleaseOrder)
 			r.Get("/api/releases/{releaseId}", h.GetReleaseOrder)
+			r.Post("/api/releases/{releaseId}/confirm", h.ConfirmReleaseOrder)
 			r.Post("/api/workbench/business-templates", h.SaveWorkspaceBusinessTemplate)
 			r.Put("/api/workbench/business-templates/{templateId}", h.SaveWorkspaceBusinessTemplate)
 			r.Get("/api/workbench/audit.csv", h.ExportWorkbenchAudit)

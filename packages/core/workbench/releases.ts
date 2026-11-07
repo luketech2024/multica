@@ -5,7 +5,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "../api";
-import type { ReleaseOrderInput } from "./release-schemas";
+import type {
+  ReleaseOrderInput,
+  ReleaseConfirmationInput,
+} from "./release-schemas";
 export * from "./release-schemas";
 
 export function releaseOrdersOptions(wsId: string, projectId = "", env = "") {
@@ -45,6 +48,15 @@ export function useCreateReleaseOrder(wsId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: ReleaseOrderInput) => api.createReleaseOrder(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["releases", wsId] }),
+  });
+}
+
+export function useConfirmReleaseOrder(wsId: string, id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ReleaseConfirmationInput) =>
+      api.confirmReleaseOrder(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["releases", wsId] }),
   });
 }

@@ -443,7 +443,8 @@
       "deploy_target_check_requested": "대상 확인 요청",
       "deploy_target_checked": "대상 확인 완료",
       "business_template_published": "비즈니스 템플릿 게시",
-      "release_created": "릴리스 생성"
+      "release_created": "릴리스 생성",
+      "release_confirmed": "릴리스 확인"
     }
   },
   "deployment": {
@@ -502,6 +503,35 @@
       "failed": "실패",
       "partial": "일부 성공",
       "retrying": "재시도 중"
+    },
+    "gates": {
+      "title": "릴리스 조건",
+      "unavailable": "사용할 수 없음",
+      "passed": "통과",
+      "blocked": "차단됨",
+      "confirm_changes": "변경 목록을 확인했습니다",
+      "confirm_migration": "데이터베이스 마이그레이션을 확인했거나 불필요함을 확인했습니다",
+      "confirm_waiver": "보안이 꺼져 있습니다. 이번 릴리스의 보안 위험을 부담합니다",
+      "save": "확인 저장",
+      "names": {
+        "acceptance": "인수",
+        "security": "보안",
+        "changes": "변경 및 마이그레이션",
+        "targets": "배포 대상"
+      },
+      "reasons": {
+        "acceptance": "인수 증거가 없거나 변경되었습니다",
+        "merge_changed": "병합 증거가 변경되었습니다",
+        "security_waiver": "보안 위험을 명시적으로 승인해야 합니다",
+        "security_risks": "해결되지 않은 중간 또는 높은 위험이 있습니다",
+        "security_scan": "이 커밋과 버전에 대한 성공한 검사가 필요합니다",
+        "change_confirmation": "변경 목록과 데이터베이스 마이그레이션을 확인하세요",
+        "repository_profile": "저장소 전달 유형을 설정하세요",
+        "target_config": "배포 대상 설정을 완료하세요",
+        "target_check": "24시간 이내에 성공한 자체 점검이 필요합니다",
+        "target_credential": "배포 자격 증명이 없거나 만료되었거나 호환되지 않습니다",
+        "target_missing": "각 전달 유형에 대한 배포 대상을 설정하세요"
+      }
     }
   }
 }

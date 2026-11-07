@@ -55,6 +55,8 @@ export class TestApiClient {
   private createdBusinessTemplateIds: string[] = [];
   private seededIssueIds: string[] = [];
   private createdPropertyIds: string[] = [];
+  private releaseFixtureProjectIds: string[] = [];
+  private releaseFixturePullRequestIds: string[] = [];
 
   async login(email: string, name: string) {
     const client = new pg.Client(DATABASE_URL);
@@ -510,6 +512,43 @@ export class TestApiClient {
     return response.json();
   }
 
+  async recordDeliveryEvidence(parentId: string, expectedRevision: number, evidence: Record<string,unknown>) {
+    const response=await this.authedFetch(`/api/issues/${parentId}/delivery-evidence`,{method:"POST",body:JSON.stringify({expected_revision:expectedRevision,evidence})});
+    if(!response.ok) throw new Error(`record delivery failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
+  async getIssue(id: string) {
+    const response=await this.authedFetch(`/api/issues/${id}`);
+    if(!response.ok) throw new Error(`get issue failed: ${response.status}`);
+    return response.json();
+  }
+
+  async acceptDelivery(parentId: string, expectedRevision: number) {
+    const review=await this.authedFetch(`/api/issues/${parentId}/delivery-review`);
+    if(!review.ok) throw new Error(`read delivery review failed: ${review.status}`);
+    const state=await review.json();
+    const response=await this.authedFetch(`/api/issues/${parentId}/delivery-review`,{method:"POST",body:JSON.stringify({expected_revision:expectedRevision,action:"accept",checks:state.checks.map((check:{id:string})=>check.id)})});
+    if(!response.ok) throw new Error(`accept delivery failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
+  async seedReleaseMerge(projectId:string,issueId:string,sourceCommit:string) {
+    if(!this.createdProjectIds.includes(projectId) || !this.createdIssueIds.includes(issueId)) throw new Error("Release fixtures require test-owned project and issue");
+    this.releaseFixtureProjectIds.push(projectId);
+    const client=new pg.Client(DATABASE_URL);
+    await client.connect();
+    try {
+      const result=await client.query<{id:string}>(`INSERT INTO github_pull_request
+        (workspace_id,installation_id,repo_owner,repo_name,pr_number,title,state,html_url,head_sha,base_branch,merge_commit_sha,pr_created_at,pr_updated_at)
+        VALUES ($1,12345,'acme',$2,1,'Release fixture','merged',$3,$4,'main',$5,now(),now()) RETURNING id`,
+        [this.workspaceId,projectId,`https://github.com/acme/${projectId}/pull/1`,sourceCommit,"b".repeat(40)]);
+      const id=result.rows[0]!.id;
+      this.releaseFixturePullRequestIds.push(id);
+      await client.query("INSERT INTO issue_pull_request (issue_id,pull_request_id) VALUES ($1,$2)",[issueId,id]);
+    } finally {await client.end();}
+  }
+
   async recordSecurityScan(input: Record<string, unknown>) {
     const response = await this.authedFetch("/api/security/scans", { method: "POST", body: JSON.stringify(input) });
     if (!response.ok) throw new Error(`record scan failed: ${response.status} ${await response.text()}`);
@@ -549,6 +588,21 @@ export class TestApiClient {
 
   /** Clean up all issues created during this test. */
   async cleanup() {
+    if(this.releaseFixtureProjectIds.length && this.workspaceId) {
+      const client=new pg.Client(DATABASE_URL);
+      await client.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("DELETE FROM workbench_release_reservations WHERE workspace_id=$1 AND release_id IN (SELECT id FROM workbench_release_orders WHERE workspace_id=$1 AND project_id=ANY($2::uuid[]))",[this.workspaceId,this.releaseFixtureProjectIds]);
+        await client.query("DELETE FROM activity_log WHERE workspace_id=$1 AND details->>'release_id' IN (SELECT id::text FROM workbench_release_orders WHERE workspace_id=$1 AND project_id=ANY($2::uuid[]))",[this.workspaceId,this.releaseFixtureProjectIds]);
+        await client.query("DELETE FROM workbench_release_orders WHERE workspace_id=$1 AND project_id=ANY($2::uuid[])",[this.workspaceId,this.releaseFixtureProjectIds]);
+        await client.query("DELETE FROM issue_pull_request WHERE pull_request_id=ANY($1::uuid[])",[this.releaseFixturePullRequestIds]);
+        await client.query("DELETE FROM github_pull_request WHERE workspace_id=$1 AND id=ANY($2::uuid[])",[this.workspaceId,this.releaseFixturePullRequestIds]);
+        await client.query("COMMIT");
+      } catch(error) {await client.query("ROLLBACK");throw error;} finally {await client.end();}
+      this.releaseFixtureProjectIds=[];
+      this.releaseFixturePullRequestIds=[];
+    }
     if (this.createdBusinessTemplateIds.length && this.workspaceId) {
       const client = new pg.Client(DATABASE_URL);
       await client.connect();

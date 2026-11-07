@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import { ReleaseCandidatesSchema, ReleaseOrderSchema } from "./release-schemas";
+import {
+  ReleaseCandidatesSchema,
+  ReleaseOrderSchema,
+  ReleaseGateSchema,
+} from "./release-schemas";
 
 it("rejects missing release snapshots and malformed merge evidence", () => {
   expect(
@@ -34,4 +38,24 @@ it("rejects missing release snapshots and malformed merge evidence", () => {
     ReleaseCandidatesSchema.parse({ candidates: [candidate] }).candidates[0]
       ?.merges[0]?.merge_commit,
   ).toBe("b".repeat(40));
+});
+
+it("rejects malformed gate states and preserves unknown blocker codes", () => {
+  expect(
+    ReleaseGateSchema.safeParse({
+      id: "security",
+      passed: "true",
+      blockers: [],
+    }).success,
+  ).toBe(false);
+  expect(
+    ReleaseGateSchema.safeParse({ id: "security", passed: true }).success,
+  ).toBe(false);
+  expect(
+    ReleaseGateSchema.parse({
+      id: "security",
+      passed: false,
+      blockers: [{ code: "new_server_check" }],
+    }).blockers[0]?.code,
+  ).toBe("new_server_check");
 });

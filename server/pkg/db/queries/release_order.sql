@@ -10,6 +10,11 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *;
 -- name: GetWorkbenchRelease :one
 SELECT * FROM workbench_release_orders WHERE workspace_id=$1 AND id=$2;
 
+-- name: ConfirmWorkbenchRelease :one
+UPDATE workbench_release_orders SET confirmations=$3, revision=revision+1,updated_at=now()
+WHERE workspace_id=$1 AND id=$2 AND revision=sqlc.arg(expected_revision)
+  AND status IN ('draft','prechecking','ready') RETURNING *;
+
 -- name: GetWorkbenchReleaseByRequest :one
 SELECT * FROM workbench_release_orders WHERE workspace_id=$1 AND request_id=$2;
 
