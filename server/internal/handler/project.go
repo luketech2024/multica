@@ -432,7 +432,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var team *workbench.ProjectRoleConfiguration
 	var template *workbench.ProjectTemplate
 	if req.BusinessTemplate != nil {
-		assets, err := workbench.BuiltinBusinessTemplates()
+		assets, err := listBusinessTemplateAssets(r.Context(), h.Queries, parseUUID(workspaceID))
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to load business templates")
 			return

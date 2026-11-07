@@ -21,7 +21,7 @@ var workbenchAuditActions = []string{
 	"deploy_target_saved", "deploy_target_deleted",
 	"deploy_target_check_requested", "deploy_target_checked",
 	"project_roles_created", "project_roles_updated", "project_template_created", "project_template_updated",
-	"repository_profile_created", "repository_profile_updated",
+	"repository_profile_created", "repository_profile_updated", "business_template_published",
 }
 
 func auditCSVCell(value string) string {

@@ -52,6 +52,7 @@ export const BusinessTemplateSchema = z.object({
   terms: z.record(z.string(), z.string()),
 });
 export const BusinessTemplateAssetSchema = z.object({
+  builtin: z.boolean().default(true),
   id: z.string(),
   revision: z.number().int().positive(),
   content: BusinessTemplateSchema,

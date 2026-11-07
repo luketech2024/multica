@@ -149,6 +149,8 @@ var concurrentIndexCleanups = map[string]string{
 	"638_workbench_audit_export_identity":                       "idx_workbench_audit_export_id",
 	"639_workbench_audit_export_expiry":                         "idx_workbench_audit_export_expiry",
 	"642_issue_completion_time_index":                           "idx_issue_workspace_completion",
+	"644_workbench_business_template_id_index":                  "idx_workbench_business_template_id",
+	"645_workbench_business_template_workspace_index":           "idx_workbench_business_template_workspace",
 	"640_deploy_target_runtime_check":                           "idx_deploy_targets_runtime_check",
 	"616_workbench_deploy_target_binding":                       "idx_deploy_targets_binding",
 	"618_workbench_credentials_scope":                           "idx_credentials_scope",

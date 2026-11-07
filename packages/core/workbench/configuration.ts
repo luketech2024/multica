@@ -12,6 +12,7 @@ import type {
   CredentialInput,
   ProjectRoles,
   ProjectTemplate,
+  BusinessTemplate,
   DeployTarget,
 } from "./schemas";
 export * from "./schemas";
@@ -120,11 +121,21 @@ export function projectTemplateOptions(wsId: string, projectId: string) {
   });
 }
 
+export function usePublishBusinessTemplate(wsId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ content, id, revision }: { content: BusinessTemplate; id?: string; revision?: number }) => api.saveBusinessTemplate(content, id, revision),
+    onSuccess: () => qc.invalidateQueries({ queryKey: businessTemplatesOptions(wsId).queryKey }),
+  });
+}
+
 export function useSaveProjectTemplate(wsId: string, projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ content, revision }: ProjectTemplate) =>
-      api.saveProjectBusinessTemplate(projectId, content, revision),
+    mutationFn: ({ content, revision, mergeSourceRevision }: ProjectTemplate & { mergeSourceRevision?: number }) =>
+      mergeSourceRevision === undefined
+        ? api.saveProjectBusinessTemplate(projectId, content, revision)
+        : api.saveProjectBusinessTemplate(projectId, content, revision, mergeSourceRevision),
     onSuccess: (data) => {
       qc.setQueryData(projectTemplateOptions(wsId, projectId).queryKey, data);
     },
@@ -251,3 +262,5 @@ export function useDeleteWorkbenchCredential(wsId: string) {
     ]),
   });
 }
+
+export { templateMergeFields, mergeBusinessTemplateFields, type TemplateMergeField } from "./template-merge";

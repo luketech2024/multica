@@ -441,7 +441,8 @@
       "credential_used": "자격 증명 사용",
       "certificate_renewal_failed": "인증서 갱신 실패",
       "deploy_target_check_requested": "대상 확인 요청",
-      "deploy_target_checked": "대상 확인 완료"
+      "deploy_target_checked": "대상 확인 완료",
+      "business_template_published": "비즈니스 템플릿 게시"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "SSH 사용자 이름",
     "ssh_port": "SSH 포트",
     "ssh_fingerprint": "SSH 호스트 키 지문 (SHA256)"
+  },
+  "template_library": {
+    "copy": "워크스페이스 템플릿으로 저장",
+    "edit_source": "워크스페이스 템플릿 편집",
+    "update": "템플릿 v{{version}} 검토",
+    "saved": "템플릿을 저장했습니다. 새 프로젝트에서 선택할 수 있습니다.",
+    "publish_hint": "변경 사항은 새 버전으로 게시되며 각 프로젝트가 병합 시점을 선택합니다.",
+    "current": "프로젝트 사본",
+    "incoming": "새 템플릿 버전",
+    "choose": "새 버전으로 교체할 필드 선택",
+    "merge": "선택한 필드 병합",
+    "keep": "프로젝트 값을 유지하고 검토 완료"
   }
 }

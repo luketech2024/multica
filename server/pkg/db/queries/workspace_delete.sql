@@ -703,6 +703,9 @@ deleted_security_scans AS (
 deleted_deploy_targets AS (
     DELETE FROM deploy_targets WHERE workspace_id=$1
 ),
+deleted_business_templates AS (
+    DELETE FROM workbench_business_templates WHERE workspace_id=$1
+),
 deleted_credentials AS (
     DELETE FROM credentials WHERE workspace_id=$1
 ),

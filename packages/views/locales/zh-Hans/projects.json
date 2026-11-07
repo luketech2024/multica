@@ -441,7 +441,8 @@
       "credential_used": "使用凭据",
       "certificate_renewal_failed": "证书续期失败",
       "deploy_target_check_requested": "发起部署目标自检",
-      "deploy_target_checked": "完成部署目标自检"
+      "deploy_target_checked": "完成部署目标自检",
+      "business_template_published": "发布业务模板"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "SSH 用户名",
     "ssh_port": "SSH 端口",
     "ssh_fingerprint": "SSH 主机公钥指纹（SHA256）"
+  },
+  "template_library": {
+    "copy": "另存为工作区模板",
+    "edit_source": "编辑工作区模板",
+    "update": "查看模板 v{{version}}",
+    "saved": "工作区模板已保存，新建项目时可选用。",
+    "publish_hint": "修改将作为新版本发布，各项目自行选择合并时机。",
+    "current": "项目副本",
+    "incoming": "模板新版本",
+    "choose": "选择采用新版的字段",
+    "merge": "合并所选字段",
+    "keep": "保留项目内容并标记已审阅"
   }
 }

@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_workbench_business_template_id;

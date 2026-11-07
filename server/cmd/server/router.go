@@ -2284,6 +2284,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				r.Get("/{credentialId}/references", h.ListWorkbenchCredentialReferences)
 			})
 			r.Get("/api/workbench/business-templates", h.ListBusinessTemplates)
+			r.Post("/api/workbench/business-templates", h.SaveWorkspaceBusinessTemplate)
+			r.Put("/api/workbench/business-templates/{templateId}", h.SaveWorkspaceBusinessTemplate)
 			r.Get("/api/workbench/audit.csv", h.ExportWorkbenchAudit)
 			r.Get("/api/workbench/audit", h.ListWorkbenchAudit)
 			r.Post("/api/workbench/audit-exports", h.CreateWorkbenchAuditExport)

@@ -441,7 +441,8 @@
       "credential_used": "認証情報を使用",
       "certificate_renewal_failed": "証明書更新失敗",
       "deploy_target_check_requested": "ターゲット確認を依頼",
-      "deploy_target_checked": "ターゲットを確認"
+      "deploy_target_checked": "ターゲットを確認",
+      "business_template_published": "業務テンプレートを公開"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "SSH ユーザー名",
     "ssh_port": "SSH ポート",
     "ssh_fingerprint": "SSH ホスト鍵フィンガープリント (SHA256)"
+  },
+  "template_library": {
+    "copy": "ワークスペースのテンプレートとして保存",
+    "edit_source": "ワークスペースのテンプレートを編集",
+    "update": "テンプレート v{{version}} を確認",
+    "saved": "テンプレートを保存しました。新規プロジェクトで選択できます。",
+    "publish_hint": "変更は新しいバージョンとして公開され、各プロジェクトで反映時期を選べます。",
+    "current": "プロジェクトのコピー",
+    "incoming": "新しいテンプレート",
+    "choose": "新しいバージョンに置き換える項目を選択",
+    "merge": "選択した項目を統合",
+    "keep": "現在の内容を保持して確認済みにする"
   }
 }

@@ -441,7 +441,8 @@
       "credential_used": "使用憑證",
       "certificate_renewal_failed": "憑證續期失敗",
       "deploy_target_check_requested": "發起部署目標自檢",
-      "deploy_target_checked": "完成部署目標自檢"
+      "deploy_target_checked": "完成部署目標自檢",
+      "business_template_published": "發佈業務範本"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "SSH 使用者名稱",
     "ssh_port": "SSH 連接埠",
     "ssh_fingerprint": "SSH 主機公鑰指紋（SHA256）"
+  },
+  "template_library": {
+    "copy": "另存為工作區範本",
+    "edit_source": "編輯工作區範本",
+    "update": "查看範本 v{{version}}",
+    "saved": "工作區範本已儲存，建立專案時可選用。",
+    "publish_hint": "修改將作為新版本發佈，各專案自行選擇合併時機。",
+    "current": "專案副本",
+    "incoming": "範本新版本",
+    "choose": "選擇採用新版的欄位",
+    "merge": "合併所選欄位",
+    "keep": "保留專案內容並標記已審閱"
   }
 }

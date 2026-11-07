@@ -441,7 +441,8 @@
       "credential_used": "Credential used",
       "certificate_renewal_failed": "Certificate renewal failed",
       "deploy_target_check_requested": "Target check requested",
-      "deploy_target_checked": "Target checked"
+      "deploy_target_checked": "Target checked",
+      "business_template_published": "Business template published"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "SSH username",
     "ssh_port": "SSH port",
     "ssh_fingerprint": "SSH host key fingerprint (SHA256)"
+  },
+  "template_library": {
+    "copy": "Save as workspace template",
+    "edit_source": "Edit workspace template",
+    "update": "Review template v{{version}}",
+    "saved": "Workspace template saved. It is available when creating a project.",
+    "publish_hint": "Changes are shared as a new version. Each project chooses when to merge them.",
+    "current": "Project copy",
+    "incoming": "New template version",
+    "choose": "Choose fields to replace with the new version",
+    "merge": "Merge selected fields",
+    "keep": "Keep project values and mark reviewed"
   }
 }

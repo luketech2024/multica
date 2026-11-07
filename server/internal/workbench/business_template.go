@@ -34,6 +34,7 @@ type BusinessTemplate struct {
 }
 
 type BusinessTemplateAsset struct {
+	Builtin       bool             `json:"builtin"`
 	ID            string           `json:"id"`
 	Revision      int64            `json:"revision"`
 	Content       BusinessTemplate `json:"content"`
@@ -55,7 +56,8 @@ func BuiltinBusinessTemplates() ([]BusinessTemplateAsset, error) {
 	if err := json.Unmarshal(businessTemplateCatalog, &assets); err != nil {
 		return nil, err
 	}
-	for _, asset := range assets {
+	for index, asset := range assets {
+		assets[index].Builtin = true
 		if err := ValidateBusinessTemplate(asset.Content); err != nil {
 			return nil, fmt.Errorf("template %s: %w", asset.ID, err)
 		}

@@ -52,6 +52,7 @@ export class TestApiClient {
   private email: string | null = null;
   private createdIssueIds: string[] = [];
   private createdProjectIds: string[] = [];
+  private createdBusinessTemplateIds: string[] = [];
   private seededIssueIds: string[] = [];
   private createdPropertyIds: string[] = [];
 
@@ -198,6 +199,18 @@ export class TestApiClient {
     const project = await res.json();
     this.createdProjectIds.push(project.id);
     return project as { id: string; title: string; status: string };
+  }
+
+  async createBusinessTemplate(content: Record<string, unknown>) {
+    const response = await this.authedFetch("/api/workbench/business-templates", { method: "POST", body: JSON.stringify({ content }) });
+    if (!response.ok) throw new Error(`create business template failed: ${response.status} ${await response.text()}`);
+    const asset = await response.json();
+    this.trackBusinessTemplate(asset.id);
+    return asset;
+  }
+
+  trackBusinessTemplate(id: string) {
+    this.createdBusinessTemplateIds.push(id);
   }
 
   /** Create a workspace custom property definition; archived on cleanup. */
@@ -536,6 +549,15 @@ export class TestApiClient {
 
   /** Clean up all issues created during this test. */
   async cleanup() {
+    if (this.createdBusinessTemplateIds.length && this.workspaceId) {
+      const client = new pg.Client(DATABASE_URL);
+      await client.connect();
+      try {
+        await client.query("DELETE FROM workbench_business_templates WHERE workspace_id=$1 AND id=ANY($2::uuid[])", [this.workspaceId, this.createdBusinessTemplateIds]);
+        await client.query("DELETE FROM activity_log WHERE workspace_id=$1 AND details->>'template_id'=ANY($2::text[])", [this.workspaceId, this.createdBusinessTemplateIds]);
+      } finally { await client.end(); }
+      this.createdBusinessTemplateIds = [];
+    }
     if (this.seededIssueIds.length > 0 && this.workspaceId) {
       const client = new pg.Client(DATABASE_URL);
       await client.connect();

@@ -2,7 +2,7 @@ import type { ZodType } from "zod";
 import { DeliveryReviewSchema, type DeliveryReviewState, type DeliveryReviewInput } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
-import { BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
+import { BusinessTemplateAssetSchema, BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
 import { ExternalTicketCountSchema } from "./schemas";
 import { CredentialSchema, CredentialsSchema, DeployTargetSchema, DeployTargetsSchema, parseWorkbenchResponse, type CredentialInput, type DeployTargetInput } from "../workbench/schemas";
 import { SecurityCheckSchema, SecurityChecksSchema, SecurityScanSchema, type SecurityDecision, type SecurityScanInput } from "../workbench/security-schemas";
@@ -4336,14 +4336,19 @@ export class ApiClient {
     return parseWorkbenchResponse(await this.fetch(endpoint), BusinessTemplatesSchema, endpoint);
   }
 
+  async saveBusinessTemplate(content: BusinessTemplate, id?: string, revision?: number) {
+    const endpoint = `/api/workbench/business-templates${id ? `/${encodeURIComponent(id)}` : ""}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: id ? "PUT" : "POST", body: JSON.stringify({ content, expected_revision: revision }) }), BusinessTemplateAssetSchema, endpoint);
+  }
+
   async getProjectBusinessTemplate(projectId: string) {
     const endpoint = `/api/projects/${projectId}/business-template`;
     return parseWorkbenchResponse(await this.fetch(endpoint), ProjectTemplateResponseSchema, endpoint);
   }
 
-  async saveProjectBusinessTemplate(projectId: string, content: BusinessTemplate, revision: number) {
+  async saveProjectBusinessTemplate(projectId: string, content: BusinessTemplate, revision: number, sourceRevision?: number) {
     const endpoint = `/api/projects/${projectId}/business-template`;
-    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PUT", body: JSON.stringify({ content, expected_revision: revision }) }), ProjectTemplateResponseSchema, endpoint);
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PUT", body: JSON.stringify({ content, expected_revision: revision, source_revision: sourceRevision }) }), ProjectTemplateResponseSchema, endpoint);
   }
 
   async saveProjectWorkbenchRoles(projectId: string, config: ProjectRoles["config"], revision: number) {

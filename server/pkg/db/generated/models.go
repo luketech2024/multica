@@ -1903,6 +1903,15 @@ type WorkbenchAuditExport struct {
 	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
 }
 
+type WorkbenchBusinessTemplate struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Content     []byte             `json:"content"`
+	Revision    int64              `json:"revision"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Workspace struct {
 	ID           pgtype.UUID        `json:"id"`
 	Name         string             `json:"name"`

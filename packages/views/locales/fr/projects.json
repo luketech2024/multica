@@ -441,7 +441,8 @@
       "credential_used": "Identifiant utilisé",
       "certificate_renewal_failed": "Renouvellement du certificat échoué",
       "deploy_target_check_requested": "Test de cible demandé",
-      "deploy_target_checked": "Cible testée"
+      "deploy_target_checked": "Cible testée",
+      "business_template_published": "Modèle métier publié"
     }
   },
   "deployment": {
@@ -455,5 +456,17 @@
     "ssh_user": "Utilisateur SSH",
     "ssh_port": "Port SSH",
     "ssh_fingerprint": "Empreinte de la clé hôte SSH (SHA256)"
+  },
+  "template_library": {
+    "copy": "Enregistrer comme modèle de l’espace",
+    "edit_source": "Modifier le modèle de l’espace",
+    "update": "Examiner le modèle v{{version}}",
+    "saved": "Modèle enregistré et disponible pour les nouveaux projets.",
+    "publish_hint": "Les modifications créent une version. Chaque projet choisit quand la fusionner.",
+    "current": "Copie du projet",
+    "incoming": "Nouvelle version du modèle",
+    "choose": "Choisir les champs à remplacer par la nouvelle version",
+    "merge": "Fusionner les champs sélectionnés",
+    "keep": "Conserver les valeurs et marquer comme examiné"
   }
 }

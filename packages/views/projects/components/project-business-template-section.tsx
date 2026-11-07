@@ -11,6 +11,7 @@ import {
 } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
+import { ProjectTemplateLibrary } from "./project-template-library";
 import { BusinessTemplateContent } from "./business-template-content";
 import { BusinessTemplateEditor } from "./business-template-editor";
 import { useT } from "../../i18n";
@@ -71,6 +72,7 @@ export function ProjectBusinessTemplateSection({
           </div>
         </details>
       )}
+      {canEdit && !draft && <ProjectTemplateLibrary projectId={projectId} template={template} />}
     </section>
   );
 }

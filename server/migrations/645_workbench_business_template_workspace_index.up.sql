@@ -1,0 +1,1 @@
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workbench_business_template_workspace ON workbench_business_templates (workspace_id);

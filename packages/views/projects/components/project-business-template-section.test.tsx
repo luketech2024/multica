@@ -29,6 +29,7 @@ vi.mock("@multica/core/permissions", () => ({
 vi.mock("@multica/core/api", () => ({
   api: {
     getProjectBusinessTemplate: async () => ({ template }),
+    listBusinessTemplates: async () => ({ templates: [] }),
     saveProjectBusinessTemplate: (...args: unknown[]) => save(...args),
   },
 }));
