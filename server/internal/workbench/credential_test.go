@@ -55,3 +55,23 @@ func TestCredentialUsageSeparatesDeploymentFromRepositoryWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestOpenCredentialRejectsIdentitySwapAndTampering(t *testing.T) {
+	box, _ := secretbox.New(bytes.Repeat([]byte{5}, 32))
+	sealed, wrapped, _ := SealCredential(box, "credential", "workspace", "test-only")
+	secret, err := OpenCredential(box, "credential", "workspace", sealed, wrapped)
+	if err != nil || string(secret) != "test-only" {
+		t.Fatal("could not open valid envelope")
+	}
+	clear(secret)
+	if _, err := OpenCredential(box, "other", "workspace", sealed, wrapped); err == nil {
+		t.Fatal("credential swap accepted")
+	}
+	if _, err := OpenCredential(box, "credential", "other", sealed, wrapped); err == nil {
+		t.Fatal("workspace swap accepted")
+	}
+	sealed[0] ^= 1
+	if _, err := OpenCredential(box, "credential", "workspace", sealed, wrapped); err == nil {
+		t.Fatal("tampered secret accepted")
+	}
+}

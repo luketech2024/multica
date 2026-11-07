@@ -51,6 +51,9 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
   const [error, setError] = useState<string>();
   const fields: Record<string, string> = {
     host: t(($) => $.workbench.host),
+    username: t(($) => $.deployment.ssh_user),
+    port: t(($) => $.deployment.ssh_port),
+    host_key: t(($) => $.deployment.ssh_fingerprint),
     image: t(($) => $.workbench.image),
     dir: t(($) => $.workbench.dir),
     domain: t(($) => $.workbench.domain),
@@ -96,7 +99,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
     try {
       const saved = await save.mutateAsync(editing);
       setEditing(undefined);
-      if (saved.channel === "runtime" && saved.missing_fields.length === 0) {
+      if ((saved.channel === "runtime" || saved.channel === "ssh") && saved.missing_fields.length === 0) {
         check.mutate({ id: saved.id, revision: saved.revision });
       }
     } catch (cause) {
@@ -207,7 +210,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
             </span>
             {canManage && (
               <>
-                {target.channel === "runtime" && (
+                {(target.channel === "runtime" || target.channel === "ssh") && (
                   <Button
                     variant="outline"
                     size="xs"
@@ -362,7 +365,14 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
                   : ["platform"]
                 ).map((channel) => ({ value: channel, label: channel }))}
                 onChange={(channel) =>
-                  change({ channel, runtime_id: null, credential_id: null })
+                  change({
+                    channel,
+                    runtime_id: null,
+                    credential_id: null,
+                    location: Object.fromEntries(Object.entries(editing.data.location).filter(
+                      ([field]) => !["username", "port", "host_key"].includes(field),
+                    )),
+                  })
                 }
               />
               {editing.data.channel === "runtime" && (
@@ -412,7 +422,7 @@ export function DeployTargetsSection({ projectId }: { projectId: string }) {
                 }
               />
             </div>
-            {(targetLocationFields[editing.data.kind] ?? []).map((field) => (
+            {[...(targetLocationFields[editing.data.kind] ?? []), ...(editing.data.channel === "ssh" ? ["username", "port", "host_key"] : [])].map((field) => (
               <label key={field} className="block space-y-1 text-caption">
                 {fields[field]}
                 <Input

@@ -451,6 +451,9 @@
     "bind": "Associer une cible",
     "unbound": "Associez une cible avant de publier ce dépôt dans cet environnement.",
     "duration": "{{ms}} ms",
-    "disk_free": "Espace disque disponible · {{mb}} MiB"
+    "disk_free": "Espace disque disponible · {{mb}} MiB",
+    "ssh_user": "Utilisateur SSH",
+    "ssh_port": "Port SSH",
+    "ssh_fingerprint": "Empreinte de la clé hôte SSH (SHA256)"
   }
 }

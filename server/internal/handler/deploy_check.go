@@ -58,6 +58,10 @@ func (h *Handler) CheckDeployTarget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "complete target configuration before checking")
 		return
 	}
+	if target.Channel == "ssh" {
+		h.checkSSHDeployTarget(w, r, tx, q, target, config.DeployTargetInput, member, input.ExpectedRevision)
+		return
+	}
 	if target.Channel != "runtime" {
 		writeError(w, 400, "this check requires a runtime deployment target")
 		return

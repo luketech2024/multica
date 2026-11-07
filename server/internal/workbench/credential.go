@@ -70,3 +70,29 @@ func SealCredential(master *secretbox.Box, id, workspaceID, secret string) (ciph
 	wrappedKey, err = master.Seal(key)
 	return ciphertext, wrappedKey, err
 }
+
+// OpenCredential verifies the envelope identity before exposing the secret to its consumer.
+func OpenCredential(master *secretbox.Box, id, workspaceID string, ciphertext, wrappedKey []byte) ([]byte, error) {
+	if master == nil {
+		return nil, errors.New("credential encryption is not configured")
+	}
+	key, err := master.Open(wrappedKey)
+	if err != nil {
+		return nil, errors.New("credential key could not be decrypted")
+	}
+	defer clear(key)
+	box, err := secretbox.New(key)
+	if err != nil {
+		return nil, err
+	}
+	payload, err := box.Open(ciphertext)
+	if err != nil {
+		return nil, errors.New("credential could not be decrypted")
+	}
+	defer clear(payload)
+	var value struct{ ID, WorkspaceID, Secret string }
+	if json.Unmarshal(payload, &value) != nil || value.ID != id || value.WorkspaceID != workspaceID {
+		return nil, errors.New("credential identity does not match")
+	}
+	return []byte(value.Secret), nil
+}

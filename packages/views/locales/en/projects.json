@@ -451,6 +451,9 @@
     "bind": "Bind target",
     "unbound": "Bind a target before releasing this repository to this environment.",
     "duration": "{{ms}} ms",
-    "disk_free": "Available disk space · {{mb}} MiB"
+    "disk_free": "Available disk space · {{mb}} MiB",
+    "ssh_user": "SSH username",
+    "ssh_port": "SSH port",
+    "ssh_fingerprint": "SSH host key fingerprint (SHA256)"
   }
 }

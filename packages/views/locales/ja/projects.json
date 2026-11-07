@@ -451,6 +451,9 @@
     "bind": "ターゲットを関連付け",
     "unbound": "この環境にリリースする前に、リポジトリにターゲットを関連付けてください。",
     "duration": "{{ms}} ms",
-    "disk_free": "ディスク空き容量 · {{mb}} MiB"
+    "disk_free": "ディスク空き容量 · {{mb}} MiB",
+    "ssh_user": "SSH ユーザー名",
+    "ssh_port": "SSH ポート",
+    "ssh_fingerprint": "SSH ホスト鍵フィンガープリント (SHA256)"
   }
 }

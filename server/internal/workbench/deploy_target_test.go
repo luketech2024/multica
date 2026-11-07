@@ -31,3 +31,20 @@ func TestDeployTargetRejectsInvalidChannelsAndCredentialURLs(t *testing.T) {
 		}
 	}
 }
+
+func TestSSHRequiresExplicitConnectionIdentity(t *testing.T) {
+	target := DeployTargetInput{Label: "SSH", Env: "staging", Kind: "service-process", Channel: "ssh", Location: map[string]string{}}
+	if err := target.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, invalid := range []map[string]string{{"port": "0"}, {"port": "65536"}, {"host_key": "ignore"}, {"username": "user\ncommand"}} {
+		target.Location = invalid
+		if target.Validate() == nil {
+			t.Fatalf("invalid SSH fields accepted: %v", invalid)
+		}
+	}
+	target.Location = map[string]string{"port": "22", "username": "deploy", "host_key": "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
+	if err := target.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

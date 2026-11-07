@@ -451,6 +451,9 @@
     "bind": "대상 연결",
     "unbound": "이 환경에 릴리스하기 전에 저장소에 대상을 연결하세요.",
     "duration": "{{ms}} ms",
-    "disk_free": "사용 가능한 디스크 공간 · {{mb}} MiB"
+    "disk_free": "사용 가능한 디스크 공간 · {{mb}} MiB",
+    "ssh_user": "SSH 사용자 이름",
+    "ssh_port": "SSH 포트",
+    "ssh_fingerprint": "SSH 호스트 키 지문 (SHA256)"
   }
 }

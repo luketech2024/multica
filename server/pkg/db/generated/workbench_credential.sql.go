@@ -172,6 +172,36 @@ func (q *Queries) GetWorkbenchCredentialForBinding(ctx context.Context, arg GetW
 	return i, err
 }
 
+const getWorkbenchCredentialForExecution = `-- name: GetWorkbenchCredentialForExecution :one
+SELECT id, workspace_id, project_id, label, kind, usage, secret_enc, wrapped_key, last_four, expires_at, rotated_at, revision, created_at FROM credentials WHERE workspace_id=$1 AND id=$2 FOR SHARE
+`
+
+type GetWorkbenchCredentialForExecutionParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ID          pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) GetWorkbenchCredentialForExecution(ctx context.Context, arg GetWorkbenchCredentialForExecutionParams) (Credential, error) {
+	row := q.db.QueryRow(ctx, getWorkbenchCredentialForExecution, arg.WorkspaceID, arg.ID)
+	var i Credential
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.Label,
+		&i.Kind,
+		&i.Usage,
+		&i.SecretEnc,
+		&i.WrappedKey,
+		&i.LastFour,
+		&i.ExpiresAt,
+		&i.RotatedAt,
+		&i.Revision,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getWorkbenchCredentialForUpdate = `-- name: GetWorkbenchCredentialForUpdate :one
 SELECT id,workspace_id,project_id,label,kind,usage,last_four,expires_at,rotated_at,revision,created_at
 FROM credentials WHERE workspace_id=$1 AND id=$2 FOR UPDATE

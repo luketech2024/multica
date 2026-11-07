@@ -49,4 +49,35 @@ test.describe("Deployment target checks", () => {
     await page.screenshot({ path: ".preview/deployment-pane.png", fullPage: true });
     expect(errors).toEqual([]);
   });
+
+  test("preserves SSH identity settings and displays a rejected private key", async ({ page }) => {
+    test.setTimeout(120000);
+    api = await createTestApi();
+    const project = await api.createProject("SSH deployment configuration");
+    const repo = await api.createProjectRepository(project.id, "https://example.test/ssh-check.git");
+    const credential = await api.createDeploymentCredential(project.id, "ssh-key", "invalid-fixture-key-1234");
+    const target = await api.createDeployTarget(project.id, {
+      label: "SSH staging", repo_id: repo.id, env: "staging", kind: "service-process", channel: "ssh", credential_id: credential.id,
+      location: { host: "127.0.0.1", port: "22", username: "deploy", host_key: "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", dir: "/srv/service", start_command: "service-server", health_url: "https://example.test/health" },
+    });
+    const slug = await loginAsDefault(page);
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`/${slug}/projects/${project.id}?tab=deployment`);
+    const section = page.getByRole("region", { name: "Deployment targets", exact: true });
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await section.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(section.getByRole("textbox", { name: "SSH username", exact: true })).toHaveValue("deploy");
+    await expect(section.getByRole("textbox", { name: "SSH port", exact: true })).toHaveValue("22");
+    const checked = page.waitForResponse((response) => response.url().endsWith(`/deploy-targets/${target.id}/check`));
+    await section.getByRole("button", { name: "Save", exact: true }).click();
+    expect((await checked).status()).toBe(200);
+    await expect(section.getByText("SSH private key is invalid or requires a passphrase", { exact: false })).toBeVisible();
+    await expect(section.getByText(/Deployment fixture · ••••1234/)).toBeVisible();
+    await expect(page.getByText("invalid-fixture-key-1234", { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(section.getByText("SSH private key is invalid or requires a passphrase", { exact: false })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
 });

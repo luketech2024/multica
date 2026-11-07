@@ -451,6 +451,9 @@
     "bind": "綁定目標",
     "unbound": "綁定目標後，此倉庫才能發佈到該環境。",
     "duration": "{{ms}} ms",
-    "disk_free": "可用磁碟空間 · {{mb}} MiB"
+    "disk_free": "可用磁碟空間 · {{mb}} MiB",
+    "ssh_user": "SSH 使用者名稱",
+    "ssh_port": "SSH 連接埠",
+    "ssh_fingerprint": "SSH 主機公鑰指紋（SHA256）"
   }
 }

@@ -42,3 +42,6 @@ WHERE workspace_id= @workspace_id AND recipient_id= @recipient_id
 UPDATE inbox_item SET archived=true
 WHERE workspace_id= @workspace_id AND details->>'source'='workbench_credential' AND details->>'credential_id'= @credential_id::text AND archived=false
 RETURNING id,recipient_id;
+
+-- name: GetWorkbenchCredentialForExecution :one
+SELECT * FROM credentials WHERE workspace_id=$1 AND id=$2 FOR SHARE;

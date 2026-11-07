@@ -503,6 +503,14 @@ export class TestApiClient {
     return response.json();
   }
 
+  async createDeploymentCredential(projectId: string, kind: string, secret: string) {
+    const response = await this.authedFetch("/api/workbench/credentials", {
+      method: "POST", body: JSON.stringify({ label: "Deployment fixture", project_id: projectId, kind, usage: ["deploy"], secret }),
+    });
+    if (!response.ok) throw new Error(`create credential failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+
   async createDeployTarget(projectId: string, input: Record<string, unknown>) {
     const response = await this.authedFetch(`/api/projects/${projectId}/deploy-targets`, { method: "POST", body: JSON.stringify(input) });
     if (!response.ok) throw new Error(`create target failed: ${response.status} ${await response.text()}`);

@@ -1,10 +1,12 @@
 package workbench
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -55,7 +57,7 @@ func (target *DeployTargetInput) Validate() error {
 		target.Location = map[string]string{}
 	}
 	for key, value := range target.Location {
-		if !slices.Contains(fields, key) && key != "domain" {
+		if !slices.Contains(fields, key) && key != "domain" && !(target.Channel == "ssh" && slices.Contains([]string{"username", "port", "host_key"}, key)) {
 			return fmt.Errorf("unsupported location field %q", key)
 		}
 		value = strings.TrimSpace(value)
@@ -68,6 +70,23 @@ func (target *DeployTargetInput) Validate() error {
 				return fmt.Errorf("%s must be an HTTP(S) URL without embedded credentials", key)
 			}
 		}
+		if target.Channel == "ssh" && value != "" {
+			if key == "port" {
+				port, err := strconv.Atoi(value)
+				if err != nil || port < 1 || port > 65535 {
+					return errors.New("SSH port must be between 1 and 65535")
+				}
+			}
+			if key == "host_key" {
+				fingerprint, err := base64.RawStdEncoding.DecodeString(strings.TrimPrefix(value, "SHA256:"))
+				if !strings.HasPrefix(value, "SHA256:") || err != nil || len(fingerprint) != 32 {
+					return errors.New("SSH host key must be a SHA256 fingerprint")
+				}
+			}
+			if strings.ContainsAny(value, "\x00\r\n") {
+				return errors.New("SSH location fields cannot contain control characters")
+			}
+		}
 		target.Location[key] = value
 	}
 	return nil
@@ -78,6 +97,13 @@ func (target DeployTargetInput) MissingFields() []string {
 	for _, field := range targetLocationFields[target.Kind] {
 		if target.Location[field] == "" {
 			missing = append(missing, field)
+		}
+	}
+	if target.Channel == "ssh" {
+		for _, field := range []string{"username", "port", "host_key"} {
+			if target.Location[field] == "" {
+				missing = append(missing, field)
+			}
 		}
 	}
 	if target.Channel == "runtime" {
