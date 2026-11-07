@@ -60,8 +60,14 @@ test.describe("Workbench cards", () => {
     await expect(reviewCard).toBeVisible();
     await expect(reviewCard.getByText(project.title, { exact: false })).toBeVisible();
     await page.screenshot({ path: ".preview/workbench-card-flow.png", fullPage: true });
+    const previousOffset = await flow.locator("[data-virtuoso-scroller]").evaluate((element) => element.scrollTop);
+    expect(previousOffset).toBeGreaterThan(300);
     await reviewCard.click();
     await expect(page).toHaveURL(new RegExp(`/issues/${review.identifier}`), { timeout: 30000 });
+    await page.goBack();
+    await expect(flow).toBeVisible();
+    await expect.poll(async () => Math.abs(await flow.locator("[data-virtuoso-scroller]").evaluate((element) => element.scrollTop) - previousOffset)).toBeLessThan(3);
+    await expect(flow.getByText(title, { exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   });
 });

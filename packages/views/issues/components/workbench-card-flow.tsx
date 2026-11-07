@@ -5,6 +5,7 @@ import { VirtuosoGrid, type VirtuosoGridHandle } from "react-virtuoso";
 import type { Issue, Project } from "@multica/core/types";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { AppLink } from "../../navigation";
+import { useRestoredScrollOffset } from "../../platform";
 import { useT } from "../../i18n";
 import { IssueActionsContextMenu } from "../actions";
 import { useIssuePeekActions, useIssuePeekLinkProps, useIsIssuePeeked, PEEK_TARGET_ATTR } from "../surface/peek-context";
@@ -47,6 +48,7 @@ export function WorkbenchCardFlow({ issues, projectMap, statusPagination }: {
   const { t } = useT("issues");
   const peek = useIssuePeekActions();
   const gridRef = useRef<VirtuosoGridHandle>(null);
+  const restoredScrollTop = useRestoredScrollOffset("workbench-card-flow");
   const ids = useMemo(() => issues.map((issue) => issue.id), [issues]);
   useWorkbenchKeyboardOrder(ids);
   useWorkbenchKeyboardReveal(useCallback((id: string) => {
@@ -84,6 +86,8 @@ export function WorkbenchCardFlow({ issues, projectMap, statusPagination }: {
         ref={gridRef}
         data={issues}
         style={{ height: "100%" }}
+        data-tab-scroll-root="workbench-card-flow"
+        initialTopMostItemIndex={{ index: 0, offset: restoredScrollTop ?? 0 }}
         initialItemCount={12}
         increaseViewportBy={200}
         components={components}
