@@ -2045,5 +2045,8 @@
     },
     "retry": "다시 시도",
     "join": "릴리스에 추가"
+  },
+  "workspace_switcher": {
+    "title": "작업 전환"
   }
 }

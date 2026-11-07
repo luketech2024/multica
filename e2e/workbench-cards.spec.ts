@@ -39,6 +39,8 @@ test.describe("Workbench cards", () => {
     await page.getByRole("button", { name: "Display", exact: true }).click();
     await page.getByRole("group", { name: "View", exact: true }).getByRole("button", { name: "List", exact: true }).click();
     await page.keyboard.press("Escape");
+    await page.getByRole('heading', { name: project.title, exact: true }).first().click();
+    await expect(page.getByRole('group', { name: 'View', exact: true })).toBeHidden();
     const flow = page.getByRole("region", { name: "Task cards", exact: true });
     await expect(flow).toBeVisible();
     const firstCard = flow.locator('[data-workbench-card="flow"]').first();
@@ -48,6 +50,7 @@ test.describe("Workbench cards", () => {
       await page.setViewportSize({ width, height: 900 });
       await expect.poll(() => flow.locator('[data-testid="virtuoso-item-list"]').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length)).toBe(columns);
     }
+    await expect(firstCard).toBeVisible();
     await page.keyboard.press("k");
     await expect(flow.locator("a[data-keyboard-selected]")).toContainText(title);
     await expect(flow.locator("a[data-keyboard-selected]")).toBeFocused();

@@ -12,6 +12,7 @@ import { NavigationProgress } from "./navigation-progress";
 import { ShellRouteDataPrefetch } from "./route-data-prefetch";
 import { WorkspacePresencePrefetch } from "./workspace-presence-prefetch";
 import { GlobalShortcuts } from "./global-shortcuts";
+import { WorkbenchViewportNotice } from "./workbench-viewport-notice";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,15 +22,11 @@ interface DashboardLayoutProps {
   loadingIndicator?: ReactNode;
 }
 
-/**
- * The content card: the space panel and the page share one surface on the
- * app shell, split by a single hairline. Below `md` the card is the whole
- * window. Desktop builds the same card in its own layout, under the tab bar.
- */
+/** The shared page canvas beside the navigation rail. */
 export function AppShellCard({ children }: { children: ReactNode }) {
   return (
-    <main className="relative flex min-w-0 flex-1 flex-row overflow-hidden bg-page-canvas md:my-2 md:mr-2 md:rounded-xl md:shadow-[var(--surface-shadow)] md:ring-1 md:ring-surface-border">
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
+    <main className="relative flex min-w-0 flex-1 flex-row overflow-hidden bg-page-canvas">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden"><WorkbenchViewportNotice />{children}</div>
     </main>
   );
 }

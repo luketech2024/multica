@@ -533,6 +533,17 @@
         "target_missing": "請為每種交付類型設定目標"
       },
       "not_required": "預發無需此項"
-    }
+    },
+    "empty_hint": "任務驗收並完成儲存庫合併後，可在此建立發布單。"
+  },
+  "overview": {
+    "open": "進入專案",
+    "running": "進行中",
+    "review": "等你",
+    "roles": "在崗角色",
+    "repositories": "程式碼儲存庫",
+    "settings": "專案設定",
+    "unfinished": "未完成任務",
+    "weekly": "本週完成"
   }
 }

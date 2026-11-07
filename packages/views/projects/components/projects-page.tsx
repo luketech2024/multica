@@ -8,6 +8,8 @@ import {
   Pin,
   PinOff,
   Rows3,
+  Plus,
+  ArrowRight,
   Trash2,
 } from "@multica/ui/icons";
 import { useQuery } from "@tanstack/react-query";
@@ -66,7 +68,6 @@ import type {
   UpdateProjectRequest,
 } from "@multica/core/types";
 import {
-  CollectionCreateButton,
   CollectionFilterButton,
   CollectionNoMatches,
   CollectionPageHeader,
@@ -83,6 +84,7 @@ import {
   type CollectionColumn,
   type CollectionSort,
 } from "../../layout/collection-list";
+import { ProjectWorkbenchMetrics } from "./project-workbench-metrics";
 import { ProjectIcon } from "./project-icon";
 import { ProjectsIntro } from "./projects-intro";
 import { useT } from "../../i18n";
@@ -275,86 +277,34 @@ function ProjectCard({
 }) {
   const { t } = useT("projects");
   const wsPaths = useWorkspacePaths();
-  const formatRelativeDate = useFormatRelativeDate();
   const updateProject = useUpdateProject();
   const handleUpdate = useCallback(
     (data: UpdateProjectRequest) => updateProject.mutate({ id: project.id, ...data }),
     [project.id, updateProject],
   );
-  const progressPercent =
-    project.issue_count > 0
-      ? Math.round((project.done_count / project.issue_count) * 100)
-      : 0;
-
+  const progressPercent = project.issue_count > 0 ? Math.round(project.done_count / project.issue_count * 100) : 0;
   return (
-    <div className="group/card group/row flex flex-col rounded-md border bg-card transition-colors hover:border-primary/50">
-      <div className="p-3 pb-2">
-        <div className="flex items-center gap-2">
-          <AppLink
-            href={wsPaths.projectDetail(project.id)}
-            className="flex min-w-0 flex-1 items-center gap-2"
-          >
-            <ProjectIcon project={project} size="sm" />
-            <h3 className="truncate text-body font-medium">{project.title}</h3>
-          </AppLink>
-          <ProjectRowActions project={project} pinned={pinned} canDelete={canDelete} />
-          <ProjectStatusBadge project={project} handleUpdate={handleUpdate} triggerClassName="shrink-0" />
-        </div>
-
-        {project.issue_count > 0 ? (
-          <div className="flex items-center justify-end gap-1.5 pt-2">
-            <div className="relative h-4 w-4">
-              <svg className="h-4 w-4 -rotate-90" viewBox="0 0 16 16">
-                <circle className="text-muted" strokeWidth="2" stroke="currentColor" fill="none" r="6" cx="8" cy="8" />
-                <circle
-                  className="text-emerald-500"
-                  strokeWidth="2"
-                  stroke="currentColor"
-                  fill="none"
-                  r="6"
-                  cx="8"
-                  cy="8"
-                  strokeDasharray={`${progressPercent * 0.377} 37.7`}
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <span className="text-micro tabular-nums text-muted-foreground">
-              {project.done_count}/{project.issue_count}
-            </span>
-          </div>
-        ) : (
-          <span className="flex justify-end pt-2 text-micro text-muted-foreground">
-            {t(($) => $.detail.no_issues_yet)}
-          </span>
-        )}
+    <article className="group/card group/row flex min-h-[160px] flex-col gap-2 rounded-xl border border-surface-border bg-surface p-4 shadow-[var(--surface-shadow)] transition-[box-shadow,transform] hover:border-brand/50 hover:shadow-[var(--surface-shadow-hover)] motion-safe:hover:-translate-y-px">
+      <div className="flex items-center gap-3">
+        <AppLink href={wsPaths.projectDetail(project.id)} className="flex min-w-0 flex-1 items-center gap-3">
+          <ProjectIcon project={project} size="sm" />
+          <h2 className="truncate text-title-sm font-medium">{project.title}</h2>
+        </AppLink>
+        <ProjectStatusBadge project={project} handleUpdate={handleUpdate} triggerClassName="shrink-0" />
+        <ProjectRowActions project={project} pinned={pinned} canDelete={canDelete} />
       </div>
-
-      <div className="mt-0 flex items-center justify-between border-t px-3 pb-3 pt-2">
-        <ProjectLeadPicker
-          project={project}
-          handleUpdate={handleUpdate}
-          renderTrigger={(leadName) => (
-            <button type="button" className="-mx-1.5 flex items-center gap-1.5 rounded-xs px-1.5 py-0.5 transition-colors hover:bg-accent/60">
-              {project.lead_type && project.lead_id ? (
-                <ActorAvatar actorType={project.lead_type} actorId={project.lead_id} size="sm" enableHoverCard />
-              ) : (
-                <span className="inline-flex h-5 w-5 rounded-full border border-dashed border-muted-foreground/30" />
-              )}
-              <span className="max-w-[60px] truncate text-micro text-muted-foreground">
-                {leadName ?? t(($) => $.lead.no_lead)}
-              </span>
-            </button>
-          )}
-        />
-        <div className="flex items-center gap-2">
-          <ProjectPriorityBadge project={project} handleUpdate={handleUpdate} align="start" />
-          <span className="text-micro text-muted-foreground">
-            {formatRelativeDate(project.created_at)}
-          </span>
+      <p className="line-clamp-1 text-caption text-muted-foreground">{project.description || t(($) => $.detail.description_placeholder)}</p>
+      <ProjectWorkbenchMetrics project={project} />
+      <div className="mt-auto space-y-2">
+        <div role="progressbar" aria-label={t(($) => $.table.progress)} aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100} className="h-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
+        </div>
+        <div className="flex items-center justify-between text-caption text-muted-foreground">
+          <span>{t(($) => $.table.progress)} {project.done_count}/{project.issue_count}</span>
+          <AppLink href={wsPaths.projectDetail(project.id)} className="flex items-center gap-1 text-brand-text hover:underline">{t(($) => $.overview.open)}<ArrowRight className="size-3" /></AppLink>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -717,6 +667,7 @@ export function ProjectsPage() {
     // relative: positioning anchor for the page-centered batch toolbar.
     <div className="relative flex flex-1 min-h-0 flex-col">
       <CollectionPageHeader
+        className="h-auto min-h-24 border-0 pt-6 pb-4 [&_h1]:text-display-sm [&_h1_button]:h-auto [&_h1_button]:text-display-sm"
         icon={FolderKanban}
         title={scopeLabels[scope]}
         menu={
@@ -837,10 +788,7 @@ export function ProjectsPage() {
                 </div>
               }
             />
-            <CollectionCreateButton
-              label={t(($) => $.page.new_project)}
-              onClick={openCreateProject}
-            />
+            <Button onClick={openCreateProject}><Plus className="size-4" />{t(($) => $.page.new_project)}</Button>
           </>
         }
       />
@@ -886,7 +834,7 @@ export function ProjectsPage() {
             />
           ) : (
             <div className={cn("min-h-0 flex-1 overflow-y-auto pt-4 pb-16", PAGE_GUTTER)}>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[1024px]:grid-cols-2 min-[1440px]:grid-cols-3">
                 {visible.map((project) => (
                   <ProjectCard
                     key={project.id}
@@ -895,6 +843,9 @@ export function ProjectsPage() {
                     canDelete={isWorkspaceAdmin}
                   />
                 ))}
+                <button type="button" onClick={openCreateProject} className="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-surface-border text-muted-foreground hover:border-brand hover:text-brand-text focus-visible:ring-2 focus-visible:ring-ring">
+                  <Plus className="size-6" />{t(($) => $.page.new_project)}
+                </button>
               </div>
             </div>
           )}

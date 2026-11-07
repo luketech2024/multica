@@ -75,7 +75,7 @@ describe("useProjectViewStore", () => {
     expect(useProjectViewStore.getState().viewMode).toBe("compact");
   });
 
-  it("resets to 'compact' when switching to a workspace with no persisted value", async () => {
+  it("resets to 'comfortable' when switching to a workspace with no persisted value", async () => {
     localStorage.setItem(
       "multica_projects_view:acme",
       JSON.stringify({ state: { viewMode: "comfortable" }, version: 0 }),
@@ -89,7 +89,7 @@ describe("useProjectViewStore", () => {
     setCurrentWorkspace("beta", "ws_b");
     await flush();
     await flush();
-    expect(useProjectViewStore.getState().viewMode).toBe("compact");
+    expect(useProjectViewStore.getState().viewMode).toBe("comfortable");
     expect(localStorage.getItem("multica_projects_view:acme")).not.toBeNull();
   });
 });

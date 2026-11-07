@@ -69,6 +69,7 @@ vi.mock("@multica/views/layout", () => ({
   AppRail: () => null,
   AppShellProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   CompactNavSheet: () => null,
+  WorkbenchViewportNotice: () => null,
   GlobalShortcuts: () => null,
   NavigationProgress: () => null,
   NewIssueButton: () => null,

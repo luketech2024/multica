@@ -37,6 +37,7 @@ export function WorkbenchTaskCardContent({ issue, project, compact = false }: {
   return (
     <div
       data-workbench-card={compact ? "compact" : "flow"}
+      title={[issue.identifier, issue.external_ticket_no, context].filter(Boolean).join(" · ")}
       className={cn(
         "flex min-w-0 flex-col gap-0.5 overflow-hidden rounded-xl border border-surface-border bg-surface px-3 py-2 shadow-[var(--surface-shadow)] transition-[box-shadow,transform] motion-safe:group-hover/card:-translate-y-px group-hover/card:shadow-[var(--surface-shadow-hover)] group-focus-visible/card:ring-2 group-focus-visible/card:ring-ring group-data-[peeked]/card:ring-2 group-data-[peeked]/card:ring-brand",
         compact ? "h-[72px]" : "h-[92px]",
@@ -45,17 +46,17 @@ export function WorkbenchTaskCardContent({ issue, project, compact = false }: {
       <p title={issue.title} className={cn("shrink-0 text-body font-medium leading-[18px]", compact ? "h-[18px] truncate" : "h-[36px] line-clamp-2")}>
         {issue.title}
       </p>
-      <p className="truncate text-micro leading-[12px] text-muted-foreground" title={[issue.identifier, issue.external_ticket_no, context].filter(Boolean).join(" · ")}>
+      {!compact && <p className="truncate text-micro leading-[12px] text-muted-foreground" title={[issue.identifier, issue.external_ticket_no, context].filter(Boolean).join(" · ")}>
         {issue.identifier}
         {issue.external_ticket_no && ` · #${issue.external_ticket_no}`}
-        {!compact && context && ` · ${context}`}
-      </p>
-      <div className="mt-auto flex min-w-0 items-center gap-1.5 text-caption">
+        {context && ` · ${context}`}
+      </p>}
+      <div className="mt-auto flex min-w-0 items-center gap-1.5 text-micro">
         <span className="min-w-0 max-w-[40%] truncate [&>[data-slot=badge]]:max-w-full [&>[data-slot=badge]]:overflow-hidden">
           <StatusBadge status={issue.status} />
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-1" title={assignee}>
-          {issue.assignee_type && issue.assignee_id && (
+          {!compact && issue.assignee_type && issue.assignee_id && (
             <ActorAvatar actorType={issue.assignee_type} actorId={issue.assignee_id} size="xs" profileLink={false} />
           )}
           <span className="truncate text-muted-foreground">{assignee}</span>

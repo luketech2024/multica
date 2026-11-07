@@ -2114,5 +2114,8 @@
     },
     "retry": "Retry",
     "join": "Add to a release"
+  },
+  "workspace_switcher": {
+    "title": "Switch task"
   }
 }

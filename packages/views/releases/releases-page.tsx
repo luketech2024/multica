@@ -43,13 +43,13 @@ export function ReleasesPage() {
   const rows = orders.data?.pages.flatMap((page) => page.releases) ?? [];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-        <h1 className="text-title font-semibold">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6 pb-4">
+        <h1 className="text-display-sm font-medium">
           {t(($) => $.releases.title)}
         </h1>
-        <CreateReleaseDialog key={project} initialProject={project} />
+        {(orders.isPending || rows.length > 0) && <CreateReleaseDialog key={project} initialProject={project} />}
       </header>
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-auto px-6 pb-6">
         <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
           <ConfigurationSelect
             label={t(($) => $.releases.project)}
@@ -88,7 +88,11 @@ export function ReleasesPage() {
           </div>
         )}
         {orders.isSuccess && rows.length === 0 && (
-          <p className="text-muted-foreground">{t(($) => $.releases.empty)}</p>
+          <section className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-surface-border bg-surface p-6 text-center shadow-[var(--surface-shadow)]">
+            <h2 className="text-title-sm font-medium">{t(($) => $.releases.empty)}</h2>
+            <p className="text-label text-muted-foreground">{t(($) => $.releases.empty_hint)}</p>
+            <CreateReleaseDialog key={project} initialProject={project} />
+          </section>
         )}
         <ul className="space-y-3">
           {rows.map((order) => (
@@ -98,7 +102,7 @@ export function ReleasesPage() {
                 className="block space-y-2 rounded-xl border bg-surface p-4 hover:bg-surface-hover"
               >
                 <div className="flex flex-wrap justify-between gap-2">
-                  <strong>{order.identifier}</strong>
+                  <span className="font-medium">{order.identifier}</span>
                   <span>{t(($) => $.releases.status[order.status])}</span>
                 </div>
                 <p className="text-caption text-muted-foreground">
@@ -337,7 +341,7 @@ export function ReleaseDetailPage({ releaseId }: { releaseId: string }) {
   const paths = useWorkspacePaths();
   const order = useQuery(releaseOrderOptions(wsId, releaseId));
   return (
-    <div className="h-full space-y-4 overflow-auto p-4">
+    <div className="h-full space-y-4 overflow-auto px-6 pb-6">
       <AppLink href={paths.releases()} className="text-brand underline">
         {t(($) => $.releases.title)}
       </AppLink>
@@ -353,7 +357,7 @@ export function ReleaseDetailPage({ releaseId }: { releaseId: string }) {
       {order.data && (
         <>
           <header className="space-y-2">
-            <h1 className="text-title font-semibold">
+            <h1 className="text-display-sm font-medium">
               {order.data.identifier}
             </h1>
             <p>

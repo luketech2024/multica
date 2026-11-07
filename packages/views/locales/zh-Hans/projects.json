@@ -533,6 +533,17 @@
         "target_missing": "请为每种交付类型配置目标"
       },
       "not_required": "预发无需此项"
-    }
+    },
+    "empty_hint": "任务验收并完成仓库合并后，可在这里创建发布单。"
+  },
+  "overview": {
+    "open": "进入项目",
+    "running": "进行中",
+    "review": "等你",
+    "roles": "在岗角色",
+    "repositories": "代码仓库",
+    "settings": "项目设置",
+    "unfinished": "未完成任务",
+    "weekly": "本周完成"
   }
 }

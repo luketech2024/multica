@@ -2114,5 +2114,8 @@
     },
     "retry": "Réessayer",
     "join": "Ajouter à une publication"
+  },
+  "workspace_switcher": {
+    "title": "Changer de tâche"
   }
 }

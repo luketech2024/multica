@@ -2045,5 +2045,8 @@
     },
     "retry": "再試行",
     "join": "リリースに追加"
+  },
+  "workspace_switcher": {
+    "title": "タスク切り替え"
   }
 }

@@ -25,7 +25,6 @@ import {
   Users,
 } from "@multica/ui/icons";
 import { Button } from "@multica/ui/components/ui/button";
-import { IconButton } from "@multica/ui/components/common/icon-button";
 import { Separator } from "@multica/ui/components/ui/separator";
 import {
   DropdownMenu,
@@ -80,7 +79,6 @@ import {
 import type { Project } from "@multica/core/types";
 import { PageHeader } from "../layout/page-header";
 import { RefreshablePageIcon } from "../layout/refreshable-page-icon";
-import { ActionShortcutKeycaps } from "../common/shortcut-keycaps";
 import { ProjectIcon } from "../projects/components/project-icon";
 import { IssueDisplayControls, IssueFilterMenu } from "../issues/components/issues-header";
 import { ChipSpan, useFilterChips, type FilterChip } from "../issues/components/filter-chips-bar";
@@ -127,6 +125,7 @@ export function IssueViewHeader({
   base,
   baseMenu,
   trailing,
+  showCreateAction = true,
 }: {
   controller: IssueSurfaceController;
   base: IssueViewHeaderBase;
@@ -134,6 +133,7 @@ export function IssueViewHeader({
   baseMenu?: ReactNode;
   /** Layout toggles at the far end, e.g. the project's properties panel. */
   trailing?: ReactNode;
+  showCreateAction?: boolean;
 }) {
   const { t } = useT("issues");
   const wsId = useWorkspaceId();
@@ -553,15 +553,10 @@ export function IssueViewHeader({
             onTableFacetChange={controller.setActiveTableFacet}
             iconOnly
           />
-          <IconButton
-            label={t(($) => $.views.new_issue)}
-            shortcut={<ActionShortcutKeycaps action="createIssue" />}
-            tooltipSide="bottom"
-            className="text-muted-foreground"
-            onClick={() => controller.openCreateIssue()}
-          >
-            <SquarePen />
-          </IconButton>
+          {showCreateAction && <Button onClick={() => controller.openCreateIssue()}>
+            <SquarePen className="size-4" />
+            {t(($) => $.views.new_issue)}
+          </Button>}
           {trailing && (
             <>
               <Separator orientation="vertical" className="ml-1 data-vertical:h-4 data-vertical:self-center" />

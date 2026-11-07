@@ -533,6 +533,17 @@
         "target_missing": "각 전달 유형에 대한 배포 대상을 설정하세요"
       },
       "not_required": "스테이징에서는 필요 없음"
-    }
+    },
+    "empty_hint": "작업 승인과 저장소 병합이 완료되면 릴리스를 만들 수 있습니다."
+  },
+  "overview": {
+    "open": "프로젝트 열기",
+    "running": "진행 중",
+    "review": "확인 대기",
+    "roles": "활성 역할",
+    "repositories": "저장소",
+    "settings": "프로젝트 설정",
+    "unfinished": "미완료 작업",
+    "weekly": "이번 주 완료"
   }
 }

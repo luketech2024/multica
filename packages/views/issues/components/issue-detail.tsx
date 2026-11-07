@@ -50,7 +50,7 @@ import { Button } from "@multica/ui/components/ui/button";
 import { IconButton } from "@multica/ui/components/common/icon-button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@multica/ui/components/ui/resizable";
 import { Sheet, SheetContent } from "@multica/ui/components/ui/sheet";
-import { useIsMobile } from "@multica/ui/hooks/use-mobile";
+import { useIsMobile, useIsBelow } from "@multica/ui/hooks/use-mobile";
 import { ContentEditor, type ContentEditorRef, TitleEditor, type TitleEditorRef, useFileDropZone, FileDropOverlay, useLazyEditor, useEditorUpload, PreviewSequenceProvider, collectPreviewSequence } from "../../editor";
 import {
   WAKEUP_ACTIVITY_ACTIONS,
@@ -1296,7 +1296,7 @@ export function IssueDetailSkeleton({
         <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]">
           {/* Gutters match the loaded column exactly (see its comment), so the
               skeleton doesn't reflow sideways when real content mounts. */}
-          <div className="mx-auto w-full max-w-4xl px-3 py-6 space-y-6 md:px-8 md:py-8">
+          <div data-issue-content-column className="mx-auto w-full max-w-[760px] px-6 py-6 space-y-6">
             <Skeleton className="h-8 w-3/4" />
             <div className="space-y-2">
               <Skeleton className="h-4 w-full" />
@@ -1379,6 +1379,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   });
   const sidebarRef = usePanelRef();
   const isMobile = useIsMobile();
+  const overlaySidebar = useIsBelow(1440);
   const desktopSidebarInitialOpen = getAnimatedRightSidebarInitialOpen(
     defaultSidebarOpen,
     defaultLayout,
@@ -1393,11 +1394,11 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (isMobile) {
+    if (overlaySidebar) {
       setMobileSidebarOpen(false);
     }
-  }, [isMobile]);
-  const sidebarOpen = isMobile ? mobileSidebarOpen : desktopSidebarOpen;
+  }, [overlaySidebar]);
+  const sidebarOpen = overlaySidebar ? mobileSidebarOpen : desktopSidebarOpen;
   const [propertiesOpen, setPropertiesOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [parentIssueOpen, setParentIssueOpen] = useState(true);
@@ -1482,7 +1483,8 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   // User preference: pin the bottom comment bar to the scroll viewport. Off
   // below `md` regardless of the preference — see the hook.
-  const stickyComposer = useStickyComposer();
+  const preferStickyComposer = useStickyComposer();
+  const [requirementsTarget, setRequirementsTarget] = useState<HTMLDivElement | null>(null);
   // Mobile only: desktop already reaches the latest entry through the
   // ThreadMinimap rail, which is not rendered below `md`. Passing null keeps
   // the hook's scroll and resize listeners off on desktop.
@@ -1580,6 +1582,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       return cached?.description != null ? cached : undefined;
     },
   });
+  const stickyComposer = !!issue?.acceptance_criteria || preferStickyComposer;
   useMarkIssueReadWhileViewing(wsId, issue?.id ?? "");
   useMarkIssueInboxReadWhileViewing(wsId, issue?.id ?? "", readsInbox);
   const descriptionSourceId = `description:${id}`;
@@ -2711,7 +2714,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   }, [autoOpenCustomProp]);
 
   const handleToggleSidebar = useCallback(() => {
-    if (isMobile) {
+    if (overlaySidebar) {
       setMobileSidebarOpen((open) => !open);
       return;
     }
@@ -2724,7 +2727,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       if (nextOpen) panel.expand();
       else panel.collapse();
     });
-  }, [beginDesktopSidebarToggle, isMobile, sidebarRef]);
+  }, [beginDesktopSidebarToggle, overlaySidebar, sidebarRef]);
 
   // The header's wakeup chip opens the sidebar and brings the Wakeups section
   // into view with focus on its heading.
@@ -2922,12 +2925,16 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   const sidebarContent = (
     <IssueSidebarStack>
       <WorkbenchPipeline issue={issue} />
-      <DeliveryEvidence key={`delivery-${issue.id}`} issue={issue} />
-      <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
+
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />
-        : <RequirementsPanel key={issue.id} issue={issue} />}
-      {issue.project_id && <TaskPreview key={`preview-${issue.id}`} issue={issue} />}
+        : <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-4"><h2 className="text-label font-medium">{t(($) => $.requirements.title)}</h2><div ref={setRequirementsTarget} /></section>}
+      <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-3">
+        <h2 className="text-label font-medium">{t(($) => $.workspace_switcher.title)}</h2>
+        <div className="max-h-64 space-y-1 overflow-y-auto">
+          {allIssues.filter((entry) => !entry.parent_issue_id).map((entry) => <AppLink key={entry.id} href={paths.issueDetail(entry.id)} aria-current={entry.id === issue.id ? "page" : undefined} className={cn("block rounded-lg px-2 py-2 text-caption hover:bg-surface-hover", entry.id === issue.id && "bg-brand/10 text-brand-text")}><span className="block truncate">{entry.title}</span><span className="text-micro text-muted-foreground">{entry.identifier}</span></AppLink>)}
+        </div>
+      </section>
       {/* Properties */}
       <div>
         <IssueSidebarSectionHeader title={t(($) => $.detail.section_properties)} open={propertiesOpen} onOpenChange={setPropertiesOpen}  />
@@ -3244,7 +3251,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
         ]
       : [];
 
-  const titleSizeClass = isPeek ? "text-title-lg font-semibold" : "text-display-sm font-semibold";
+  const titleSizeClass = issue.acceptance_criteria ? "text-title-sm font-medium" : isPeek ? "text-title-lg font-medium" : "text-display-sm font-medium";
 
   const detailContent = (
     <CurrentIssueRenderContextProvider value={currentIssueRenderContext}>
@@ -3282,6 +3289,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             {/* Live "agent is working" chip, leftmost in the right cluster so
                 it never overlaps the title (which truncates to make room).
                 It self-hides when no agent is active. */}
+            {issue.acceptance_criteria?.team && <AppLink href={paths.issuePipeline(issue.id)} className="shrink-0 rounded-lg border border-surface-border bg-surface px-3 py-2 text-caption text-brand-text">{t(($) => $.pipeline_page.open)}</AppLink>}
             <IssueAgentHeaderChip issueId={id} onJumpToRun={jumpToRun} />
             {!issue.parent_issue_id && <ExternalTicketEditor issue={issue} />}
             <IssueWakeupHeaderChip issueId={id} onOpen={openWakeups} />
@@ -3388,11 +3396,12 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             `useStickyComposer`), so it lands here — right where the launcher
             floats — once the reader scrolls to the bottom. */}
         <div
+          data-issue-content-column
           className={cn(
-            "mx-auto w-full",
+            "mx-auto flex min-h-full w-full flex-col",
             // The peek is already a narrow column, so it takes a tighter gutter
             // and never reaches the chat launcher's corner (see IssuePeekHost).
-            isPeek ? "px-6 py-5" : "max-w-4xl px-3 py-6 max-md:pb-chat-launcher md:px-8 md:py-8",
+            isPeek ? "px-6 py-5" : "max-w-[760px] px-6 py-6 max-md:pb-chat-launcher",
           )}
         >
           <IssueDuplicateBanner
@@ -3404,7 +3413,12 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
               )
             }
           />
-          <div id={descriptionSectionId}>
+          <div id={descriptionSectionId} className="rounded-xl border border-surface-border bg-surface p-5 shadow-[var(--surface-shadow)]">
+          {issue.acceptance_criteria && <div className="mb-3 flex items-center gap-2 text-caption text-muted-foreground">
+            <ActorAvatar actorType={issue.creator_type} actorId={issue.creator_id} size="sm" />
+            <span>{getActorName(issue.creator_type, issue.creator_id)}</span>
+            <time className="ml-auto" dateTime={issue.created_at}>{timeAgo(issue.created_at)}</time>
+          </div>}
           {titleLazy.active && (
             <div className={titleLazy.ready ? undefined : "hidden"}>
               <TitleEditor
@@ -3774,11 +3788,17 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
           <DeliveryReview key={`review-${issue.id}`} issue={issue} />
 
+          <div className="my-6 space-y-4">
+            {!issue.workbench_handoff && <RequirementsPanel key={issue.id} issue={issue} detailsTarget={requirementsTarget} />}
+            <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
+            <DeliveryEvidence key={`delivery-${issue.id}`} issue={issue} />
+            {issue.project_id && <TaskPreview key={`preview-${issue.id}`} issue={issue} />}
+          </div>
           {/* Activity / Comments */}
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h2 className="text-title-sm font-semibold">{t(($) => $.detail.activity_section)}</h2>
+                <h2 className="sr-only">{t(($) => $.detail.activity_section)}</h2>
               </div>
               <div className="flex items-center gap-2">
                 {/* A delegated subscription is one the user never opted into
@@ -4004,7 +4024,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
           <div
             ref={composerRef}
             className={cn(
-              "mt-4",
+              "mt-auto pt-6",
               stickyComposer &&
                 "sticky bottom-0 z-10 -mb-4 bg-background pb-4 before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-gradient-to-t before:from-background before:to-transparent",
             )}
@@ -4093,7 +4113,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
     return withPreview(<div className="flex flex-1 min-h-0">{detailContent}</div>);
   }
 
-  if (isMobile) {
+  if (overlaySidebar) {
     return withPreview(
       <div className="flex flex-1 min-h-0">
         {detailContent}
@@ -4126,7 +4146,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       >
         {/* Sections inset their own bodies and rows, so the panel itself only
             needs a narrow gutter. */}
-        <AnimatedRightSidebar open={desktopSidebarVisualOpen} motionEnabled={desktopSidebarMotionEnabled} contentClassName="px-2 py-4">
+        <AnimatedRightSidebar open={desktopSidebarVisualOpen} motionEnabled={desktopSidebarMotionEnabled} contentClassName="bg-surface/40 px-4 py-4">
           {sidebarContent}
         </AnimatedRightSidebar>
       </ResizablePanel>

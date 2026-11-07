@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AcceptanceCriteria, Issue } from "@multica/core/types";
@@ -12,7 +13,7 @@ import { BusinessTemplateContent } from "../../projects/components/business-temp
 import { RequirementsChangeControls } from "./requirements-change-controls";
 import { ExecutionPlanEditor } from "./execution-plan-editor";
 
-export function RequirementsPanel({ issue }: { issue: Issue }) {
+export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; detailsTarget?: HTMLElement | null }) {
   const { t } = useTranslation("issues");
   const { t: projectT } = useTranslation("projects");
   const update = useUpdateIssue();
@@ -44,15 +45,7 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
     }
   };
 
-  return (
-    <section className="space-y-3 rounded-xl border bg-surface p-3" aria-label={t(($) => $.requirements.title)}>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-label font-medium">{t(($) => $.requirements.title)}</h3>
-        <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
-      </div>
-      {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
-      {locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
-      {(criteria.change || issue.status === "in_progress") && <RequirementsChangeControls issue={issue} />}
+  const fields = <div className="space-y-3">
       {criteria.template && <details className="text-caption">
         <summary className="cursor-pointer">{criteria.template.content.name} · {t(($) => $.requirements.version, { version: criteria.template.revision })}</summary>
         <div className="mt-2"><BusinessTemplateContent template={criteria.template.content} /></div>
@@ -105,6 +98,17 @@ export function RequirementsPanel({ issue }: { issue: Issue }) {
           onChange={(event) => edit({ ...criteria, bounds: event.target.value.split("\n") })}
         />
       </label>
+  </div>;
+  return (
+    <section className="space-y-3 rounded-xl border bg-surface p-3" aria-label={t(($) => $.requirements.title)}>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-label font-medium">{t(($) => $.requirements.title)}</h3>
+        <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
+      </div>
+      {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
+      {locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
+      {(criteria.change || issue.status === "in_progress") && <RequirementsChangeControls issue={issue} />}
+      {detailsTarget === undefined ? fields : detailsTarget ? createPortal(fields, detailsTarget) : <details><summary className="cursor-pointer text-caption text-muted-foreground">{t(($) => $.requirements.title)}</summary>{fields}</details>}
       {error && <p role="alert" className="text-caption text-destructive">{error}</p>}
       {!readOnly && <div className="flex flex-wrap gap-2">
         {draft && <>

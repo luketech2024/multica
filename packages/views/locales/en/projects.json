@@ -533,6 +533,17 @@
         "target_missing": "Configure a target for each delivery type"
       },
       "not_required": "Not required for staging"
-    }
+    },
+    "empty_hint": "Accepted tasks will appear here when their repository merges are ready."
+  },
+  "overview": {
+    "open": "Open project",
+    "running": "Running",
+    "review": "Awaiting you",
+    "roles": "Enabled roles",
+    "repositories": "Repositories",
+    "settings": "Project settings",
+    "unfinished": "Unfinished tasks",
+    "weekly": "Completed this week"
   }
 }

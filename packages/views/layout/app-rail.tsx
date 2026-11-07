@@ -108,7 +108,7 @@ export function AppRail({
       data-slot="app-rail"
       data-expanded={expanded}
       className={cn(
-        "flex h-full shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r bg-sidebar py-2 text-sidebar-foreground",
+        "flex h-full shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-sidebar-border bg-sidebar px-2 py-3 text-sidebar-foreground",
         expanded ? "w-[240px]" : "w-16",
         className,
       )}
@@ -117,7 +117,7 @@ export function AppRail({
       <div className="flex items-center gap-2 px-2">
         <RailWorkspaces />
         {expanded && (
-          <span className="min-w-0 truncate text-caption font-semibold">
+          <span className="min-w-0 truncate text-label font-medium">
             {workspace?.name}
           </span>
         )}
@@ -139,7 +139,7 @@ export function AppRail({
           />
         </div>
       )}
-      <div className="flex-1 space-y-3 px-1 py-2" data-workbench-navigation>
+      <div className="flex-1 space-y-3 py-2" data-workbench-navigation>
         {groups.map((group) => {
           const entries =
             group === "pinned"
@@ -155,6 +155,7 @@ export function AppRail({
           return (
             <section
               key={group}
+              className={group === "pinned" ? "border-b border-sidebar-border pb-3" : undefined}
               aria-label={t(($) => $.workbench_nav.groups[group])}
             >
               {expanded && (
@@ -191,7 +192,7 @@ export function AppRail({
                           aria-label={label}
                           aria-current={selected ? "page" : undefined}
                           className={cn(
-                            "flex h-8 items-center gap-2 rounded-xl px-2 outline-none hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
+                            "flex h-8 items-center gap-2 rounded-lg px-2 text-muted-foreground outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-ring",
                             selected &&
                               "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent",
                             expanded && "pr-8",
@@ -199,7 +200,7 @@ export function AppRail({
                         >
                           <Icon className="size-4 shrink-0" />
                           {expanded && (
-                            <span className="min-w-0 flex-1 truncate text-caption">
+                            <span className="min-w-0 flex-1 truncate text-label">
                               {label}
                             </span>
                           )}
@@ -254,7 +255,7 @@ export function AppRail({
       </div>
       <div
         className={cn(
-          "flex items-center gap-1 px-1",
+          "flex items-center gap-1 border-t border-sidebar-border px-1 pt-3",
           expanded ? "flex-row" : "flex-col",
         )}
       >

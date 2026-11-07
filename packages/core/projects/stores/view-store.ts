@@ -74,6 +74,6 @@ export const useProjectViewStore = createCollectionViewStore<
   sortDefaultDirection: PROJECT_SORT_DEFAULT_DIRECTION,
   defaultHiddenColumns: PROJECT_DEFAULT_HIDDEN_COLUMNS,
   emptyFilters: EMPTY_PROJECT_FILTERS,
-  extraState: { viewMode: "compact" },
+  extraState: { viewMode: "comfortable" },
   extraActions: (set) => ({ setViewMode: (mode) => set({ viewMode: mode }) }),
 });

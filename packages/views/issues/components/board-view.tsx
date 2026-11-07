@@ -851,7 +851,8 @@ function BoardViewImpl({
         onLostPointerCapture={pan.onLostPointerCapture}
         data-board-scroller=""
         className={cn(
-          "flex flex-1 min-h-0 gap-4 overflow-x-auto p-2",
+          "flex flex-1 min-h-0 gap-4 overflow-x-auto",
+          workbench ? "px-6 pb-6 pt-2" : "p-2",
           // While a side peek is open, a trailing spacer as wide as the panel
           // lets every column scroll clear of it (IssuePeekHost).
           "group-data-[peek-open]/peek:after:w-(--issue-peek-width) group-data-[peek-open]/peek:after:shrink-0 group-data-[peek-open]/peek:after:content-['']",

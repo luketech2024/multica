@@ -91,7 +91,7 @@ export function CollectionPageHeader({
     </>
   );
   return (
-    <PageHeader className={className}>
+    <PageHeader className={cn("h-auto min-h-20 border-0 pt-6 pb-4", className)}>
       <div className="group/collection-tools @container/collection-tools flex min-w-0 flex-1 items-center gap-1">
         {menu ? (
           <DropdownMenu>
@@ -101,7 +101,7 @@ export function CollectionPageHeader({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 min-w-0 max-w-64 shrink gap-2 px-2 text-body font-medium text-foreground"
+                    className="h-auto min-w-0 max-w-64 shrink gap-2 px-0 text-title-lg font-medium text-foreground"
                   />
                 }
               >
@@ -116,7 +116,7 @@ export function CollectionPageHeader({
         ) : (
           <h1
             className={cn(
-              "flex min-w-0 items-center gap-2 px-2 text-body font-medium",
+              "flex min-w-0 items-center gap-2 text-title-lg font-medium",
               TITLE_YIELDS_TO_SEARCH,
             )}
           >
@@ -393,7 +393,7 @@ export function CollectionDisplayButton({
   );
 }
 
-/** Create is always an icon; the page's one solid button is never "New". */
+/** The page's primary create action keeps its label visible. */
 export function CollectionCreateButton({
   label,
   className,
@@ -401,12 +401,15 @@ export function CollectionCreateButton({
 }: Omit<ComponentProps<typeof IconButton>, "children">) {
   return (
     <IconButton
+      variant="default"
+      size="default"
       {...props}
       tooltipSide="bottom"
       label={label}
-      className={cn("shrink-0 text-muted-foreground", className)}
+      className={cn("shrink-0", className)}
     >
       <Plus />
+      <span>{label}</span>
     </IconButton>
   );
 }

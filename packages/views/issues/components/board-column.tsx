@@ -23,6 +23,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
 import { useViewStoreApi } from "@multica/core/issues/stores/view-store-context";
 import { useViewBaseline } from "../surface/view-baseline-context";
+import { useStatusLabel } from "../utils/status-label";
 import { StatusHeading } from "./status-heading";
 import { useWorkbenchKeyboardReveal } from "../surface/workbench-keyboard";
 import { DraggableBoardCard } from "./board-card";
@@ -128,6 +129,7 @@ export const BoardColumn = memo(function BoardColumn({
   const status = group.status;
   const wsId = useWorkspaceId();
   const { entryOf } = useIssueStatuses(wsId);
+  const statusLabel = useStatusLabel(wsId);
   const archived = !!status && !!entryOf(status)?.archived_at;
   const { setNodeRef, isOver: droppableIsOver } = useDroppable({ id: group.id });
   // A dragged card whose project workflow does not list this status cannot
@@ -214,8 +216,8 @@ export const BoardColumn = memo(function BoardColumn({
 
   return (
     <div
-      style={{ width: BOARD_COL_WIDTH }}
-      className={`group/column relative flex shrink-0 flex-col rounded-xl bg-muted/40 p-2 ${
+      style={workbench ? { flex: "1 0 196px", minWidth: 196 } : { width: BOARD_COL_WIDTH }}
+      className={`group/column relative flex shrink-0 flex-col ${workbench ? "" : "rounded-xl bg-muted/40 p-2"} ${
         hint ? "ring-2 ring-brand/30" : ""
       }`}
     >
@@ -233,11 +235,11 @@ export const BoardColumn = memo(function BoardColumn({
         </div>
       )}
       <div className="mb-2 flex items-center justify-between gap-2 px-1.5">
-        <BoardGroupHeading group={group} count={totalCount ?? issueIds.length} />
+        {workbench && status ? <div className="flex min-w-0 items-center gap-2"><span className="truncate text-label font-medium">{statusLabel(status)}</span><span className="rounded-full border border-surface-border bg-surface px-1.5 text-micro text-muted-foreground">{totalCount ?? issueIds.length}</span></div> : <BoardGroupHeading group={group} count={totalCount ?? issueIds.length} />}
 
         {/* Right: step handler + add + menu */}
-        <div className="flex min-w-0 items-center gap-1">
-          {status && <WorkflowStepHandlerBadge status={status} />}
+        <div className="flex shrink-0 items-center gap-1">
+          {status && !workbench && <WorkflowStepHandlerBadge status={status} />}
           {/* Column-header popups mount lazily: a board/swimlane renders one
               header per column and almost none of these menus/tooltips are
               ever opened — eagerly mounting them dominated surface mount
@@ -338,7 +340,7 @@ export const BoardColumn = memo(function BoardColumn({
           // (MUL-4741): the group id is the stable memento key, so every
           // column's offset survives tab switches/reloads independently.
           data-tab-scroll-root={scrollMementoKey}
-          className={`absolute inset-0 overflow-y-auto rounded-lg p-1 transition-colors ${
+          className={`absolute inset-0 overflow-y-auto transition-colors ${workbench ? "rounded-xl border border-surface-border/70 bg-surface/40 p-2" : "rounded-lg p-1"} ${
             isOver && sortLabel
               ? "ring-2 ring-brand/25 bg-accent/15"
               : isOver

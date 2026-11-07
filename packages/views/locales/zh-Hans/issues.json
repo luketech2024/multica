@@ -228,12 +228,12 @@
     "move_failed": "移动任务失败"
   },
   "status": {
-    "backlog": "待规划",
-    "todo": "待办",
+    "backlog": "待排期",
+    "todo": "待开始",
     "in_progress": "进行中",
-    "in_review": "审核中",
+    "in_review": "待验收",
     "done": "已完成",
-    "blocked": "已阻塞",
+    "blocked": "阻塞",
     "cancelled": "已取消",
     "paused": "已暂停"
   },
@@ -2045,5 +2045,8 @@
     },
     "retry": "重试",
     "join": "加入发布"
+  },
+  "workspace_switcher": {
+    "title": "任务切换"
   }
 }

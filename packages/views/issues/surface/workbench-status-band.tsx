@@ -7,6 +7,8 @@ import { issueTableFacetsOptions } from "@multica/core/issues/queries";
 import { workbenchBandQuery, workbenchBandSelection } from "@multica/core/workbench/status-band";
 import { Button } from "@multica/ui/components/ui/button";
 import { Checkbox } from "@multica/ui/components/ui/checkbox";
+import { Check, ChevronRight, BarChart3 } from "@multica/ui/icons";
+import { cn } from "@multica/ui/lib/utils";
 import { useOptionalNavigation } from "../../navigation";
 import { useT } from "../../i18n";
 
@@ -39,6 +41,8 @@ export function useWorkbenchBand(enabled: boolean, defaultMine: boolean) {
 }
 
 const bands = ["running", "review", "today"] as const;
+const bandIcons = [ChevronRight, Check, BarChart3];
+const bandColors = ["bg-brand/14 text-brand", "bg-warning/14 text-warning", "bg-success/14 text-success"];
 
 export function WorkbenchStatusBand({
   workspaceId,
@@ -69,37 +73,34 @@ export function WorkbenchStatusBand({
   return (
     <section
       aria-label={t(($) => $.workbench_band.title)}
-      className="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2"
+      className="flex shrink-0 flex-wrap items-center gap-3 px-6 py-4"
     >
-      <Button
-        variant={selection.band === "all" ? "secondary" : "ghost"}
-        size="sm"
-        aria-pressed={selection.band === "all"}
-        onClick={() => onSelect("all", selection.only_mine)}
-      >
-        {t(($) => $.workbench_band.all)}
-      </Button>
-      {bands.map((band, index) => (
-        <Button
+      {bands.map((band, index) => {
+        const Icon = bandIcons[index]!;
+        return <button
+          type="button"
           key={band}
-          variant={selection.band === band ? "secondary" : "ghost"}
-          size="sm"
+          className={cn("flex min-w-[132px] items-center gap-3 rounded-xl border border-surface-border bg-surface px-3 py-3 text-left shadow-[var(--surface-shadow)] transition-[box-shadow,transform] hover:shadow-[var(--surface-shadow-hover)] motion-safe:hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-ring", selection.band === band && "border-brand/55 bg-brand/8")}
           aria-pressed={selection.band === band}
-          onClick={() => onSelect(band, selection.only_mine)}
+          onClick={() => onSelect(selection.band === band ? "all" : band, selection.only_mine)}
         >
-          {t(($) => $.workbench_band[band])}
-          <span className="tabular-nums">
-            {enabled && !counts[index]?.isError ? counts[index]?.data?.total ?? "—" : "—"}
+          <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg", bandColors[index])}><Icon className="size-4" /></span>
+          <span className="flex flex-col">
+            <span className="text-display-sm font-medium leading-6 tabular-nums">{enabled && !counts[index]?.isError ? counts[index]?.data?.total ?? "—" : "—"}</span>
+            <span className="text-caption text-muted-foreground">{t(($) => $.workbench_band[band])}</span>
           </span>
-        </Button>
-      ))}
-      <label className="ml-auto flex items-center gap-2 text-caption">
+        </button>;
+      })}
+      <div className="ml-auto flex items-center gap-1 rounded-lg border border-surface-border bg-surface p-1">
+      <label className={cn("flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-caption", selection.only_mine && "bg-surface-hover")}>
         <Checkbox
           checked={selection.only_mine}
           onCheckedChange={(checked) => onSelect(selection.band, checked === true)}
         />
         {t(($) => $.workbench_band.mine)}
       </label>
+      <Button variant="ghost" size="sm" aria-pressed={!selection.only_mine && selection.band === "all"} onClick={() => onSelect("all", false)}>{t(($) => $.workbench_band.all)}</Button>
+      </div>
       {counts.some((count) => count.isError) && (
         <Button
           size="sm"

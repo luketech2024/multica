@@ -533,6 +533,17 @@
         "target_missing": "Configurez une cible pour chaque type de livraison"
       },
       "not_required": "Non requis en préproduction"
-    }
+    },
+    "empty_hint": "Créez une publication après acceptation des tâches et fusion des dépôts."
+  },
+  "overview": {
+    "open": "Ouvrir le projet",
+    "running": "En cours",
+    "review": "À examiner",
+    "roles": "Rôles actifs",
+    "repositories": "Dépôts",
+    "settings": "Paramètres du projet",
+    "unfinished": "Tâches restantes",
+    "weekly": "Terminées cette semaine"
   }
 }

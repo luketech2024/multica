@@ -26,6 +26,9 @@ import { ActorAvatar } from "../../common/actor-avatar";
 import { AppLink, currentPath, useNavigation } from "../../navigation";
 import { TitleEditor, ContentEditor, type ContentEditorRef } from "../../editor";
 import { PriorityIcon } from "../../issues/components/priority-icon";
+import { ProjectTeamPanel } from "./project-team-panel";
+import { ProjectWorkbenchMetrics } from "./project-workbench-metrics";
+import { openCreateIssueWithPreference } from "@multica/core/issues/stores";
 import { ProjectResourcesSection } from "./project-resources-section";
 import { deployTargetsOptions } from "@multica/core/workbench/configuration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
@@ -126,7 +129,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const wsPaths = useWorkspacePaths();
   const router = useNavigation();
   const requestedTab = router.searchParams.get("tab");
-  const projectTab = requestedTab === "deployment" || requestedTab === "autopilots" ? requestedTab : "tasks";
+  const projectTab = requestedTab === "deployment" || requestedTab === "autopilots" || requestedTab === "settings" ? requestedTab : "tasks";
   const targets = useQuery(deployTargetsOptions(wsId, projectId));
   const selectProjectTab = (value: string) => {
     const params = new URLSearchParams(router.searchParams);
@@ -530,8 +533,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
       <ResizablePanel id="content" minSize="50%">
         <div ref={rightSidebarShortcutTargetRef} className="flex h-full flex-col">
-          <Tabs value={projectTab} onValueChange={(value) => selectProjectTab(String(value))} className="h-full min-h-0 gap-0">
-            <TabsList className="mx-4 my-2" aria-label={project.title}>
+          <header className="flex shrink-0 items-center justify-between gap-4 px-6 pt-6 pb-4">
+            <div className="min-w-0"><AppLink href={wsPaths.projects()} className="text-caption text-muted-foreground hover:text-brand-text">{t(($) => $.detail.back_to_list)}</AppLink><h1 className="mt-1 truncate text-display-sm font-medium">{project.title}</h1></div>
+            <div className="flex shrink-0 items-center gap-2"><Button variant="outline" onClick={() => selectProjectTab("settings")}>{t(($) => $.overview.settings)}</Button><Button onClick={() => openCreateIssueWithPreference({ project_id: projectId })}>{t(($) => $.detail.empty_issues_new_button)}</Button></div>
+          </header>
+          <div className="mx-6 mb-4 rounded-xl border border-surface-border bg-surface p-4"><ProjectWorkbenchMetrics project={project} expanded /></div>
+          <Tabs value={projectTab} onValueChange={(value) => selectProjectTab(String(value))} className="min-h-0 flex-1 gap-0">
+            <TabsList className="mx-6 mb-4" aria-label={project.title}>
               <TabsTrigger value="tasks">{t(($) => $.deployment.tasks)}</TabsTrigger>
               <TabsTrigger value="autopilots">{tLayout(($) => $.nav.autopilots)}</TabsTrigger>
               <TabsTrigger value="deployment">
@@ -539,7 +547,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                 {targets.data && <span className="text-caption tabular-nums">{targets.data.targets.length}</span>}
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="deployment" className="min-h-0 overflow-auto p-4">
+            <TabsContent value="settings" className="min-h-0 overflow-auto px-6 pb-6"><div className="max-w-3xl rounded-xl border border-surface-border bg-surface p-5">{sidebarContent}</div></TabsContent>
+            <TabsContent value="deployment" className="min-h-0 overflow-auto px-6 pb-6">
               <DeployTargetsSection key={projectId} projectId={projectId} />
             </TabsContent>
             <TabsContent value="autopilots" className="flex min-h-0 flex-col">
@@ -554,6 +563,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               <ProjectWorkflowMenuHost project={project}>
                 {(workflowSubmenu) => (
                   <IssueViewHeader
+                    showCreateAction={false}
                     controller={controller}
                     base={{ kind: "project", project }}
                     baseMenu={
@@ -629,16 +639,16 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           id="sidebar"
           {...rightSidebarPanelMotionProps}
           data-right-sidebar-motion={desktopSidebarMotionEnabled ? "enabled" : undefined}
-          defaultSize={desktopSidebarOpen ? 320 : 0}
-          minSize={260}
-          maxSize={420}
+          defaultSize={desktopSidebarOpen ? 250 : 0}
+          minSize={250}
+          maxSize={320}
           collapsible
           groupResizeBehavior="preserve-pixel-size"
           panelRef={sidebarRef}
           onResize={handleDesktopSidebarResize}
         >
           <AnimatedRightSidebar open={desktopSidebarVisualOpen} motionEnabled={desktopSidebarMotionEnabled}>
-            {sidebarContent}
+            <ProjectTeamPanel projectId={projectId} onConfigure={() => selectProjectTab("settings")} />
           </AnimatedRightSidebar>
         </ResizablePanel>
         )}

@@ -235,6 +235,7 @@
     "unpin": "Unpin {{name}}",
     "pin_limit": "Unpin an entry before pinning another. Up to 3 entries.",
     "choose_project": "Choose a project",
-    "project_unavailable": "Could not load the project. Retry or select another project."
+    "project_unavailable": "Could not load the project. Retry or select another project.",
+    "narrow_viewport": "Window too narrow. Expand it to at least 1024 pixels wide."
   }
 }

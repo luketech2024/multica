@@ -7,7 +7,7 @@ const MOBILE_BREAKPOINT = 768
 // screen or a tablet enough reading width for both panes.
 const COMPACT_BREAKPOINT = 768
 
-function useIsBelow(breakpoint: number) {
+export function useIsBelow(breakpoint: number) {
   const [isBelow, setIsBelow] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {

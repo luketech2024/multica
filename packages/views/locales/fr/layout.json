@@ -235,6 +235,7 @@
     "unpin": "Désépingler {{name}}",
     "pin_limit": "Désépinglez une entrée avant d’en ajouter une. Maximum 3.",
     "choose_project": "Choisir un projet",
-    "project_unavailable": "Impossible de charger le projet. Réessayez ou choisissez un autre projet."
+    "project_unavailable": "Impossible de charger le projet. Réessayez ou choisissez un autre projet.",
+    "narrow_viewport": "Fenêtre trop étroite. Agrandissez-la à au moins 1024 pixels."
   }
 }

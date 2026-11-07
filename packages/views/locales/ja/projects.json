@@ -533,6 +533,17 @@
         "target_missing": "配信タイプごとにデプロイ先を設定してください"
       },
       "not_required": "ステージングでは不要"
-    }
+    },
+    "empty_hint": "タスクの承認とリポジトリのマージ後にリリースを作成できます。"
+  },
+  "overview": {
+    "open": "プロジェクトを開く",
+    "running": "実行中",
+    "review": "確認待ち",
+    "roles": "有効な役割",
+    "repositories": "リポジトリ",
+    "settings": "プロジェクト設定",
+    "unfinished": "未完了のタスク",
+    "weekly": "今週の完了"
   }
 }

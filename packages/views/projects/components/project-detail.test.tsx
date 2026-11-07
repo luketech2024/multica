@@ -25,6 +25,8 @@ vi.mock("../../workflows/project-workflow-menu", () => ({
   ProjectWorkflowMenuHost: ({ children }: { children: (submenu: null) => React.ReactNode }) => children(null),
 }));
 vi.mock("../../workflows/project-workflow-row", () => ({ ProjectWorkflowControl: () => null }));
+vi.mock("./project-workbench-metrics", () => ({ ProjectWorkbenchMetrics: () => null }));
+vi.mock("./project-team-panel", () => ({ ProjectTeamPanel: () => null }));
 vi.mock("./deploy-targets-section", () => ({ DeployTargetsSection: () => null }));
 vi.mock("./repository-profiles-section", () => ({ RepositoryProfilesSection: () => null }));
 vi.mock("./project-roles-section", () => ({ ProjectRolesSection: () => null }));

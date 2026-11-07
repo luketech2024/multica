@@ -13,6 +13,7 @@ import {
 import { ModalRegistry } from "@multica/views/modals/registry";
 import {
   AppRail,
+  WorkbenchViewportNotice,
   AppShellProvider,
   CompactNavSheet,
   GlobalShortcuts,
@@ -134,11 +135,12 @@ function MainCanvas({
     <div
       data-slot="main-canvas"
       className={cn(
-        "relative mr-2 mb-2 flex min-h-0 flex-1 flex-row overflow-hidden rounded-xl bg-page-canvas shadow-[var(--surface-shadow)] ring-1 ring-surface-border",
+        "relative flex min-h-0 flex-1 flex-row overflow-hidden bg-page-canvas",
         railMounted && !isCompact ? "ml-0" : "ml-2",
       )}
     >
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <WorkbenchViewportNotice />
         {children}
       </div>
       {showWorkspaceLoading && (

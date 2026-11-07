@@ -227,6 +227,7 @@
     "unpin": "取消置顶{{name}}",
     "pin_limit": "最多置顶3个入口，请先取消一个置顶。",
     "choose_project": "选择项目",
-    "project_unavailable": "项目无法加载，请重试或选择其他项目。"
+    "project_unavailable": "项目无法加载，请重试或选择其他项目。",
+    "narrow_viewport": "窗口过窄，请放大到1024宽以上使用"
   }
 }

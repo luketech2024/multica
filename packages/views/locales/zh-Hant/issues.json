@@ -228,12 +228,12 @@
     "move_failed": "移動任務失敗"
   },
   "status": {
-    "backlog": "待規劃",
-    "todo": "待辦",
+    "backlog": "待排期",
+    "todo": "待開始",
     "in_progress": "進行中",
-    "in_review": "審查中",
+    "in_review": "待驗收",
     "done": "已完成",
-    "blocked": "已阻塞",
+    "blocked": "阻塞",
     "cancelled": "已取消",
     "paused": "已暫停"
   },
@@ -2045,5 +2045,8 @@
     },
     "retry": "重試",
     "join": "加入發布"
+  },
+  "workspace_switcher": {
+    "title": "任務切換"
   }
 }

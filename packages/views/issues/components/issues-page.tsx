@@ -45,9 +45,11 @@ export function IssuesPage() {
     <div className="flex flex-1 min-h-0 flex-col">
       {layout === "board" && (
         <div
-          className="max-w-sm p-4"
+          className="flex shrink-0 items-center justify-between gap-6 px-6 pt-6 pb-2"
           aria-busy={projects.isPending || (!!projectId && project.isPending)}
         >
+          <div className="min-w-0 flex-1"><h1 className="text-display-sm font-medium">{tLayout(($) => $.workbench_nav.board)}</h1><p className="mt-1 text-caption text-muted-foreground">{project.data?.title || tLayout(($) => $.workbench_nav.choose_project)}</p></div>
+          <div className="w-72">
           <ConfigurationSelect
             label={tLayout(($) => $.nav.projects)}
             value={projectId ?? ""}
@@ -75,6 +77,7 @@ export function IssuesPage() {
               navigation.replace(paths.taskBoard(id));
             }}
           />
+          </div>
           {(projects.isError || project.isError) && (
             <div role="alert" className="mt-2 text-caption">
               <p>{tLayout(($) => $.workbench_nav.project_unavailable)}</p>

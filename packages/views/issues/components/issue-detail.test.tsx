@@ -42,6 +42,7 @@ const emptyDraftAttachments = vi.hoisted(() => [] as unknown[]);
 
 vi.mock("@multica/ui/hooks/use-mobile", () => ({
   useIsMobile: () => mockViewport.isMobile,
+  useIsBelow: () => mockViewport.isMobile,
 }));
 
 // useWorkspaceId() derives from useCurrentWorkspace (relative import inside
@@ -883,7 +884,7 @@ describe("IssueDetail (shared)", () => {
     mockApiObj.getIssue.mockReturnValue(new Promise(() => {}));
     const loadingRender = renderIssueDetail();
     const skeletonGutters = horizontalGutters(
-      loadingRender.container.querySelector(".max-w-4xl"),
+      loadingRender.container.querySelector("[data-issue-content-column]"),
     );
     loadingRender.unmount();
 
@@ -896,7 +897,7 @@ describe("IssueDetail (shared)", () => {
     // Non-empty guard: without it a renamed column class passes vacuously.
     expect(skeletonGutters.length).toBeGreaterThan(0);
     expect(skeletonGutters).toEqual(
-      horizontalGutters(container.querySelector(".max-w-4xl")),
+      horizontalGutters(container.querySelector("[data-issue-content-column]")),
     );
   });
 

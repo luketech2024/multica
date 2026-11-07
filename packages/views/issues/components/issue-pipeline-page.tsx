@@ -80,7 +80,7 @@ function PipelineWorkspace({ issue, criteria }: { issue: Issue; criteria: Accept
         {t(($) => $.pipeline_page.open_task)}
       </AppLink>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="min-w-0 break-words text-title font-semibold">{issue.identifier} · {issue.title}</h1>
+        <h1 className="min-w-0 break-words text-display-sm font-medium">{issue.identifier} · {issue.title}</h1>
         <Badge variant="neutral">{statusLabel(issue.status)}</Badge>
       </div>
       <div className="flex gap-1" aria-label={t(($) => $.pipeline.title)}>
@@ -89,7 +89,7 @@ function PipelineWorkspace({ issue, criteria }: { issue: Issue; criteria: Accept
       </div>
     </header>
     <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[230px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_292px]">
-      <nav className="space-y-2" aria-label={t(($) => $.pipeline_page.stages)}>
+      <nav className="relative space-y-2 rounded-xl border border-surface-border bg-surface p-3 shadow-[var(--surface-shadow)]" aria-label={t(($) => $.pipeline_page.stages)}>
         {stages.map((entry) => <Button key={entry.role} variant={stage?.role === entry.role ? "brandSubtle" : "ghost"}
           className="h-auto w-full justify-between gap-2 whitespace-normal py-3" aria-current={stage?.role === entry.role ? "step" : undefined}
           onClick={() => select(entry.role)}>
