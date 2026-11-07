@@ -2091,5 +2091,17 @@
     "create": "Nouvelle tâche",
     "escape": "Retour à la liste / effacer la sélection",
     "help": "Aide des raccourcis"
+  },
+  "release_readiness": {
+    "title": "Preuves de fusion",
+    "failed": "Impossible de charger les preuves de fusion.",
+    "matched": "Les commits acceptés correspondent aux fusions des dépôts.",
+    "blockers": {
+      "acceptance": "Acceptez la livraison actuelle avant de préparer une publication.",
+      "repository_missing": "Configurez l’URL du dépôt et la branche cible.",
+      "merge_missing": "Aucune fusion ne correspond au commit source accepté.",
+      "merge_ambiguous": "Plusieurs pull requests correspondent. Vérifiez leurs liens."
+    },
+    "retry": "Réessayer"
   }
 }

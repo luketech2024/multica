@@ -39,6 +39,23 @@ export const DeliveryReviewSchema = z.object({
   checks: z.array(z.object({ id: z.string(), text: z.string(), check: z.string() })),
 });
 export type DeliveryReviewState = z.infer<typeof DeliveryReviewSchema>;
+
+export const ReleaseReadinessSchema = z.object({
+  revision: z.number().int().positive(),
+  blockers: z.array(z.object({
+    code: z.enum(["acceptance", "repository_missing", "merge_missing", "merge_ambiguous"]).catch("merge_missing"),
+    repo_id: z.string().optional(),
+  })),
+  merges: z.array(z.object({
+    repo_id: z.string().uuid(),
+    pull_request_id: z.string().uuid(),
+    url: evidenceURL,
+    base_branch: z.string().min(1),
+    source_commit: z.string().regex(/^[a-f0-9]{40}([a-f0-9]{24})?$/i),
+    merge_commit: z.string().regex(/^[a-f0-9]{40}([a-f0-9]{24})?$/i),
+  })),
+});
+export type ReleaseReadiness = z.infer<typeof ReleaseReadinessSchema>;
 export type DeliveryReviewInput = {
   expected_revision: number;
   action: "accept" | "reject" | "undo";

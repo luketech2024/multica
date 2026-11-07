@@ -15,6 +15,7 @@ import {
 import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 import { useT } from "../../i18n";
+import { ReleaseReadiness } from "./release-readiness";
 
 export function DeliveryReview({ issue }: { issue: Issue }) {
   if (issue.parent_issue_id || !issue.acceptance_criteria?.plan) return null;
@@ -71,6 +72,7 @@ function ReviewCard({ issue }: { issue: Issue }) {
           actor: getActorName("member", issue.acceptance_criteria.gate.accept.passed_by),
           time: new Date(issue.acceptance_criteria.gate.accept.passed_at).toLocaleString(),
         })}</p>
+        <ReleaseReadiness issue={issue} />
       </div>
     ) : <>
       {review.isPending && <p role="status" className="text-caption">{t(($) => $.delivery_review.loading)}</p>}

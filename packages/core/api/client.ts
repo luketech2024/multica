@@ -1,5 +1,5 @@
 import type { ZodType } from "zod";
-import { DeliveryReviewSchema, type DeliveryReviewState, type DeliveryReviewInput } from "../workbench/delivery";
+import { DeliveryReviewSchema, ReleaseReadinessSchema, type DeliveryReviewState, type DeliveryReviewInput, type ReleaseReadiness } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
 import { RepositoryStackCatalogSchema, RepositoryProfileSchema, type RepositoryProfileInput } from "../workbench/schemas";
 import { BusinessTemplateAssetSchema, BusinessTemplatesSchema, ProjectTemplateResponseSchema, type BusinessTemplate } from "../workbench/schemas";
@@ -1648,6 +1648,13 @@ export class ApiClient {
     const review = parseWithFallback<DeliveryReviewState | null>(await this.fetch(endpoint), DeliveryReviewSchema, null, { endpoint });
     if (!review) throw new Error("Invalid delivery review response");
     return review;
+  }
+
+  async getReleaseReadiness(id: string): Promise<ReleaseReadiness> {
+    const endpoint = `/api/issues/${encodeURIComponent(id)}/release-readiness`;
+    const result = parseWithFallback<ReleaseReadiness | null>(await this.fetch(endpoint), ReleaseReadinessSchema, null, { endpoint });
+    if (!result) throw new Error("Invalid release readiness response");
+    return result;
   }
 
   async reviewDelivery(id: string, input: DeliveryReviewInput): Promise<Issue> {

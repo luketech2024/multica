@@ -94,6 +94,8 @@ test.describe("Workbench delivery evidence", () => {
     const accepted = await acceptedResponse;
     expect(accepted.status()).toBe(200);
     expect((await accepted.json()).status).toBe("done");
+    await expect(acceptance.getByRole("region", { name: "Merge evidence", exact: true })).toBeVisible();
+    await expect(acceptance.getByText("Configure the repository URL and target branch.")).toBeVisible();
     const undoResponse = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith("/delivery-review"));
     await page.getByRole("button", { name: "Undo", exact: true }).click();
     const undone = await undoResponse;

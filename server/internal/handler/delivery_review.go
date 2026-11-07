@@ -109,6 +109,19 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		writeRevisionConflict(w, "issue", current.ID, input.ExpectedRevision, current.Revision)
 		return
 	}
+	if input.Action == "undo" {
+		prs, err := readReleasePullRequests(r.Context(), q, current)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to verify acceptance undo eligibility")
+			return
+		}
+		for _, pr := range prs {
+			if pr.State == "merged" {
+				writeError(w, http.StatusConflict, "acceptance cannot be undone after a linked pull request has merged")
+				return
+			}
+		}
+	}
 	criteria, status, err := workbench.ReviewDelivery(criteria, current.Status, input.Action, input.Reason, actorID, input.Checks, state.Blockers, time.Now())
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())

@@ -2091,5 +2091,17 @@
     "create": "New task",
     "escape": "Return to task list / clear selection",
     "help": "Shortcut help"
+  },
+  "release_readiness": {
+    "title": "Merge evidence",
+    "failed": "Could not load merge evidence.",
+    "matched": "Accepted source commits match the repository merges.",
+    "blockers": {
+      "acceptance": "Accept the current delivery before preparing a release.",
+      "repository_missing": "Configure the repository URL and target branch.",
+      "merge_missing": "A matching merge for the accepted source commit is missing.",
+      "merge_ambiguous": "Multiple matching pull requests require review."
+    },
+    "retry": "Retry"
   }
 }

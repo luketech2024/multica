@@ -2022,5 +2022,17 @@
     "create": "새 작업",
     "escape": "작업 목록으로 돌아가기 / 선택 해제",
     "help": "단축키 도움말"
+  },
+  "release_readiness": {
+    "title": "병합 증거",
+    "failed": "병합 증거를 불러오지 못했습니다.",
+    "matched": "검수한 소스 커밋이 각 저장소의 병합과 일치합니다.",
+    "blockers": {
+      "acceptance": "릴리스 준비 전에 현재 결과물을 검수하세요.",
+      "repository_missing": "저장소 URL과 대상 브랜치를 설정하세요.",
+      "merge_missing": "검수한 소스 커밋과 일치하는 병합 기록이 없습니다.",
+      "merge_ambiguous": "일치하는 PR이 여러 개입니다. 연결을 확인하세요."
+    },
+    "retry": "다시 시도"
   }
 }

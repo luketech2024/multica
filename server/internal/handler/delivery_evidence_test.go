@@ -16,8 +16,12 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 		t.Skip("database unavailable")
 	}
 	project := dbfx.Project(t, "Delivery evidence")
+	repo := dbfx.Insert(t, "project_resource", testutil.Cols{
+		"project_id": project, "workspace_id": testWorkspaceID, "resource_type": "github_repo",
+		"resource_ref": `{"url":"https://github.com/acme/release-evidence","ref":"main"}`,
+	})
 	parent := dbfx.Issue(t, "Review export", testutil.Cols{"project_id": project, "assignee_type": "member", "assignee_id": testUserID})
-	handoff := workbench.Handoff{V: 2, RequirementVersion: 1, Role: "test", RepoID: "repository", Expected: []string{"report"}, DependsOn: []string{}}
+	handoff := workbench.Handoff{V: 2, RequirementVersion: 1, Role: "test", RepoID: repo, Expected: []string{"report"}, DependsOn: []string{}}
 	properties, _ := json.Marshal(map[string]any{"workbench_handoff": handoff})
 	child := dbfx.Issue(t, "Verify export", testutil.Cols{"project_id": project, "parent_issue_id": parent, "status": "done", "properties": properties})
 	roles := workbench.DefaultProjectRoles()
@@ -59,7 +63,7 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 		t.Fatal(err)
 	}
 	recorded := parsed.Delivery[child]
-	if recorded.RecordedBy != testUserID || recorded.Role != "test" || recorded.Version != 1 || recorded.RecordedAt == "" || recorded.RepoID != "repository" {
+	if recorded.RecordedBy != testUserID || recorded.Role != "test" || recorded.Version != 1 || recorded.RecordedAt == "" || recorded.RepoID != repo {
 		t.Fatalf("evidence attribution was not server-owned: %+v", recorded)
 	}
 	call(current.Revision, http.StatusConflict)
@@ -125,6 +129,28 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 		t.Fatal("acceptance must read its pending notification while preserving unrelated mentions")
 	}
 	review("accept", "", saved.Revision, http.StatusConflict)
+	readRelease := func() workbench.ReleaseReadiness {
+		t.Helper()
+		var result workbench.ReleaseReadiness
+		req := testutil.WithURLParams(newRequest("GET", "/api/issues/"+parent+"/release-readiness", nil), "id", parent)
+		testutil.Call(t, testHandler.GetIssueReleaseReadiness, req).Want(http.StatusOK).JSON(&result)
+		return result
+	}
+	if result := readRelease(); len(result.Blockers) != 1 || result.Blockers[0].Code != "merge_missing" {
+		t.Fatalf("missing merge should block release: %+v", result)
+	}
+	pr := dbfx.Insert(t, "github_pull_request", testutil.Cols{
+		"workspace_id": testWorkspaceID, "installation_id": int64(12345), "repo_owner": "acme", "repo_name": "release-evidence", "pr_number": 1,
+		"title": "Release evidence", "state": "merged", "html_url": "https://github.com/acme/release-evidence/pull/1",
+		"head_sha": evidence.Commit, "base_branch": "main", "merge_commit_sha": strings.Repeat("b", 40),
+		"pr_created_at": "2026-11-07T00:00:00Z", "pr_updated_at": "2026-11-07T00:00:00Z",
+	})
+	dbfx.Exec(t, `INSERT INTO issue_pull_request (issue_id,pull_request_id) VALUES ($1,$2)`, child, pr)
+	if result := readRelease(); len(result.Blockers) != 0 || len(result.Merges) != 1 || result.Merges[0].MergeCommit != strings.Repeat("b", 40) {
+		t.Fatalf("accepted source and merged child should match: %+v", result)
+	}
+	review("undo", "", accepted.Revision, http.StatusConflict)
+	dbfx.Exec(t, `DELETE FROM issue_pull_request WHERE issue_id=$1 AND pull_request_id=$2`, child, pr)
 	undone := review("undo", "", accepted.Revision, http.StatusOK)
 	if undone.Status != "in_review" {
 		t.Fatal("undo did not restore review")

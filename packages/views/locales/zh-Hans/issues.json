@@ -2022,5 +2022,17 @@
     "create": "新建任务",
     "escape": "返回任务清单 / 取消选中",
     "help": "快捷键帮助"
+  },
+  "release_readiness": {
+    "title": "合并证据",
+    "failed": "合并证据加载失败。",
+    "matched": "验收源提交与逐仓合并记录一致。",
+    "blockers": {
+      "acceptance": "请先验收当前交付成果。",
+      "repository_missing": "请配置仓库地址与目标分支。",
+      "merge_missing": "缺少与验收源提交匹配的合并记录。",
+      "merge_ambiguous": "存在多个匹配的 PR，请核对关联记录。"
+    },
+    "retry": "重试"
   }
 }

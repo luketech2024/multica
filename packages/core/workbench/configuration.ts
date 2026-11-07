@@ -80,6 +80,14 @@ export function deliveryReviewOptions(wsId: string, issueId: string, revision?: 
   });
 }
 
+export function releaseReadinessOptions(wsId: string, issueId: string, revision?: number) {
+  return queryOptions({
+    queryKey: [...issueKeys.all(wsId), "release-readiness", issueId, revision],
+    queryFn: () => api.getReleaseReadiness(issueId),
+    refetchInterval: 15_000,
+  });
+}
+
 export function useReviewDelivery(wsId: string, issueId: string) {
   const qc = useQueryClient();
   return useMutation({

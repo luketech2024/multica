@@ -2127,6 +2127,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Post("/execution-plan", h.SaveExecutionPlan)
 					r.Post("/delivery-evidence", h.SaveDeliveryEvidence)
 					r.Get("/delivery-review", h.ReviewIssueDelivery)
+					r.Get("/release-readiness", h.GetIssueReleaseReadiness)
 					r.Post("/delivery-review", h.ReviewIssueDelivery)
 					r.Post("/execution-control", h.ControlIssueExecution)
 					r.Post("/move", h.MoveIssue)

@@ -2022,5 +2022,17 @@
     "create": "新增任務",
     "escape": "返回任務清單 / 取消選取",
     "help": "快捷鍵說明"
+  },
+  "release_readiness": {
+    "title": "合併證據",
+    "failed": "合併證據載入失敗。",
+    "matched": "驗收來源提交與逐倉合併記錄一致。",
+    "blockers": {
+      "acceptance": "請先驗收目前交付成果。",
+      "repository_missing": "請設定儲存庫網址與目標分支。",
+      "merge_missing": "缺少與驗收來源提交相符的合併記錄。",
+      "merge_ambiguous": "存在多個相符的 PR，請核對關聯記錄。"
+    },
+    "retry": "重試"
   }
 }
