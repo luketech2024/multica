@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Check, Cloud, Download, Laptop, Server, SquareTerminal } from "@multica/ui/icons";
-import { buttonVariants } from "@multica/ui/components/ui/button";
+import { Check, Cloud, Laptop, Server, SquareTerminal } from "@multica/ui/icons";
+import { Button } from "@multica/ui/components/ui/button";
 import { cn } from "@multica/ui/lib/utils";
 import { providerDisplayName } from "@multica/core/runtimes";
 import {
@@ -30,10 +30,12 @@ const CLOUD_NODES = [
 export function RuntimesIntro({
   action,
   cloudRuntimeEnabled,
+  onConnect,
 }: {
   /** The page's add-runtime menu, so every way to add one stays reachable. */
   action: ReactNode;
   cloudRuntimeEnabled: boolean;
+  onConnect: () => void;
 }) {
   const { t } = useT("runtimes");
 
@@ -76,15 +78,10 @@ export function RuntimesIntro({
       ]}
       action={action}
       secondaryAction={
-        <a
-          href="/download"
-          target="_blank"
-          rel="noreferrer"
-          className={buttonVariants({ variant: "outline" })}
-        >
-          <Download aria-hidden="true" />
-          {t(($) => $.page.rows.download_desktop)}
-        </a>
+        <Button variant="outline" onClick={onConnect}>
+          <SquareTerminal aria-hidden="true" />
+          {t(($) => $.page.rows.view_commands)}
+        </Button>
       }
     >
       <FeatureIntroCarousel label={t(($) => $.intro.title)} slides={slides} />

@@ -28,7 +28,7 @@
       "machines": "机器",
       "this_computer": "这台电脑",
       "this_computer_connected": "已连接 · {{name}}",
-      "this_computer_download": "下载桌面端即可连接",
+      "this_computer_connect": "通过本地 CLI 连接",
       "other_machine": "其他机器或服务器",
       "other_machine_hint": "在那台机器上运行两条命令",
       "cloud_services": "云服务",
@@ -53,7 +53,7 @@
     },
     "rows": {
       "this_computer_title": "在这台电脑上运行",
-      "this_computer_hint": "下载桌面端并登录，这台电脑上的 Claude Code、Codex 等会自动出现在这里",
+      "this_computer_hint": "在这台电脑上运行连接命令，识别已安装的 Claude Code、Codex 等 CLI",
       "download_desktop": "下载桌面端",
       "add_machine_title": "添加其他机器或服务器",
       "add_machine_hint": "在那台机器上运行两条命令，智能体就能用它上面装好的 CLI 执行任务",
@@ -658,8 +658,8 @@
     "description": "运行时是智能体真正执行任务的地方：你的电脑、一台服务器，或者云服务。",
     "slides": {
       "local": {
-        "title": "这台电脑，自动连接",
-        "description": "下载桌面端并登录，这台电脑上的 Claude Code、Codex 等会自动出现。"
+        "title": "连接这台电脑",
+        "description": "在这台电脑上运行连接命令，智能体即可使用本机已安装的 CLI。"
       },
       "remote": {
         "title": "其他机器，两条命令",

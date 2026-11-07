@@ -28,7 +28,7 @@
       "machines": "マシン",
       "this_computer": "このコンピューター",
       "this_computer_connected": "接続済み · {{name}}",
-      "this_computer_download": "デスクトップアプリをダウンロードして接続",
+      "this_computer_connect": "ローカル CLI で接続",
       "other_machine": "他のマシンまたはサーバー",
       "other_machine_hint": "そのマシンで 2 つのコマンドを実行",
       "cloud_services": "クラウドサービス",
@@ -53,7 +53,7 @@
     },
     "rows": {
       "this_computer_title": "このコンピューターで実行",
-      "this_computer_hint": "デスクトップアプリをダウンロードしてサインインすると、このコンピューターの Claude Code や Codex などが自動的に表示されます",
+      "this_computer_hint": "このコンピューターで接続コマンドを実行し、Claude Code や Codex などを検出します",
       "download_desktop": "デスクトップ版をダウンロード",
       "add_machine_title": "他のマシンやサーバーを追加",
       "add_machine_hint": "そのマシンで 2 つのコマンドを実行すると、エージェントがそこにインストールされた CLI を使えます",
@@ -658,8 +658,8 @@
     "description": "ランタイムは、エージェントが実際にタスクを実行する場所です。手元のコンピューター、サーバー、またはクラウドサービスを使えます。",
     "slides": {
       "local": {
-        "title": "このコンピューターは自動で接続",
-        "description": "デスクトップアプリをダウンロードしてサインインすると、このコンピューターの Claude Code や Codex などが自動的に表示されます。"
+        "title": "このコンピューターを接続",
+        "description": "このコンピューターで接続コマンドを実行すると、エージェントがインストール済みの CLI を使用できます。"
       },
       "remote": {
         "title": "ほかのマシンはコマンド 2 つ",

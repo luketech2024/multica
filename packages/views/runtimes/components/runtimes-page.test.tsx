@@ -36,6 +36,13 @@ vi.mock("@multica/core/paths", () => ({
   useRequiredWorkspaceSlug: () => "workspace-test",
 }));
 vi.mock("@multica/core/realtime", () => ({ useWSEvent: () => {} }));
+vi.mock("./connect-remote-dialog", () => ({
+  ConnectRemoteDialog: ({ onClose }: { onClose: () => void }) => (
+    <div role="dialog" aria-label="Connect machine">
+      <button onClick={onClose}>Close connection</button>
+    </div>
+  ),
+}));
 vi.mock("@multica/core/onboarding", () => ({
   memberNeedsMikaSetup: () => false,
   useBootstrapMika: () => ({ isPending: false, mutateAsync: vi.fn() }),
@@ -164,7 +171,7 @@ describe("RuntimesPage", () => {
     expect(screen.queryByText("Machines")).not.toBeInTheDocument();
   });
 
-  it("keeps the top bar to one row of icon tools with a single icon add action", () => {
+  it("keeps the top bar to one row with a single labeled add action", () => {
     renderPage();
 
     const header = screen.getByRole("banner");
@@ -172,7 +179,7 @@ describe("RuntimesPage", () => {
     expect(within(header).queryByText("Learn more →")).not.toBeInTheDocument();
     expect(within(header).queryByText("2")).not.toBeInTheDocument();
     const add = within(header).getByRole("button", { name: "Add runtime" });
-    expect(add).not.toHaveTextContent("Add runtime");
+    expect(add).toHaveTextContent("Add runtime");
     expect(screen.queryByRole("button", { name: /^Offline/ })).not.toBeInTheDocument();
   });
 
@@ -224,10 +231,9 @@ describe("RuntimesPage", () => {
     const intro = screen.getByRole("region", {
       name: "Give your agents a computer to work on",
     });
-    expect(within(intro).getByRole("link", { name: /Download desktop/ })).toHaveAttribute(
-      "href",
-      "/download",
-    );
+    await user.click(within(intro).getByRole("button", { name: "View commands" }));
+    expect(screen.getByRole("dialog", { name: "Connect machine" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Close connection" }));
     expect(screen.queryByText("Machines")).not.toBeInTheDocument();
     expect(within(intro).getAllByRole("button", { name: /^Go to slide/ })).toHaveLength(2);
 
@@ -235,6 +241,8 @@ describe("RuntimesPage", () => {
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Other machine or server")).toBeInTheDocument();
     expect(within(menu).getByText("Qoder Cloud Agents")).toBeInTheDocument();
+    await user.click(within(menu).getByText("This computer"));
+    expect(screen.getByRole("dialog", { name: "Connect machine" })).toBeVisible();
   });
 
   it("adds the cloud node card only when cloud runtimes are enabled", () => {

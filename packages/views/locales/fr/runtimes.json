@@ -28,7 +28,7 @@
       "machines": "Machines",
       "this_computer": "Cet ordinateur",
       "this_computer_connected": "Connecté · {{name}}",
-      "this_computer_download": "Téléchargez l’app de bureau pour le connecter",
+      "this_computer_connect": "Connecter via le CLI local",
       "other_machine": "Autre machine ou serveur",
       "other_machine_hint": "Exécutez deux commandes sur cette machine",
       "cloud_services": "Services cloud",
@@ -53,7 +53,7 @@
     },
     "rows": {
       "this_computer_title": "Exécuter sur cet ordinateur",
-      "this_computer_hint": "Téléchargez l’app de bureau et connectez-vous : Claude Code, Codex et les autres CLI de cet ordinateur apparaîtront ici",
+      "this_computer_hint": "Exécutez les commandes de connexion sur cet ordinateur pour détecter Claude Code, Codex et les autres CLI",
       "download_desktop": "Télécharger l’app",
       "add_machine_title": "Ajouter une autre machine ou un serveur",
       "add_machine_hint": "Exécutez deux commandes sur cette machine pour que les agents utilisent ses CLI",
@@ -678,8 +678,8 @@
     "description": "Un runtime, c'est là où les agents exécutent vraiment leurs tâches : votre ordinateur, un serveur ou un service cloud.",
     "slides": {
       "local": {
-        "title": "Cet ordinateur se connecte tout seul",
-        "description": "Téléchargez l'app de bureau et connectez-vous : Claude Code, Codex et les autres CLI de cet ordinateur apparaissent d'eux-mêmes."
+        "title": "Connecter cet ordinateur",
+        "description": "Exécutez les commandes de connexion sur cet ordinateur pour rendre ses CLI disponibles aux agents."
       },
       "remote": {
         "title": "Une autre machine, deux commandes",

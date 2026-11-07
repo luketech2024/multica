@@ -28,7 +28,7 @@
       "machines": "機器",
       "this_computer": "這臺電腦",
       "this_computer_connected": "已連線 · {{name}}",
-      "this_computer_download": "下載桌面端即可連線",
+      "this_computer_connect": "透過本機 CLI 連接",
       "other_machine": "其他機器或伺服器",
       "other_machine_hint": "在那臺機器上執行兩條命令",
       "cloud_services": "雲服務",
@@ -53,7 +53,7 @@
     },
     "rows": {
       "this_computer_title": "在這臺電腦上執行",
-      "this_computer_hint": "下載桌面端並登入，這臺電腦上的 Claude Code、Codex 等會自動出現在這裡",
+      "this_computer_hint": "在這台電腦上執行連接命令，識別已安裝的 Claude Code、Codex 等 CLI",
       "download_desktop": "下載桌面端",
       "add_machine_title": "新增其他機器或伺服器",
       "add_machine_hint": "在那臺機器上執行兩條命令，AI 代理就能用它上面裝好的 CLI 執行任務",
@@ -658,8 +658,8 @@
     "description": "執行時是 AI 代理真正執行任務的地方：你的電腦、一臺伺服器，或者雲端服務。",
     "slides": {
       "local": {
-        "title": "這臺電腦，自動連接",
-        "description": "下載桌面端並登入，這臺電腦上的 Claude Code、Codex 等會自動出現。"
+        "title": "連接這台電腦",
+        "description": "在這台電腦上執行連接命令，智慧體即可使用本機已安裝的 CLI。"
       },
       "remote": {
         "title": "其他機器，兩條命令",

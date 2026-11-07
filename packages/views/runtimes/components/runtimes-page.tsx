@@ -11,7 +11,6 @@ import {
 import {
   Check,
   Cloud,
-  Download,
   Laptop,
   Loader2,
   Plus,
@@ -46,7 +45,7 @@ import {
 import type { AgentRuntime, MemberWithUser } from "@multica/core/types";
 import type { QoderConnection } from "@multica/core/runtimes/qoder";
 import { Badge } from "@multica/ui/components/ui/badge";
-import { Button, buttonVariants } from "@multica/ui/components/ui/button";
+import { Button } from "@multica/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -415,15 +414,10 @@ export function RuntimesPage({
       title: t(($) => $.page.rows.this_computer_title),
       description: t(($) => $.page.rows.this_computer_hint),
       action: (
-        <a
-          href="/download"
-          target="_blank"
-          rel="noreferrer"
-          className={buttonVariants({ variant: "outline", size: "xs" })}
-        >
-          <Download aria-hidden="true" className="size-3.5" />
-          {t(($) => $.page.rows.download_desktop)}
-        </a>
+        <Button variant="outline" size="xs" onClick={() => setShowConnectDialog(true)}>
+          <SquareTerminal aria-hidden="true" className="size-3.5" />
+          {t(($) => $.page.rows.view_commands)}
+        </Button>
       ),
     });
   }
@@ -497,6 +491,7 @@ export function RuntimesPage({
 
       {showIntro ? (
         <RuntimesIntro
+          onConnect={() => setShowConnectDialog(true)}
           cloudRuntimeEnabled={cloudRuntimeEnabled}
           action={
             <AddRuntimeMenu
@@ -622,8 +617,8 @@ function AddRuntimeMenu({
             <AddMenuItem
               icon={<Laptop className="size-4 text-muted-foreground" />}
               title={t(($) => $.page.add_menu.this_computer)}
-              description={t(($) => $.page.add_menu.this_computer_download)}
-              render={<a href="/download" target="_blank" rel="noreferrer" />}
+              description={t(($) => $.page.add_menu.this_computer_connect)}
+              onClick={onAddMachine}
             />
           )}
           <AddMenuItem
