@@ -16,11 +16,12 @@ type ReleaseTaskInput struct {
 }
 
 type ReleaseOrderInput struct {
-	ProjectID string             `json:"project_id"`
-	Env       string             `json:"env"`
-	RequestID string             `json:"request_id"`
-	Tasks     []ReleaseTaskInput `json:"tasks"`
-	Tags      map[string]string  `json:"tags"`
+	Delivery  *ApplicationRelease `json:"delivery,omitempty"`
+	ProjectID string              `json:"project_id"`
+	Env       string              `json:"env"`
+	RequestID string              `json:"request_id"`
+	Tasks     []ReleaseTaskInput  `json:"tasks"`
+	Tags      map[string]string   `json:"tags"`
 }
 
 type ReleaseTaskSnapshot struct {
@@ -38,6 +39,7 @@ type ReleaseRepositorySnapshot struct {
 }
 
 type ReleaseManifest struct {
+	Delivery     *ApplicationRelease         `json:"delivery,omitempty"`
 	Tasks        []ReleaseTaskSnapshot       `json:"tasks"`
 	Repositories []ReleaseRepositorySnapshot `json:"repositories"`
 }
@@ -48,7 +50,21 @@ func (input *ReleaseOrderInput) Normalize() error {
 	if input.Env != "staging" && input.Env != "prod" {
 		return errors.New("release environment must be staging or prod")
 	}
-	if len(input.Tasks) == 0 || len(input.Tasks) > 100 {
+	if input.Delivery != nil {
+		if len(input.Tasks) > 0 || len(input.Tags) > 0 {
+			return errors.New("application releases and task releases must use separate source selections")
+		}
+		if err := input.Delivery.Validate(); err != nil {
+			return err
+		}
+		input.Delivery.Snapshot = nil
+		input.Delivery.Results = nil
+		for i := range input.Delivery.Changes {
+			input.Delivery.Changes[i].ResolvedVersion = ""
+			input.Delivery.Changes[i].ArtifactDigest = ""
+		}
+	}
+	if (len(input.Tasks) == 0 && input.Delivery == nil) || len(input.Tasks) > 100 {
 		return errors.New("select 1 to 100 accepted tasks")
 	}
 	slices.SortFunc(input.Tasks, func(a, b ReleaseTaskInput) int { return strings.Compare(a.ID, b.ID) })

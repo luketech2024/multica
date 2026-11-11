@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+import { ProjectDeploymentSchema, DeploymentHostDiscoverySchema, DeploymentConnectionCheckSchema, DeploymentCertificatesSchema, DeploymentCertificateSchema, type DeploymentResource, type ProjectDeployment, type CertificateUpload, type ApplicationRelease } from "../workbench/application-deployment-schemas";
 import { ReleaseOrderSchema, ReleaseOrdersSchema, ReleaseCandidatesSchema, type ReleaseOrder, type ReleaseOrders, type ReleaseCandidates, type ReleaseOrderInput, type ReleaseConfirmationInput } from "../workbench/release-schemas";
 import { DeliveryReviewSchema, ReleaseReadinessSchema, type DeliveryReviewState, type DeliveryReviewInput, type ReleaseReadiness } from "../workbench/delivery";
 import { ProjectRolesSchema, type ProjectRoles } from "../workbench/schemas";
@@ -4373,6 +4374,43 @@ export class ApiClient {
   async getProjectWorkbenchRoles(projectId: string) {
     const endpoint = `/api/projects/${projectId}/workbench-roles`;
     return parseWorkbenchResponse(await this.fetch(endpoint), ProjectRolesSchema, endpoint);
+  }
+
+  async getProjectDeployment(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/deployment`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), ProjectDeploymentSchema, endpoint);
+  }
+  async checkDeploymentResource(projectId: string, resourceId: string) {
+    const endpoint = `/api/projects/${projectId}/deployment/resources/${resourceId}/check`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "POST"}), DeploymentConnectionCheckSchema, endpoint);
+  }
+  async checkDeploymentResourceDraft(projectId: string, resource: DeploymentResource) {
+    const endpoint = `/api/projects/${projectId}/deployment/check-resource`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "POST", body: JSON.stringify(resource)}), DeploymentConnectionCheckSchema, endpoint);
+  }
+  async discoverDeploymentHost(projectId: string, input: {host:string;port:string}) {
+    const endpoint = `/api/projects/${projectId}/deployment/discover-host`;
+    return parseWorkbenchResponse(await this.fetch(endpoint,{method:"POST",body:JSON.stringify(input)}), DeploymentHostDiscoverySchema, endpoint);
+  }
+  async saveProjectDeployment(projectId: string, data: ProjectDeployment) {
+    const endpoint = `/api/projects/${projectId}/deployment`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "PUT", body: JSON.stringify({config: data.config, expected_revision: data.revision})}), ProjectDeploymentSchema, endpoint);
+  }
+  async listDeploymentCertificates(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/certificates`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), DeploymentCertificatesSchema, endpoint);
+  }
+  async uploadDeploymentCertificate(projectId: string, input: CertificateUpload) {
+    const endpoint = `/api/projects/${projectId}/certificates`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "POST", body: JSON.stringify(input)}), DeploymentCertificateSchema, endpoint);
+  }
+  async updateApplicationRelease(id: string, input: {delivery: ApplicationRelease; expected_revision: number}) {
+    const endpoint = `/api/releases/${id}/content`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method: "PUT", body: JSON.stringify(input)}), ReleaseOrderSchema, endpoint);
+  }
+  async executeApplicationRelease(id: string, input: {expected_revision: number; acknowledged: boolean}) {
+    const endpoint = `/api/releases/${id}/execute`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {method:"POST",body:JSON.stringify(input)}), ReleaseOrderSchema, endpoint);
   }
 
   async listBusinessTemplates() {

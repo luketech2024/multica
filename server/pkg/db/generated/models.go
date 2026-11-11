@@ -707,6 +707,20 @@ type DeployTarget struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type DeploymentCertificate struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
+	Name        string             `json:"name"`
+	Domains     []string           `json:"domains"`
+	NotBefore   pgtype.Timestamptz `json:"not_before"`
+	NotAfter    pgtype.Timestamptz `json:"not_after"`
+	Fingerprint string             `json:"fingerprint"`
+	SecretEnc   []byte             `json:"secret_enc"`
+	WrappedKey  []byte             `json:"wrapped_key"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type DingtalkBotIdentity struct {
 	WorkspaceID      pgtype.UUID        `json:"workspace_id"`
 	InstallationID   pgtype.UUID        `json:"installation_id"`
@@ -1422,6 +1436,14 @@ type Project struct {
 	WorkflowID  pgtype.UUID        `json:"workflow_id"`
 }
 
+type ProjectDeployment struct {
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
+	Revision    int64              `json:"revision"`
+	Config      []byte             `json:"config"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ProjectResource struct {
 	ID           pgtype.UUID        `json:"id"`
 	ProjectID    pgtype.UUID        `json:"project_id"`
@@ -1936,6 +1958,7 @@ type WorkbenchReleaseOrder struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	Confirmations []byte             `json:"confirmations"`
+	LeaseUntil    pgtype.Timestamptz `json:"lease_until"`
 }
 
 type WorkbenchReleaseReservation struct {

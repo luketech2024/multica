@@ -12,6 +12,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 
 const mockQuickCreateIssue = vi.hoisted(() => vi.fn());
+const mockCreateIssue = vi.hoisted(() => vi.fn());
+vi.mock("@multica/core/issues/mutations", () => ({ useCreateIssue: () => ({ mutateAsync: mockCreateIssue }) }));
 const mockCreateCommentSubIssue = vi.hoisted(() => vi.fn());
 const mockSetLastActor = vi.hoisted(() => vi.fn());
 const mockSetQuickCreateFieldVisible = vi.hoisted(() => vi.fn());
@@ -201,6 +203,7 @@ vi.mock("./use-issue-limit-upgrade-prompt", () => ({
 vi.mock("@multica/core/paths", () => ({
   useCurrentWorkspace: () => ({ name: "Test Workspace" }),
   useWorkspacePaths: () => ({
+    issueDetail: (id: string) => `/ws-test/issues/${id}`,
     settings: () => "/ws-test/settings",
   }),
 }));
@@ -557,6 +560,7 @@ describe("AgentCreatePanel", () => {
     mockSquadsData.list = [];
     mockRuntimesData.list = [{ id: "runtime-1", metadata: { cli_version: "1.2.3" } }];
     mockQuickCreateIssue.mockResolvedValue(undefined);
+    mockCreateIssue.mockResolvedValue({ id: "created", identifier: "TEST-10", title: "New task" });
     mockCreateCommentSubIssue.mockResolvedValue({ task_id: "task-source-child" });
     mockApiUploadFile.mockResolvedValue({
       id: "019ec09d-6222-722b-bdfa-427b105d80be",
@@ -588,6 +592,38 @@ describe("AgentCreatePanel", () => {
         'Tell the agent what to do, e.g. "let Bohan fix the inbox loading slowness in the Web project"',
       ),
     ).toHaveValue("Persisted draft prompt");
+  });
+
+  it("persists a project task immediately, locks duplicate submission, and exposes its link", async () => {
+    mockProjectsQuery.data = [{ id: "proj-1", title: "Web", icon: null }];
+    mockProjectsQuery.isSuccess = true;
+    mockIssueDraftStore.draft.shared.projectId = "proj-1";
+    let resolve!: (value: unknown) => void;
+    mockCreateIssue.mockImplementation(() => new Promise((done) => { resolve = done; }));
+    renderPanel({ onClose: vi.fn(), isExpanded: false, setIsExpanded: vi.fn() });
+    const create = screen.getByRole("button", { name: /^Create$/i });
+    fireEvent.click(create);
+    fireEvent.click(create);
+    expect(mockCreateIssue).toHaveBeenCalledTimes(1);
+    expect(mockQuickCreateIssue).not.toHaveBeenCalled();
+    expect(create).toBeDisabled();
+    await act(async () => resolve({ id: "created", identifier: "TEST-10", title: "Saved request" }));
+    expect(mockToastSuccess).toHaveBeenCalledWith("TEST-10 · Saved request", expect.objectContaining({ action: expect.any(Object) }));
+    mockToastSuccess.mock.calls.at(-1)![1].action.onClick();
+    expect(mockNavigationPush).toHaveBeenCalledWith("/ws-test/issues/created");
+  });
+
+  it("preserves the project task draft when persistence fails", async () => {
+    mockProjectsQuery.data = [{ id: "proj-1", title: "Web", icon: null }];
+    mockProjectsQuery.isSuccess = true;
+    mockIssueDraftStore.draft.shared.projectId = "proj-1";
+    mockCreateIssue.mockRejectedValue(new Error("Connection lost"));
+    const onClose = vi.fn();
+    renderPanel({ onClose, isExpanded: false, setIsExpanded: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: /^Create$/i }));
+    expect(await screen.findByText("Connection lost")).toBeVisible();
+    expect(mockClearDraft).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("restores unfinished actor, project, priority, and due-date selections after remount", async () => {
@@ -957,7 +993,7 @@ describe("AgentCreatePanel", () => {
       await user.click(screen.getByRole("button", { name: /^Create$/i }));
 
       await waitFor(() => {
-        expect(mockQuickCreateIssue).toHaveBeenCalledWith(
+        expect(mockCreateIssue).toHaveBeenCalledWith(
           expect.objectContaining({ project_id: "proj-1" }),
         );
       });

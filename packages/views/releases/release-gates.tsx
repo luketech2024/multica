@@ -24,7 +24,7 @@ export function ReleaseGates({
   const [migration, setMigration] = useState(order.confirmations.migration);
   const [waiver, setWaiver] = useState(order.confirmations.security_waiver);
   const editable =
-    order.env === "prod" &&
+    (order.env === "prod" || Boolean(order.manifest.delivery)) &&
     ["draft", "prechecking", "ready"].includes(order.status);
   const waiverRequired =
     order.gates?.some((gate) =>
@@ -43,9 +43,14 @@ export function ReleaseGates({
         {order.gates?.map((gate) => (
           <div key={gate.id} className="space-y-1">
             <h3 className="text-caption font-medium">
-              {t(($) => $.releases.gates.names[gate.id])} ·{" "}
+              {order.manifest.delivery && gate.id === "targets"
+                ? t(($) => $.application_deployment.configuration_gate)
+                : t(($) => $.releases.gates.names[gate.id])}{" "}
+              ·{" "}
               {!gate.required
-                ? t(($) => $.releases.gates.not_required)
+                ? order.manifest.delivery && gate.id === "acceptance"
+                  ? t(($) => $.application_deployment.existing_source_gate)
+                  : t(($) => $.releases.gates.not_required)
                 : gate.passed
                   ? t(($) => $.releases.gates.passed)
                   : t(($) => $.releases.gates.blocked)}

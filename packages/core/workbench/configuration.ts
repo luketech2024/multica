@@ -17,6 +17,8 @@ import type {
 } from "./schemas";
 export * from "./schemas";
 export { workbenchPipeline } from "./pipeline";
+export { workbenchNextStep } from "./next-step";
+export type { WorkbenchDestination } from "./next-step";
 export type { PipelineState } from "./pipeline";
 export type { DeliveryEvidence, DeliveryEvidenceInput, DeliveryReviewInput } from "./delivery";
 export { prefillTaskTemplate } from "./template-prefill";

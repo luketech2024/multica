@@ -36,7 +36,13 @@
       "evidence_stale": "납품 보고서가 오래되었습니다.",
       "evidence_failed": "납품 보고서가 실패했습니다.",
       "role_missing": "활성 역할의 납품 결론이 없습니다."
-    }
+    },
+    "claim": "검수 담당하기",
+    "recover": "검수 자료 보완",
+    "recovery_hint": "검수 항목을 확인하고 완료된 하위 작업을 연결한 후 실제 납품 증거를 등록하세요.",
+    "recovery_items": "검수 항목, 한 줄에 하나",
+    "no_completed_children": "완료된 하위 작업이 없습니다.",
+    "confirm_recovery": "확인 및 연결"
   },
   "delivery": {
     "unverified": "현재 유효성이 확인되지 않았습니다.",
@@ -774,7 +780,7 @@
     "delete_failed": "댓글을 삭제하지 못했습니다",
     "reply_count_other": "답글 {{count}}개",
     "replying_to": "{{name}}에게 답글: {{preview}}",
-    "leave_comment_placeholder": "댓글 남기기...",
+    "leave_comment_placeholder": "이 작업에 댓글 추가…",
     "send_tooltip": "보내기",
     "trigger_source_issue_assignee": "담당자",
     "trigger_source_mention_agent": "@멘션",
@@ -826,7 +832,7 @@
     "restart_failed": "현재 실행을 중지하지 못했습니다. 메시지는 보내지 않았습니다."
   },
   "reply": {
-    "placeholder": "답글 남기기...",
+    "placeholder": "이 토론에 답변…",
     "annotations": {
       "confirm_add": "주석 추가",
       "save": "주석 저장",
@@ -2048,5 +2054,95 @@
   },
   "workspace_switcher": {
     "title": "작업 전환"
+  },
+  "workbench_ui": {
+    "view_total": "이 보기의 전체 작업 {{total}}개",
+    "mine_hint": "나에게 할당된 작업에는 에이전트 담당 작업이 포함되지 않습니다.",
+    "band_hint": "상태 필터 {{band}}",
+    "mine_empty": "나에게 할당된 작업만 표시 중입니다. 에이전트 담당 작업은 숨겨져 있습니다. 필터를 지우면 다른 작업도 볼 수 있습니다.",
+    "band_empty": "선택한 상태 필터가 차단된 작업을 포함한 다른 상태의 작업을 숨깁니다. 필터를 지우면 다른 작업도 볼 수 있습니다.",
+    "blocked_title": "작업이 차단됨",
+    "blocked_hint": "최신 에이전트 답변에서 원인을 확인하고 해당 토론에 답변하세요.",
+    "blocked_no_reply": "작업 설명과 실행 로그에서 차단 원인을 확인하세요.",
+    "read_reply": "최신 에이전트 답변 보기",
+    "review_sidebar": "오른쪽 패널에서 인수 기준을 검토한 후 여기서 확인하세요.",
+    "preview_settings": "미리보기 및 설정",
+    "discussion": "작업 토론"
+  },
+  "next_step": {
+    "title": "현재 단계 및 다음 작업",
+    "assignee": "담당자 {{name}}",
+    "read_failed": "현재 조건을 불러올 수 없습니다.",
+    "blockers": "조치가 필요한 조건 {{count}}개",
+    "offline": "담당 에이전트가 오프라인입니다. 런타임을 확인하세요.",
+    "stages": {
+      "requirements": "요구사항 확인 대기",
+      "plan": "실행 계획 대기",
+      "change": "요구사항 변경 중",
+      "running": "진행 중",
+      "blocked": "조치 필요",
+      "paused": "실행 일시 중지",
+      "review": "결과 검수 대기",
+      "recovery": "검수 정보 필요",
+      "accepted": "검수 완료",
+      "closed": "종료",
+      "task": "작업 활동"
+    },
+    "actions": {
+      "requirements": "요구사항 확인",
+      "plan": "실행 계획 보기",
+      "change": "변경 사항 확인",
+      "running": "진행 상황 보기",
+      "blocked": "요청 확인 및 답변",
+      "paused": "실행 제어 보기",
+      "review": "결과 검수",
+      "recovery": "검수 정보 보완",
+      "accepted": "릴리스 조건 보기",
+      "closed": "결과 보기",
+      "task": "활동 보기"
+    },
+    "latest_run": "최근 실행"
+  },
+  "composer_ui": {
+    "preview_loading": "수신 대상 및 처리 방식 확인 중…",
+    "preview_failed": "처리 방식을 확인할 수 없습니다. 다시 시도하세요.",
+    "comment_only": "댓글만 게시하며 에이전트를 실행하지 않습니다.",
+    "input_label": "이 작업에 대한 댓글 또는 지시",
+    "resume_draft": "초안 계속 편집",
+    "post_comment": "댓글 게시",
+    "send_instruction": "지시 보내기",
+    "send_queue": "보내고 대기",
+    "draft": {
+      "restored": "초안을 복원했습니다",
+      "saved": "초안을 저장했습니다",
+      "failed": "초안을 저장하지 못했습니다. 페이지를 열어 둔 채 다시 시도하세요.",
+      "clear_failed": "댓글이 게시되었지만 로컬 초안을 지우지 못했습니다. 새로고침 후 중복 전송하지 마세요."
+    },
+    "posted": "댓글이 게시되었습니다.",
+    "recipient": "수신 대상",
+    "queued": "처리 대기 중",
+    "received": "보충 내용을 접수했습니다. 실행 기록에서 전달 상태를 확인하세요",
+    "collapse_hint": "Esc로 접기",
+    "replying_to": "{{name}}의 토론에 답변",
+    "view_original": "원래 토론 보기",
+    "reply_action": "답글",
+    "back_to_task": "작업 댓글로 돌아가기"
+  },
+  "discussion_picker": {
+    "title": "답글을 달 토론 선택",
+    "description": "이번 답글에 해당하는 원본 메시지를 선택하세요.",
+    "loading": "토론을 불러오는 중…",
+    "failed": "토론을 불러오지 못했습니다. 다시 시도한 후 답글 대상을 선택하세요.",
+    "empty": "답글을 달 수 있는 토론이 없습니다.",
+    "attachment": "첨부 파일 메시지",
+    "in_thread": "토론 내 답글",
+    "reply": "이 토론에 답글",
+    "more": "토론 더 보기",
+    "hint": "원래 토론을 확인하면 입력란에서 전송 방식을 볼 수 있습니다.",
+    "change": "토론 변경",
+    "unavailable": "선택한 토론을 사용할 수 없습니다. 초안은 유지됩니다. 다시 불러오거나 다른 토론을 선택하세요.",
+    "changed": "원본 메시지가 변경되었습니다. 전송 전에 최신 내용을 확인하세요.",
+    "continue_reply": "답글 계속 작성",
+    "choose": "토론 선택 후 답글"
   }
 }

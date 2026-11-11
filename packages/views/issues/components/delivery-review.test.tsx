@@ -18,10 +18,11 @@ vi.mock("@multica/core/api", () => ({ api: {
 } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
-function mount(assignee = "member") {
+function mount(assignee = "member", overrides: Partial<Issue> = {}) {
   const issue = {
-    id: "parent", revision: 7, status: "in_review", assignee_type: "member", assignee_id: assignee,
+    id: "parent", project_id: "project", revision: 7, status: "in_review", assignee_type: "member", assignee_id: assignee,
     acceptance_criteria: { plan: { issues: [] }, gate: { accept: null } },
+    ...overrides,
   } as unknown as Issue;
   renderWithI18n(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
     <DeliveryReview issue={issue} />
@@ -44,6 +45,22 @@ it("requires project checks before accepting and offers revision-safe undo", asy
   expect(options.duration).toBe(5000);
   options.action.onClick();
   await waitFor(() => expect(review).toHaveBeenLastCalledWith("parent", expect.objectContaining({ action: "undo", expected_revision: 8 })));
+});
+
+it("keeps acceptance visible for legacy completed tasks without a plan", async () => {
+  read.mockResolvedValue({ revision: 7, blockers: [{ code: "plan" }], checks: [] });
+  mount("member", { status: "done", acceptance_criteria: undefined });
+  expect(screen.getByRole("button", { name: "Complete acceptance data" })).toBeVisible();
+  await waitFor(() => expect(read).toHaveBeenCalledWith("parent"));
+  await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+});
+
+it("lets a member claim a review assigned to an agent", async () => {
+  read.mockResolvedValue({ revision: 7, blockers: [], checks: [] });
+  review.mockResolvedValue({ revision: 8 });
+  mount("agent", { assignee_type: "agent" });
+  fireEvent.click(await screen.findByRole("button", { name: "Take over acceptance" }));
+  await waitFor(() => expect(review).toHaveBeenCalledWith("parent", expect.objectContaining({ action: "claim", expected_revision: 7 })));
 });
 
 it("shows named missing evidence and retains a required rejection reason on conflict", async () => {

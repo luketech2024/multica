@@ -24,6 +24,10 @@ import { ConfigurationSelect } from "../projects/components/configuration-select
 import { AppLink, useNavigation } from "../navigation";
 import { useT } from "../i18n";
 import { ReleaseGates } from "./release-gates";
+import {
+  CreateApplicationReleaseDialog,
+  ApplicationReleaseEditor,
+} from "./application-release-editor";
 
 export function ReleasesPage() {
   const { t } = useT("projects");
@@ -47,7 +51,13 @@ export function ReleasesPage() {
         <h1 className="text-display-sm font-medium">
           {t(($) => $.releases.title)}
         </h1>
-        {(orders.isPending || rows.length > 0) && <CreateReleaseDialog key={project} initialProject={project} />}
+        <div className="flex flex-wrap gap-2">
+          <CreateApplicationReleaseDialog
+            key={`apps-${project}`}
+            initialProject={project}
+          />
+          <CreateReleaseDialog key={project} initialProject={project} />
+        </div>
       </header>
       <div className="min-h-0 flex-1 space-y-4 overflow-auto px-6 pb-6">
         <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
@@ -89,9 +99,12 @@ export function ReleasesPage() {
         )}
         {orders.isSuccess && rows.length === 0 && (
           <section className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-surface-border bg-surface p-6 text-center shadow-[var(--surface-shadow)]">
-            <h2 className="text-title-sm font-medium">{t(($) => $.releases.empty)}</h2>
-            <p className="text-label text-muted-foreground">{t(($) => $.releases.empty_hint)}</p>
-            <CreateReleaseDialog key={project} initialProject={project} />
+            <h2 className="text-title-sm font-medium">
+              {t(($) => $.releases.empty)}
+            </h2>
+            <p className="text-label text-muted-foreground">
+              {t(($) => $.releases.empty_hint)}
+            </p>
           </section>
         )}
         <ul className="space-y-3">
@@ -102,18 +115,36 @@ export function ReleasesPage() {
                 className="block space-y-2 rounded-xl border bg-surface p-4 hover:bg-surface-hover"
               >
                 <div className="flex flex-wrap justify-between gap-2">
-                  <span className="font-medium">{order.identifier}</span>
+                  <span className="font-medium">
+                    {order.identifier} {order.manifest.delivery?.title}
+                  </span>
                   <span>{t(($) => $.releases.status[order.status])}</span>
                 </div>
                 <p className="text-caption text-muted-foreground">
                   {t(($) => $.releases[order.env])} ·{" "}
-                  {t(($) => $.releases.task_count, {
-                    count: order.manifest.tasks.length,
-                  })}{" "}
-                  ·{" "}
-                  {t(($) => $.releases.repo_count, {
-                    count: order.manifest.repositories.length,
-                  })}
+                  {order.manifest.delivery ? (
+                    t(($) => $.application_deployment.change_counts, {
+                      apps: order.manifest.delivery.changes.filter(
+                        (change) => change.type === "app",
+                      ).length,
+                      configs: order.manifest.delivery.changes.filter(
+                        (change) => change.type === "config",
+                      ).length,
+                      sql: order.manifest.delivery.changes.filter(
+                        (change) => change.type === "sql",
+                      ).length,
+                    })
+                  ) : (
+                    <>
+                      {t(($) => $.releases.task_count, {
+                        count: order.manifest.tasks.length,
+                      })}{" "}
+                      ·{" "}
+                      {t(($) => $.releases.repo_count, {
+                        count: order.manifest.repositories.length,
+                      })}
+                    </>
+                  )}
                 </p>
                 <p className="truncate text-caption">
                   {order.manifest.tasks.map((task) => task.title).join(" · ")}
@@ -155,6 +186,7 @@ function CreateReleaseDialog({ initialProject }: { initialProject: string }) {
   });
   const create = useCreateReleaseOrder(wsId);
   const rows = candidates.data?.pages.flatMap((page) => page.candidates) ?? [];
+  const blocked = candidates.data?.pages.flatMap((page) => page.blocked ?? []) ?? [];
   const selected = rows.filter((row) => !excluded.includes(row.id));
   const repositories = [
     ...new Map(
@@ -206,8 +238,8 @@ function CreateReleaseDialog({ initialProject }: { initialProject: string }) {
         if (!create.isPending) setOpen(value);
       }}
     >
-      <DialogTrigger render={<Button />}>
-        {t(($) => $.releases.create)}
+      <DialogTrigger render={<Button variant="outline" />}>
+        {t(($) => $.application_deployment.task_release)}
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
@@ -253,12 +285,16 @@ function CreateReleaseDialog({ initialProject }: { initialProject: string }) {
             </Button>
           </div>
         )}
-        {candidates.isSuccess && rows.length === 0 && (
+        {candidates.isSuccess && rows.length === 0 && blocked.length === 0 && (
           <p className="text-caption text-muted-foreground">
             {t(($) => $.releases.no_candidates)}
           </p>
         )}
         <div className="space-y-2">
+          {blocked.map((row) => <div key={row.id} className="space-y-1 rounded-lg border p-3 text-caption">
+            <AppLink className="text-brand underline" href={paths.issueDetail(row.id)} onNavigateInPlace={() => setOpen(false)}>{row.identifier} · {row.title}</AppLink>
+            {row.blockers.map((blocker, index) => <p key={index} className="text-muted-foreground">{t(($) => $.releases.blocked_reasons[blocker.code])}</p>)}
+          </div>)}
           {rows.map((row) => (
             <label key={row.id} className="flex items-start gap-2 text-caption">
               <input
@@ -365,58 +401,65 @@ export function ReleaseDetailPage({ releaseId }: { releaseId: string }) {
               {t(($) => $.releases.status[order.data.status])}
             </p>
           </header>
-          <ReleaseGates
-            key={`${order.data.id}-${order.data.revision}`}
-            wsId={wsId}
-            order={order.data}
-          />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <section className="space-y-3 rounded-xl border p-4">
-              <h2 className="text-title-sm font-medium">
-                {t(($) => $.releases.tasks)}
-              </h2>
-              <ul className="space-y-2">
-                {order.data.manifest.tasks.map((task) => (
-                  <li key={task.id}>
-                    <AppLink
-                      className="text-brand underline"
-                      href={paths.issueDetail(task.id)}
-                    >
-                      {task.identifier} · {task.title}
-                    </AppLink>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="space-y-3 rounded-xl border p-4">
-              <h2 className="text-title-sm font-medium">
-                {t(($) => $.releases.repositories)}
-              </h2>
-              {order.data.manifest.repositories.map((repo) => (
-                <div key={repo.repo_id} className="space-y-2 text-caption">
-                  <p className="font-medium">{repo.tag}</p>
-                  {repo.merges.map((merge, index) => (
-                    <div key={`${merge.pull_request_id}-${index}`}>
-                      <a
-                        className="block truncate text-brand underline"
-                        href={merge.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {merge.url}
-                      </a>
-                      <p
-                        className="truncate text-muted-foreground"
-                        title={merge.merge_commit}
-                      >
-                        {merge.base_branch} · <code>{merge.merge_commit}</code>
-                      </p>
+          {order.data.manifest.delivery ? (
+            <ApplicationReleaseEditor key={order.data.id} order={order.data} />
+          ) : (
+            <>
+              <ReleaseGates
+                key={`${order.data.id}-${order.data.revision}`}
+                wsId={wsId}
+                order={order.data}
+              />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <section className="space-y-3 rounded-xl border p-4">
+                  <h2 className="text-title-sm font-medium">
+                    {t(($) => $.releases.tasks)}
+                  </h2>
+                  <ul className="space-y-2">
+                    {order.data.manifest.tasks.map((task) => (
+                      <li key={task.id}>
+                        <AppLink
+                          className="text-brand underline"
+                          href={paths.issueDetail(task.id)}
+                        >
+                          {task.identifier} · {task.title}
+                        </AppLink>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="space-y-3 rounded-xl border p-4">
+                  <h2 className="text-title-sm font-medium">
+                    {t(($) => $.releases.repositories)}
+                  </h2>
+                  {order.data.manifest.repositories.map((repo) => (
+                    <div key={repo.repo_id} className="space-y-2 text-caption">
+                      <p className="font-medium">{repo.tag}</p>
+                      {repo.merges.map((merge, index) => (
+                        <div key={`${merge.pull_request_id}-${index}`}>
+                          <a
+                            className="block truncate text-brand underline"
+                            href={merge.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {merge.url}
+                          </a>
+                          <p
+                            className="truncate text-muted-foreground"
+                            title={merge.merge_commit}
+                          >
+                            {merge.base_branch} ·{" "}
+                            <code>{merge.merge_commit}</code>
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   ))}
-                </div>
-              ))}
-            </section>
-          </div>
+                </section>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

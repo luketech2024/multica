@@ -732,14 +732,16 @@ async function refreshWorkingAgentQueries(qc: QueryClient, wsId: string): Promis
         // projection may contain newly started work. Other facets also
         // depend on this membership, not only rows and group descriptors.
         return spec?.filters.working_only === true ||
-          spec?.filters.working_issue_ids !== undefined;
+          spec?.filters.working_issue_ids !== undefined ||
+          spec?.filters.workbench?.band === "running";
       },
     },
     {
       queryKey: issueKeys.sidebarAll(wsId),
       predicate: ({ queryKey }) => {
         const request = queryKey[4] as SidebarIssuesRequest | undefined;
-        return !!request && isSidebarTableRequest(request) && request.table.filters.working_only === true;
+        return !!request && isSidebarTableRequest(request) &&
+          (request.table.filters.working_only === true || request.table.filters.workbench?.band === "running");
       },
     },
   ];

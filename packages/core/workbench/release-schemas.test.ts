@@ -6,6 +6,13 @@ import {
   ReleaseGateSchema,
 } from "./release-schemas";
 
+it("keeps old candidate responses compatible and exposes blocked tasks safely", () => {
+  expect(ReleaseCandidatesSchema.parse({ candidates: [] }).blocked).toEqual([]);
+  const blocked = { id: "00000000-0000-4000-8000-000000000001", identifier: "TEST-1", title: "Completed", blockers: [{ code: "future_gate" }] };
+  expect(ReleaseCandidatesSchema.parse({ candidates: [], blocked: [blocked] }).blocked[0]?.blockers[0]?.code).toBe("acceptance");
+  expect(ReleaseCandidatesSchema.safeParse({ candidates: [], blocked: [{ ...blocked, blockers: null }] }).success).toBe(false);
+});
+
 it("rejects missing release snapshots and malformed merge evidence", () => {
   expect(
     ReleaseOrderSchema.safeParse({ id: "bad", status: "ready" }).success,

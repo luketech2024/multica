@@ -252,6 +252,7 @@ export function WorkbenchCredentials() {
                     items={[
                       "token",
                       "ssh-key",
+                      "ssh-password",
                       "cloud-ak",
                       "weapp-ci-key",
                       "registry-token",

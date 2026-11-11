@@ -6,9 +6,21 @@ import {
   type ReactNode,
 } from "react";
 
+import type { AgentTask } from "@multica/core/types";
+
+export type DiscussionReplyTarget = {
+  parentId: string;
+  draftThreadId?: string;
+  name: string;
+  onEditAnnotation?: (id: string) => boolean;
+  steerByDefault?: (task: AgentTask) => boolean;
+};
+
 export type CurrentIssueRenderContextValue = Readonly<{
   id: string;
   identifier: string;
+  status?: string;
+  composeReply?: (target: DiscussionReplyTarget) => void;
 }>;
 
 /**

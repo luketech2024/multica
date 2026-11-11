@@ -25,7 +25,7 @@ func (input *CredentialInput) Validate() error {
 	if input.Label == "" || len([]rune(input.Label)) > 120 {
 		return errors.New("credential label must contain 1 to 120 characters")
 	}
-	if !slices.Contains([]string{"ssh-key", "token", "cloud-ak", "weapp-ci-key", "registry-token"}, input.Kind) {
+	if !slices.Contains([]string{"ssh-key", "ssh-password", "token", "cloud-ak", "weapp-ci-key", "registry-token"}, input.Kind) {
 		return errors.New("unsupported credential kind")
 	}
 	if len(input.Usage) == 0 || len(input.Usage) > 4 {
@@ -40,6 +40,9 @@ func (input *CredentialInput) Validate() error {
 	}
 	if seen["deploy"] && len(input.Usage) != 1 {
 		return errors.New("deployment credentials cannot be reused for repository access")
+	}
+	if input.Kind == "ssh-password" && !seen["deploy"] {
+		return errors.New("SSH passwords are for deployment use only")
 	}
 	if strings.TrimSpace(input.Secret) == "" || len(input.Secret) > 65536 {
 		return errors.New("credential secret must contain 1 to 65536 bytes")

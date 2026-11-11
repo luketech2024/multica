@@ -36,7 +36,13 @@
       "evidence_stale": "Un rapport est obsolète.",
       "evidence_failed": "Un rapport signale un échec.",
       "role_missing": "Un rôle activé n’a pas de conclusion de livraison."
-    }
+    },
+    "claim": "Prendre en charge la validation",
+    "recover": "Compléter les données de validation",
+    "recovery_hint": "Confirmez les critères et associez les sous-tâches terminées, puis renseignez leurs preuves de livraison.",
+    "recovery_items": "Critères, un par ligne",
+    "no_completed_children": "Aucune sous-tâche terminée à associer.",
+    "confirm_recovery": "Confirmer et associer"
   },
   "delivery": {
     "unverified": "La validité actuelle n’a pas été vérifiée.",
@@ -791,7 +797,7 @@
     "reply_count_one": "{{count}} réponse",
     "reply_count_other": "{{count}} réponses",
     "replying_to": "En réponse à {{name}} : {{preview}}",
-    "leave_comment_placeholder": "Laisser un commentaire...",
+    "leave_comment_placeholder": "Ajouter un commentaire à cette tâche…",
     "send_tooltip": "Envoyer",
     "trigger_source_issue_assignee": "assigné",
     "trigger_source_mention_agent": "@mention",
@@ -848,7 +854,7 @@
     "restart_failed": "Impossible d'arrêter l'exécution en cours. Votre message n'a pas été envoyé."
   },
   "reply": {
-    "placeholder": "Laisser une réponse...",
+    "placeholder": "Répondre à cette discussion…",
     "annotations": {
       "confirm_add": "Ajouter une annotation",
       "save": "Enregistrer l'annotation",
@@ -2117,5 +2123,95 @@
   },
   "workspace_switcher": {
     "title": "Changer de tâche"
+  },
+  "workbench_ui": {
+    "view_total": "Toutes les tâches de cette vue : {{total}}",
+    "mine_hint": "Les tâches qui me sont assignées excluent celles assignées aux agents.",
+    "band_hint": "Filtre de statut : {{band}}",
+    "mine_empty": "Seules les tâches qui vous sont assignées sont affichées. Celles des agents sont masquées. Effacez les filtres pour voir les autres tâches.",
+    "band_empty": "Le statut sélectionné masque les tâches dans les autres états, y compris les tâches bloquées. Effacez les filtres pour les voir.",
+    "blocked_title": "Tâche bloquée",
+    "blocked_hint": "Lisez la dernière réponse de l’agent pour comprendre le blocage, puis répondez dans cette discussion.",
+    "blocked_no_reply": "Consultez la description de la tâche et le journal d’exécution pour identifier le blocage.",
+    "read_reply": "Lire la dernière réponse de l’agent",
+    "review_sidebar": "Vérifiez les critères dans le panneau de droite, puis confirmez ici.",
+    "preview_settings": "Aperçu et configuration",
+    "discussion": "Discussion de la tâche"
+  },
+  "next_step": {
+    "title": "Étape actuelle et suite",
+    "assignee": "Responsable {{name}}",
+    "read_failed": "Impossible de lire les conditions actuelles.",
+    "blockers": "{{count}} conditions demandent une action",
+    "offline": "L’agent responsable est hors ligne. Vérifiez son environnement d’exécution.",
+    "stages": {
+      "requirements": "Exigences à confirmer",
+      "plan": "Plan à préparer",
+      "change": "Modification des exigences",
+      "running": "En cours",
+      "blocked": "Action requise",
+      "paused": "Exécution suspendue",
+      "review": "Validation des résultats",
+      "recovery": "Informations de validation requises",
+      "accepted": "Validé",
+      "closed": "Fermé",
+      "task": "Activité de la tâche"
+    },
+    "actions": {
+      "requirements": "Vérifier les exigences",
+      "plan": "Voir le plan",
+      "change": "Examiner les changements",
+      "running": "Voir la progression",
+      "blocked": "Voir la demande et répondre",
+      "paused": "Voir les contrôles",
+      "review": "Examiner les résultats",
+      "recovery": "Compléter les informations",
+      "accepted": "Voir les conditions de publication",
+      "closed": "Voir les résultats",
+      "task": "Voir l’activité"
+    },
+    "latest_run": "Dernière exécution"
+  },
+  "composer_ui": {
+    "preview_loading": "Vérification des destinataires et du traitement…",
+    "preview_failed": "Impossible de confirmer le traitement. Réessayez avant d’envoyer.",
+    "comment_only": "Ce commentaire sera publié sans démarrer d’agent.",
+    "input_label": "Commentaire ou instruction pour cette tâche",
+    "resume_draft": "Continuer le brouillon",
+    "post_comment": "Publier le commentaire",
+    "send_instruction": "Envoyer l’instruction",
+    "send_queue": "Envoyer et mettre en attente",
+    "draft": {
+      "restored": "Brouillon restauré",
+      "saved": "Brouillon enregistré",
+      "failed": "Impossible d’enregistrer le brouillon. Gardez cette page ouverte et réessayez.",
+      "clear_failed": "Commentaire publié, mais le brouillon local n’a pas pu être effacé. Évitez de le renvoyer après rechargement."
+    },
+    "posted": "Commentaire publié.",
+    "recipient": "Destinataire",
+    "queued": "En attente de traitement",
+    "received": "Complément reçu. Consultez l’exécution pour suivre sa transmission",
+    "collapse_hint": "Esc pour replier",
+    "replying_to": "Réponse à la discussion de {{name}}",
+    "view_original": "Voir la discussion d’origine",
+    "reply_action": "Répondre",
+    "back_to_task": "Revenir au commentaire de tâche"
+  },
+  "discussion_picker": {
+    "title": "Choisir une discussion",
+    "description": "Sélectionnez le message auquel cette réponse se rapporte.",
+    "loading": "Chargement des discussions…",
+    "failed": "Impossible de charger les discussions. Réessayez pour choisir le destinataire de la réponse.",
+    "empty": "Aucune discussion à laquelle répondre.",
+    "attachment": "Message avec pièce jointe",
+    "in_thread": "Réponse dans une discussion",
+    "reply": "Répondre à cette discussion",
+    "more": "Afficher plus de discussions",
+    "hint": "Vérifiez la discussion d’origine. Les options d’envoi apparaissent dans la zone de saisie.",
+    "change": "Changer de discussion",
+    "unavailable": "La discussion sélectionnée est indisponible. Votre brouillon est conservé. Rechargez ou choisissez une autre discussion.",
+    "changed": "Le message d’origine a été modifié. Vérifiez son contenu avant l’envoi.",
+    "continue_reply": "Continuer la réponse",
+    "choose": "Choisir une discussion et répondre"
   }
 }

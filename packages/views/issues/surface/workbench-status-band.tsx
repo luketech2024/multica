@@ -59,9 +59,9 @@ export function WorkbenchStatusBand({
 }) {
   const { t } = useT("issues");
   const counts = useQueries({
-    queries: bands.map((band) => ({
+    queries: [...bands, "all" as const].map((band) => ({
       ...issueTableFacetsOptions(workspaceId, {
-        query: workbenchBandQuery(query, { ...selection, band }),
+        query: workbenchBandQuery(query, { ...selection, band, only_mine: band === "all" ? false : selection.only_mine }),
         facets: [{ kind: "status" }],
         include_total: true,
       }),
@@ -100,6 +100,11 @@ export function WorkbenchStatusBand({
         {t(($) => $.workbench_band.mine)}
       </label>
       <Button variant="ghost" size="sm" aria-pressed={!selection.only_mine && selection.band === "all"} onClick={() => onSelect("all", false)}>{t(($) => $.workbench_band.all)}</Button>
+      </div>
+      <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-label text-muted-foreground">
+        <span>{t(($) => $.workbench_ui.view_total, { total: enabled && !counts[3]?.isError ? counts[3]?.data?.total ?? "—" : "—" })}</span>
+        {selection.only_mine && <span>{t(($) => $.workbench_ui.mine_hint)}</span>}
+        {selection.band !== "all" && <span>{t(($) => $.workbench_ui.band_hint, { band: t(($) => $.workbench_band[selection.band as typeof bands[number]]) })}</span>}
       </div>
       {counts.some((count) => count.isError) && (
         <Button

@@ -109,3 +109,51 @@ func TestWorkbenchBandCountsAcrossPagesAndUsesMemberAssignment(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkbenchRunningIncludesActiveExecutionBeforeStatusTransition(t *testing.T) {
+	project := dbfx.Project(t, "Running execution band")
+	runtime := dbfx.Runtime(t, "Running execution runtime")
+	agent := dbfx.Agent(t, "Running execution agent", runtime)
+	issue := dbfx.Issue(t, "Agent still preparing", testutil.Cols{"project_id": project, "status": "todo", "assignee_type": "agent", "assignee_id": agent})
+	dbfx.Issue(t, "Member in progress", testutil.Cols{"project_id": project, "status": "in_progress", "assignee_type": "member", "assignee_id": testUserID})
+	task := dbfx.Task(t, agent, testutil.Cols{"runtime_id": runtime, "issue_id": issue, "status": "running"})
+	otherProject := dbfx.Project(t, "Other running project")
+	otherIssue := dbfx.Issue(t, "Other project work", testutil.Cols{"project_id": otherProject})
+	dbfx.Task(t, agent, testutil.Cols{"runtime_id": runtime, "issue_id": otherIssue, "status": "running"})
+	// A prior completed execution must not multiply the issue count.
+	dbfx.Task(t, agent, testutil.Cols{"runtime_id": runtime, "issue_id": issue, "status": "completed"})
+	for _, tc := range []struct {
+		status string
+		mine   bool
+		count  int64
+	}{
+		{"running", false, 2},
+		{"running", true, 1},
+		{"completed", false, 1},
+		{"failed", false, 1},
+		{"cancelled", false, 1},
+		{"queued", false, 1},
+	} {
+		dbfx.Exec(t, "UPDATE agent_task_queue SET status=$2 WHERE id=$1", task, tc.status)
+		query := map[string]any{
+			"scope":   map[string]string{"kind": "project", "project_id": project},
+			"filters": map[string]any{"workbench": map[string]any{"band": "running", "only_mine": tc.mine}},
+			"sort":    map[string]string{"field": "created_at", "direction": "asc"},
+		}
+		var rows struct {
+			Total int64 `json:"total"`
+		}
+		input := map[string]any{"query": query, "group": map[string]string{"kind": "none"}, "page": map[string]int{"limit": 10}}
+		testutil.Call(t, testHandler.ListIssueTableRows, newRequest("POST", "/api/issues/table/rows", input)).Want(200).JSON(&rows)
+		if rows.Total != tc.count {
+			t.Fatalf("status=%s mine=%v rows=%d want=%d", tc.status, tc.mine, rows.Total, tc.count)
+		}
+		var facets struct {
+			Total int64 `json:"total"`
+		}
+		testutil.Call(t, testHandler.ListIssueTableFacets, newRequest("POST", "/api/issues/table/facets", map[string]any{"query": query, "facets": []map[string]string{{"kind": "status"}}, "include_total": true})).Want(200).JSON(&facets)
+		if facets.Total != rows.Total {
+			t.Fatal("running count and list disagree")
+		}
+	}
+}

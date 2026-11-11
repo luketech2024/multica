@@ -9,6 +9,8 @@ import { IssueFlowCard } from "../../workflows/issue-flow-card";
 import { RequirementsPanel } from "./requirements-panel";
 import { WorkbenchPipeline } from "./workbench-pipeline";
 import { DeliveryEvidence } from "./delivery-evidence";
+import { CommentSendReceipt } from "./comment-send-receipt";
+import { IssueNextStep } from "./issue-next-step";
 import { DeliveryReview } from "./delivery-review";
 import { ExecutionControl } from "./execution-control";
 import { WorkbenchHandoffPanel } from "./workbench-handoff-panel";
@@ -115,7 +117,9 @@ import { SourceContextBadge } from "./source-context-viewer";
 import { RevisionConflictCompare } from "./revision-conflict-compare";
 import { CommentInput } from "./comment-input";
 import { useCommentAnnotations } from "./use-comment-annotations";
-import { CurrentIssueRenderContextProvider } from "../current-issue-render-context";
+import { DiscussionReplyPicker, isReplyDiscussion } from "./discussion-reply-picker";
+import { descriptionPreview } from "./description-preview";
+import { CurrentIssueRenderContextProvider, type DiscussionReplyTarget } from "../current-issue-render-context";
 import { ResolvedThreadBar } from "./resolved-thread-bar";
 import { ThreadMinimap, type ThreadMinimapThread } from "./thread-minimap";
 import { collectThreadParticipants, collectThreadReplies, deriveThreadResolution } from "./thread-utils";
@@ -1434,6 +1438,9 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   // Bottom comment composer. Measured when scrolling a freshly posted comment
   // into view so its bottom lands above the composer rather than behind it.
   const composerRef = useRef<HTMLDivElement | null>(null);
+  const [supplementTarget, setSupplementTarget] = useState<(DiscussionReplyTarget & { issueId: string; originalContent?: string | null; originalRevision?: number }) | null>(null);
+  const replyContext = supplementTarget?.issueId === id ? supplementTarget : null;
+  useEffect(() => { setSupplementTarget(null); }, [id]);
   // Pull-based scroll restoration (MUL-4741): the platform serves the offset
   // captured when this route was last left. The ref-attach assignment covers
   // the flat render modes (real heights at commit); the virtualized browsing
@@ -1484,7 +1491,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   // User preference: pin the bottom comment bar to the scroll viewport. Off
   // below `md` regardless of the preference — see the hook.
   const preferStickyComposer = useStickyComposer();
-  const [requirementsTarget, setRequirementsTarget] = useState<HTMLDivElement | null>(null);
+  const [, setRequirementsTarget] = useState<HTMLDivElement | null>(null);
   // Mobile only: desktop already reaches the latest entry through the
   // ThreadMinimap rail, which is not rendered below `md`. Passing null keeps
   // the hook's scroll and resize listeners off on desktop.
@@ -1582,7 +1589,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       return cached?.description != null ? cached : undefined;
     },
   });
-  const stickyComposer = !!issue?.acceptance_criteria || preferStickyComposer;
+  const stickyComposer = !isMobile && (!!issue?.acceptance_criteria || preferStickyComposer);
   useMarkIssueReadWhileViewing(wsId, issue?.id ?? "");
   useMarkIssueInboxReadWhileViewing(wsId, issue?.id ?? "", readsInbox);
   const descriptionSourceId = `description:${id}`;
@@ -1661,8 +1668,8 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   // Custom hooks — encapsulate timeline, reactions, subscribers
   const {
-    timeline, loading: timelineLoading,
-    submitComment, submitReply,
+    timeline, loading: timelineLoading, isError: timelineError, refetch: refetchTimeline,
+    submitComment, submitReply, lastSubmittedComment,
     editComment, deleteComment, toggleResolveComment, toggleReaction: handleToggleReaction,
   } = useIssueTimeline(id, user?.id);
 
@@ -1918,8 +1925,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   // Virtualized mode: Virtuoso owns the scroll. The first jump materializes the
   // row at its estimated height; once measured, the repeat aligns using the
-  // real height. The extra `offset` lifts the row's bottom clear of the sticky
-  // composer.
+  // real height. The docked composer has its own layout space.
   useEffect(() => {
     if (!pendingPostedCommentId || isFlatTimeline) return;
     const rootId = replyToRoot.get(pendingPostedCommentId) ?? pendingPostedCommentId;
@@ -1927,8 +1933,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
     if (index < 0) return;
     let timer: number | undefined;
     const scrollEnd = () => {
-      const composerHeight = composerRef.current?.getBoundingClientRect().height ?? 0;
-      virtuosoRef.current?.scrollToIndex({ index, align: "end", offset: composerHeight });
+      virtuosoRef.current?.scrollToIndex({ index, align: "end", offset: 0 });
     };
     const frame = requestAnimationFrame(() => {
       scrollEnd();
@@ -1944,7 +1949,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   }, [pendingPostedCommentId, items, replyToRoot, isFlatTimeline]);
 
   // Flat mode (find bar / deep link) has no Virtuoso, so drive scrollTop by
-  // hand: align the row's bottom to the composer's top edge. The comment's
+  // hand: align the row's bottom to the scroll viewport's bottom edge. The comment's
   // async layout (markdown, code highlight, images) keeps shifting its height,
   // so re-align each frame until it settles (within 1px) or ~0.5s elapses — the
   // same rAF stabilization the deep-link landing uses.
@@ -1961,8 +1966,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       if (el && container) {
         const c = container.getBoundingClientRect();
         const e = el.getBoundingClientRect();
-        const composerHeight = composerRef.current?.getBoundingClientRect().height ?? 0;
-        const target = Math.max(0, container.scrollTop + (e.bottom - c.bottom) + composerHeight);
+        const target = Math.max(0, container.scrollTop + (e.bottom - c.bottom));
         container.scrollTop = target;
         if (Math.abs(target - last) > 1 && ++frames < 30) {
           last = target;
@@ -2758,17 +2762,41 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
     overrideTop: restoredScrollTop,
   });
 
-  // Keep the identity value stable across unrelated issue-detail updates so
-  // context consumers only re-render when the owning issue changes identity.
+  const focusComposer = useCallback(() => {
+    requestAnimationFrame(() => {
+      composerRef.current?.scrollIntoView({ block: "nearest" });
+      const shell = composerRef.current?.querySelector<HTMLButtonElement>("[data-testid=comment-composer-shell]");
+      if (shell) shell.click();
+      else composerRef.current?.querySelector<HTMLElement>("[contenteditable=true]")?.focus();
+    });
+  }, []);
+  const composeReply = useCallback((target: DiscussionReplyTarget) => {
+    const entry = timeline.find((row) => row.id === target.parentId);
+    setSupplementTarget({ ...target, issueId: id, originalContent: entry?.content, originalRevision: entry?.revision });
+    locateOrigin({ kind: "comment", commentId: target.parentId });
+    focusComposer();
+  }, [id, timeline, locateOrigin, focusComposer]);
+  const selectedReply = replyContext ? timeline.find((entry) => entry.id === replyContext.parentId) : undefined;
+  const replyUnavailable = !!replyContext && (timelineLoading || timelineError || !selectedReply || !isReplyDiscussion(selectedReply));
+  const replyChanged = !!replyContext && !!selectedReply && (
+    selectedReply.content !== replyContext.originalContent || selectedReply.revision !== replyContext.originalRevision
+  );
+
+  // Keep the issue context stable across unrelated detail updates so
+  // consumers only re-render when the owning issue identity or status changes.
   const resolvedIssueId = issue?.id;
   const resolvedIssueIdentifier = issue?.identifier;
+  const resolvedIssueStatus = issue?.status;
   const currentIssueRenderContext = useMemo(
     () =>
       resolvedIssueId && resolvedIssueIdentifier
-        ? { id: resolvedIssueId, identifier: resolvedIssueIdentifier }
+        ? { id: resolvedIssueId, identifier: resolvedIssueIdentifier, status: resolvedIssueStatus, composeReply }
         : null,
-    [resolvedIssueId, resolvedIssueIdentifier],
+    [resolvedIssueId, resolvedIssueIdentifier, resolvedIssueStatus, composeReply],
   );
+  const latestRun = commentTasks?.toSorted((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))[0];
+  const latestAgentComment = timeline.filter((entry) => entry.type === "comment" && entry.actor_type === "agent" && !isDeletedComment(entry) && entry.content?.trim())
+    .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))[0];
 
   if (loading) {
     // The host's trailing controls hold the peek's only close button, so the
@@ -2935,6 +2963,10 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
           {allIssues.filter((entry) => !entry.parent_issue_id).map((entry) => <AppLink key={entry.id} href={paths.issueDetail(entry.id)} aria-current={entry.id === issue.id ? "page" : undefined} className={cn("block rounded-lg px-2 py-2 text-caption hover:bg-surface-hover", entry.id === issue.id && "bg-brand/10 text-brand-text")}><span className="block truncate">{entry.title}</span><span className="text-micro text-muted-foreground">{entry.identifier}</span></AppLink>)}
         </div>
       </section>
+      {issue.project_id && <details className="rounded-xl border border-surface-border bg-surface p-3">
+        <summary className="cursor-pointer text-label font-medium">{t(($) => $.workbench_ui.preview_settings)}</summary>
+        <div className="mt-3"><TaskPreview key={`preview-${issue.id}`} issue={issue} /></div>
+      </details>}
       {/* Properties */}
       <div>
         <IssueSidebarSectionHeader title={t(($) => $.detail.section_properties)} open={propertiesOpen} onOpenChange={setPropertiesOpen}  />
@@ -3253,6 +3285,77 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   const titleSizeClass = issue.acceptance_criteria ? "text-title-sm font-medium" : isPeek ? "text-title-lg font-medium" : "text-display-sm font-medium";
 
+  const discussionPicker = (label: string, primary = false) => (
+    <DiscussionReplyPicker key={`${id}:${primary ? "stage" : "composer"}`}
+      entries={timeline} loading={timelineLoading} failed={timelineError}
+      onRetry={() => { void refetchTimeline(); }} label={label} primary={primary}
+      onShowActivity={() => document.getElementById(`workflow-${id}-activity`)?.scrollIntoView({ block: "start" })}
+      onSelect={(entry) => {
+        const rootId = replyToRoot.get(entry.id) ?? entry.id;
+        const runs = commentRuns.get(rootId) ?? EMPTY_COMMENT_RUNS;
+        composeReply({ parentId: entry.id, draftThreadId: rootId,
+          name: entry.actor_name || getActorName(entry.actor_type, entry.actor_id),
+          steerByDefault: (task) => runs.some((run) => run.task.id === task.id),
+          onEditAnnotation: replyContext?.draftThreadId === rootId ? replyContext.onEditAnnotation : undefined,
+        });
+      }} />
+  );
+
+  const commentComposer = (
+          <div
+            ref={composerRef}
+            className={cn(
+              "relative mx-auto w-full max-w-[760px] min-[1920px]:max-w-[880px] shrink-0",
+              stickyComposer &&
+                "flex max-h-[50%] min-h-0 flex-col border-t bg-background px-6 py-3",
+              !stickyComposer && "mt-auto pt-6",
+            )}
+          >
+            {/* key={id}: web's /issues/[id] route doesn't remount on
+                issueId change, so without an explicit key the editor
+                keeps the previous issue's in-memory content and the
+                next keystroke would flush it into the new issue's
+                draft key. */}
+            {stickyComposer && jumpToLatest.visible && (
+              <JumpToLatestButton onClick={jumpToLatest.jump} label={t(($) => $.timeline.jump_to_latest)} />
+            )}
+            <h2 className="mb-2 text-label font-medium">{replyContext ? t(($) => $.composer_ui.replying_to, { name: replyContext.name }) : t(($) => $.workbench_ui.discussion)}</h2>
+            {replyContext && <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2 text-caption">
+              <Button size="sm" variant="ghost" onClick={() => locateOrigin({ kind: "comment", commentId: replyContext.parentId })}>{t(($) => $.composer_ui.view_original)}</Button>
+              {discussionPicker(t(($) => $.discussion_picker.change))}
+              <Button size="sm" variant="ghost" onClick={() => setSupplementTarget(null)}>{t(($) => $.composer_ui.back_to_task)}</Button>
+            </div>}
+            {replyContext && <div className="mb-2 rounded-md border-l-2 border-primary bg-muted px-3 py-2 text-caption">
+              {replyUnavailable ? <p role="alert">{t(($) => $.discussion_picker.unavailable)}</p>
+                : <p className="line-clamp-3 whitespace-pre-wrap break-words">{descriptionPreview(selectedReply?.content ?? "") || t(($) => $.discussion_picker.attachment)}</p>}
+              {replyChanged && !replyUnavailable && <p role="status" className="mt-1 text-warning">{t(($) => $.discussion_picker.changed)}</p>}
+            </div>}
+            <CommentSendReceipt comment={lastSubmittedComment} />
+            <CommentInput
+              key={`${id}:${replyContext?.parentId ?? "task"}`}
+              issueId={id}
+              parentId={replyContext?.parentId}
+              draftThreadId={replyContext?.draftThreadId}
+              steerByDefault={replyContext?.steerByDefault}
+              docked={stickyComposer}
+              sendDisabled={replyUnavailable}
+              onSubmit={replyContext ? (content, attachments, suppress, steer) => submitReply(replyContext.parentId, content, attachments, suppress, steer) : submitComment}
+              onAccepted={scrollToTimelineBottom}
+              onEditAnnotation={replyContext ? replyContext.onEditAnnotation : (annotationId) => descriptionAnnotations.editAnnotation(annotationId, true)}
+            />
+          </div>
+  );
+
+  const navigateWorkflow = (destination: "requirements" | "review" | "execution" | "activity" | "children") => {
+    if (destination === "activity" && latestAgentComment) {
+      locateOrigin({ kind: "comment", commentId: latestAgentComment.id });
+      return;
+    }
+    const target = document.getElementById(`workflow-${issue.id}-${destination}`);
+    target?.scrollIntoView({ block: "start", behavior: "instant" });
+    target?.focus({ preventScroll: true });
+  };
+
   const detailContent = (
     <CurrentIssueRenderContextProvider value={currentIssueRenderContext}>
     <div className="relative flex h-full min-w-0 flex-1 flex-col">
@@ -3362,6 +3465,15 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             />
             {isPeek ? (
               trailingActions
+            ) : overlaySidebar ? (
+              <Button
+                variant={sidebarOpen ? "secondary" : "ghost"}
+                aria-expanded={sidebarOpen}
+                onClick={handleToggleSidebar}
+              >
+                <PanelRight />
+                {t(($) => $.detail.section_properties)}
+              </Button>
             ) : (
               <IconButton
                 label={t(($) => $.detail.sidebar_tooltip)}
@@ -3384,10 +3496,16 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             centered column reads 32px left vs 43px right (MUL-4404). Mirroring
             the gutter restores symmetry; overlay-scrollbar platforms reserve
             nothing and render unchanged. */}
+        <IssueNextStep issue={issue} statusLabel={resolveStatusLabel(issue.status)} latestRun={latestRun} onShowRun={jumpToRun} onNavigate={navigateWorkflow}
+          blockedAction={replyContext && !replyUnavailable
+            ? <Button onClick={() => { locateOrigin({ kind: "comment", commentId: replyContext.parentId }); focusComposer(); }}>{t(($) => $.discussion_picker.continue_reply)}</Button>
+            : !timelineLoading && !timelineError && !timeline.some(isReplyDiscussion)
+              ? <Button onClick={() => document.getElementById(`workflow-${id}-activity`)?.scrollIntoView({ block: "start" })}>{t(($) => $.next_step.actions.task)}</Button>
+              : discussionPicker(t(($) => $.discussion_picker.choose), true)} />
         <div
           ref={attachScrollContainer}
           data-tab-scroll-root={isPeek ? undefined : scrollContainerKey}
-          className="relative flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+          className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
         >
         {/* Gutters: 32px is a comfortable reading margin on a desktop column
             but eats 16% of a 393px phone, so below `md` they drop to 12px.
@@ -3401,9 +3519,10 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             "mx-auto flex min-h-full w-full flex-col",
             // The peek is already a narrow column, so it takes a tighter gutter
             // and never reaches the chat launcher's corner (see IssuePeekHost).
-            isPeek ? "px-6 py-5" : "max-w-[760px] px-6 py-6 max-md:pb-chat-launcher",
+            isPeek ? "px-6 py-5" : "max-w-[760px] min-[1920px]:max-w-[880px] px-6 py-6 max-md:pb-chat-launcher",
           )}
         >
+
           <IssueDuplicateBanner
             issue={issue}
             onUnmark={() =>
@@ -3662,6 +3781,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
           </div>
 
+          <div id={`workflow-${issue.id}-children`} tabIndex={-1} className="scroll-mt-4 outline-none" />
           {/* Sub-issues — Linear-style */}
           {childIssues.length === 0 && (
             <div className="mt-6">
@@ -3784,18 +3904,17 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
             );
           })()}
 
-          <div className="my-8 border-t" />
+          <div className="my-6 border-t" />
 
-          <DeliveryReview key={`review-${issue.id}`} issue={issue} />
+          <div id={`workflow-${issue.id}-review`} tabIndex={-1} className="scroll-mt-4 outline-none"><DeliveryReview key={`review-${issue.id}`} issue={issue} /></div>
 
           <div className="my-6 space-y-4">
-            {!issue.workbench_handoff && <RequirementsPanel key={issue.id} issue={issue} detailsTarget={requirementsTarget} />}
-            <ExecutionControl key={`execution-${issue.id}`} issue={issue} />
+            <div id={`workflow-${issue.id}-requirements`} tabIndex={-1} className="scroll-mt-4 outline-none">{!issue.workbench_handoff && <RequirementsPanel key={issue.id} issue={issue} />}</div>
+            <div id={`workflow-${issue.id}-execution`} tabIndex={-1} className="scroll-mt-4 outline-none"><ExecutionControl key={`execution-${issue.id}`} issue={issue} /></div>
             <DeliveryEvidence key={`delivery-${issue.id}`} issue={issue} />
-            {issue.project_id && <TaskPreview key={`preview-${issue.id}`} issue={issue} />}
           </div>
           {/* Activity / Comments */}
-          <div>
+          <div id={`workflow-${issue.id}-activity`} tabIndex={-1} className="scroll-mt-4 outline-none">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="sr-only">{t(($) => $.detail.activity_section)}</h2>
@@ -3999,19 +4118,6 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
           </div>
 
-          {/* Bottom comment input — no avatar, full width. Direct child of
-              the content column (not the Activity section): a sticky box
-              can't leave its containing block, and the Activity div only
-              spans the timeline — at column level `sticky bottom-0` can pin
-              the composer across the whole scroll range.
-
-              Sticky treatment, bottom edge: opaque bg-background
-              under/around the card (its rounded
-              corners would otherwise leak scrolled text), a 16px gradient
-              fade above (exactly the mt-4 gap, so at rest it sits over the
-              page background and is invisible), and pb-4 so the card floats
-              off the viewport edge — with -mb-4 giving the padding back to
-              the column's py-8 so the at-rest layout doesn't shift. */}
           {/* "Jump to latest" (MUL-8324, mobile only) floats centered just above the
               composer's top edge. With the sticky composer it rides the
               composer itself; without it, a zero-height sticky anchor pins
@@ -4021,32 +4127,11 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
               <JumpToLatestButton onClick={jumpToLatest.jump} label={t(($) => $.timeline.jump_to_latest)} />
             </div>
           )}
-          <div
-            ref={composerRef}
-            className={cn(
-              "mt-auto pt-6",
-              stickyComposer &&
-                "sticky bottom-0 z-10 -mb-4 bg-background pb-4 before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-gradient-to-t before:from-background before:to-transparent",
-            )}
-          >
-            {/* key={id}: web's /issues/[id] route doesn't remount on
-                issueId change, so without an explicit key the editor
-                keeps the previous issue's in-memory content and the
-                next keystroke would flush it into the new issue's
-                draft key. */}
-            {stickyComposer && jumpToLatest.visible && (
-              <JumpToLatestButton onClick={jumpToLatest.jump} label={t(($) => $.timeline.jump_to_latest)} />
-            )}
-            <CommentInput
-              key={id}
-              issueId={id}
-              onSubmit={submitComment}
-              onAccepted={scrollToTimelineBottom}
-              onEditAnnotation={(annotationId) => descriptionAnnotations.editAnnotation(annotationId, true)}
-            />
-          </div>
+          {!stickyComposer && commentComposer}
         </div>
         </div>
+
+        {stickyComposer && commentComposer}
 
         {/* Thread quick-jump rail — rides the scroll container's right edge,
             next to the scrollbar, where the pointer already is while
@@ -4127,7 +4212,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
   }
 
   return withPreview(
-    <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
+    <ResizablePanelGroup orientation="horizontal" className="mx-auto w-full max-w-[1200px] min-[1920px]:max-w-[1320px] flex-1 min-h-0" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
       <ResizablePanel id="content" minSize="50%">
         {detailContent}
       </ResizablePanel>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ReleaseReadinessSchema } from "./delivery";
+import { ApplicationReleaseSchema, type ApplicationRelease } from "./application-deployment-schemas";
 
 export const ReleaseGateSchema = z.object({
   id: z.enum(["acceptance", "security", "changes", "targets"]),
@@ -33,6 +34,7 @@ export const ReleaseOrderSchema = z.object({
   created_by: z.string().uuid(),
   created_at: z.string(),
   updated_at: z.string(),
+  lease_until: z.string().nullable().optional(),
   gates: z.array(ReleaseGateSchema).optional(),
   confirmations: z
     .object({
@@ -50,6 +52,7 @@ export const ReleaseOrderSchema = z.object({
       at: "",
     }),
   manifest: z.object({
+    delivery: ApplicationReleaseSchema.optional(),
     tasks: z.array(
       z.object({
         id: z.string().uuid(),
@@ -72,6 +75,12 @@ export const ReleaseOrdersSchema = z.object({
   next_cursor: z.string().nullable().default(null),
 });
 export const ReleaseCandidatesSchema = z.object({
+  blocked: z.array(z.object({
+    id: z.string().uuid(),
+    identifier: z.string(),
+    title: z.string(),
+    blockers: z.array(z.object({ code: z.enum(["acceptance", "repository_missing", "merge_missing", "merge_ambiguous", "reserved"]).catch("acceptance"), repo_id: z.string().optional() })),
+  })).default([]),
   candidates: z.array(
     z.object({
       id: z.string().uuid(),
@@ -87,6 +96,7 @@ export type ReleaseOrder = z.infer<typeof ReleaseOrderSchema>;
 export type ReleaseOrders = z.infer<typeof ReleaseOrdersSchema>;
 export type ReleaseCandidates = z.infer<typeof ReleaseCandidatesSchema>;
 export type ReleaseOrderInput = {
+  delivery?: ApplicationRelease;
   project_id: string;
   env: "staging" | "prod";
   request_id: string;

@@ -1,4 +1,6 @@
 "use client";
+
+import { useCurrentIssueRenderContext } from "../current-issue-render-context";
 import { WorkbenchRunSummary } from "../../common/task-transcript/workbench-summary";
 
 import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -666,6 +668,7 @@ function CommentRow({
   const locale = useLocale();
   const timeAgo = useTimeAgo();
   const { getActorName } = useActorName();
+  const conversation = !!useCurrentIssueRenderContext()?.composeReply;
 
   const edit = useEditAttachmentState(issueId, entry, onEdit);
 
@@ -687,7 +690,15 @@ function CommentRow({
   if (isDeletedComment(entry)) return null;
 
   return (
-    <div data-comment-block className="pb-3">
+    <div
+      data-comment-block
+      data-message-side={conversation ? (isOwn ? "right" : "left") : undefined}
+      className={cn(
+        "pb-3",
+        conversation && "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
+        conversation && (isOwn ? "ml-auto bg-accent" : "mr-auto bg-card"),
+      )}
+    >
       {/* Header pins to the timeline's scroll parent within this reply's own
           row box, so a LONG reply keeps its
           author + actions visible while you scroll its body, then releases once
@@ -695,7 +706,7 @@ function CommentRow({
           highlight state while it occludes the body scrolling underneath. */}
       <StickyHeaderShell
         highlighted={isHighlighted}
-        className="flex items-center gap-2.5 px-4 max-md:px-3 pt-3 pb-1"
+        className={cn("flex items-center gap-2.5 px-4 max-md:px-3 pt-3 pb-1", conversation && isOwn && "!bg-accent")}
       >
         <ActorAvatar
           actorType={entry.actor_type}
@@ -1037,6 +1048,7 @@ function CommentCardImpl({
   onResolvedExpandChange,
   highlightedCommentId,
 }: CommentCardProps) {
+  const composeReply = useCurrentIssueRenderContext()?.composeReply;
   const { t } = useT("issues");
   const locale = useLocale();
   const timeAgo = useTimeAgo();
@@ -1051,8 +1063,21 @@ function CommentCardImpl({
     sources: [entry, ...replies].filter((e) => e.type === "comment")
       .map((e) => ({ id: e.id, name: e.actor_name || getActorName(e.actor_type, e.actor_id), revision: e.revision })),
     enabled: !!currentUserId,
-    onAdded: () => { if (replyFolded) onResolvedExpandChange?.(entry.id, true); },
+    onAdded: () => {
+      if (replyFolded) onResolvedExpandChange?.(entry.id, true);
+      openReplyComposer();
+    },
   });
+  const openReplyComposer = () => {
+    const target = replies.find((reply) => reply.id === replyTargetId) ?? entry;
+    composeReply?.({
+      parentId: replyTargetId,
+      draftThreadId: entry.id,
+      name: target.actor_name || getActorName(target.actor_type, target.actor_id),
+      onEditAnnotation: (id) => annotation.editAnnotation(id, true),
+      steerByDefault: steerThreadRunByDefault,
+    });
+  };
   const isCollapsed = useCommentCollapseStore((s) => s.isCollapsed(issueId, entry.id));
   const toggleCollapse = useCommentCollapseStore((s) => s.toggle);
   const open = !isCollapsed;
@@ -1109,7 +1134,8 @@ function CommentCardImpl({
         <div
           id={`comment-${reply.id}`}
           className={cn(
-            "border-t border-border/50 transition-colors duration-700",
+            "transition-colors duration-700",
+            !composeReply && "border-t border-border/50",
             highlightedCommentId === reply.id && highlightedCommentBackgroundClass,
           )}
         >
@@ -1182,7 +1208,7 @@ function CommentCardImpl({
     // overflow-clip (not -hidden) clips the rounded corners WITHOUT creating a
     // scroll container, so the sticky collapse affordances below resolve to the
     // timeline's scroll parent instead of this card. See PR #3623.
-    <Card ref={annotation.cardRef} {...annotation.captureProps} className="!py-0 !gap-0 overflow-clip transition-colors duration-700">
+    <Card ref={annotation.cardRef} {...annotation.captureProps} className={cn("!py-0 !gap-0 overflow-clip transition-colors duration-700", composeReply && "border-0 bg-transparent shadow-none")}>
       {annotation.popup}
       {onCollapseResolved && (
         <button
@@ -1202,12 +1228,21 @@ function CommentCardImpl({
             That is what keeps exactly one header pinned at a time: without this
             wrapper the header's containing block is the whole thread and it
             stays stuck behind every reply. */}
-        <div data-comment-block className={cn("transition-colors duration-700", isHighlighted && highlightedCommentBackgroundClass)}>
+        <div
+          data-comment-block
+          data-message-side={composeReply ? (isOwn ? "right" : "left") : undefined}
+          className={cn(
+            "transition-colors duration-700",
+            composeReply && "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
+            composeReply && (isOwn ? "ml-auto bg-accent" : "mr-auto bg-card"),
+            isHighlighted && highlightedCommentBackgroundClass,
+          )}
+        >
           {/* Keep the author aligned with replies; thread controls sit on the right. */}
           <StickyHeaderShell
             sticky={stickyHeader}
             highlighted={isHighlighted}
-            className={cn("px-4 max-md:px-3", !open ? "py-3" : stickyHeader ? "pt-3 pb-1" : "pt-3 pb-2")}
+            className={cn("px-4 max-md:px-3", composeReply && isOwn && "!bg-accent", !open ? "py-3" : stickyHeader ? "pt-3 pb-1" : "pt-3 pb-2")}
           >
             <div className="flex items-center gap-2.5">
               {deleted ? (
@@ -1525,22 +1560,28 @@ function CommentCardImpl({
               {/* Replies — chronological; the resolution keeps its place with a badge */}
               {threadRows.map(renderThreadRow)}
 
-              {/* Reply input */}
-              <div className="border-t border-border/50 px-4 max-md:px-3 py-2.5">
-                <ReplyInput
-                  issueId={issueId}
-                  parentId={replyTargetId}
-                  targetMissing={replyTargetMissing}
-                  placeholder={t(($) => $.reply.placeholder)}
-                  size="sm"
-                  avatarType="member"
-                  avatarId={currentUserId ?? ""}
-                  draftKey={`reply:${issueId}:${entry.id}`}
-                  onEditAnnotation={(id) => annotation.editAnnotation(id, true)}
-                  steerByDefault={steerThreadRunByDefault}
-                  onSubmit={(content, attachmentIds, suppressAgentIds, steerTaskIds) => replyTargetMissing ? Promise.resolve(false) : onReply(replyTargetId, content, attachmentIds, suppressAgentIds, steerTaskIds)}
-                  onAccepted={onReplyAccepted}
-                />
+              {/* Only one editor owns a discussion draft at a time. */}
+              <div className="px-4 max-md:px-3 py-2.5">
+                {composeReply ? (
+                  <Button size="sm" variant="ghost" disabled={replyTargetMissing} onClick={openReplyComposer}>
+                    {t(($) => $.composer_ui.reply_action)}
+                  </Button>
+                ) : (
+                  <ReplyInput
+                    issueId={issueId}
+                    parentId={replyTargetId}
+                    targetMissing={replyTargetMissing}
+                    placeholder={t(($) => $.reply.placeholder)}
+                    size="sm"
+                    avatarType="member"
+                    avatarId={currentUserId ?? ""}
+                    draftKey={`reply:${issueId}:${entry.id}`}
+                    onEditAnnotation={(id) => annotation.editAnnotation(id, true)}
+                    steerByDefault={steerThreadRunByDefault}
+                    onSubmit={(content, attachmentIds, suppressAgentIds, steerTaskIds) => replyTargetMissing ? Promise.resolve(false) : onReply(replyTargetId, content, attachmentIds, suppressAgentIds, steerTaskIds)}
+                    onAccepted={onReplyAccepted}
+                  />
+                )}
               </div>
             </>
           )}

@@ -36,7 +36,13 @@
       "evidence_stale": "A delivery report is out of date.",
       "evidence_failed": "A delivery report has failed.",
       "role_missing": "An enabled role has no delivery conclusion."
-    }
+    },
+    "claim": "Take over acceptance",
+    "recover": "Complete acceptance data",
+    "recovery_hint": "Confirm acceptance items and associate completed subtasks, then record their delivery evidence below.",
+    "recovery_items": "Acceptance items, one per line",
+    "no_completed_children": "No completed subtasks to associate.",
+    "confirm_recovery": "Confirm and associate subtasks"
   },
   "delivery": {
     "unverified": "Current validity has not been verified.",
@@ -791,7 +797,7 @@
     "reply_count_one": "{{count}} reply",
     "reply_count_other": "{{count}} replies",
     "replying_to": "Replying to {{name}}: {{preview}}",
-    "leave_comment_placeholder": "Leave a comment...",
+    "leave_comment_placeholder": "Add a comment to this task…",
     "send_tooltip": "Send",
     "trigger_source_issue_assignee": "assignee",
     "trigger_source_mention_agent": "@mention",
@@ -848,7 +854,7 @@
     "restart_failed": "Couldn't stop the current run. Your message wasn't sent."
   },
   "reply": {
-    "placeholder": "Leave a reply...",
+    "placeholder": "Reply to this discussion…",
     "annotations": {
       "confirm_add": "Add annotation",
       "save": "Save annotation",
@@ -2117,5 +2123,95 @@
   },
   "workspace_switcher": {
     "title": "Switch task"
+  },
+  "workbench_ui": {
+    "view_total": "All tasks in this view: {{total}}",
+    "mine_hint": "Assigned to me excludes tasks assigned to agents.",
+    "band_hint": "Status filter: {{band}}",
+    "mine_empty": "This filter shows tasks assigned to you. Tasks assigned to agents are hidden. Clear the filters to see more tasks.",
+    "band_empty": "The selected status hides tasks in other states, including blocked tasks. Clear the filters to see more tasks.",
+    "blocked_title": "Task blocked",
+    "blocked_hint": "Read the latest agent reply to understand the blocker and respond in that discussion.",
+    "blocked_no_reply": "Check the task description and execution log to identify the blocker.",
+    "read_reply": "Read latest agent reply",
+    "review_sidebar": "Review the criteria in the right panel, then confirm here.",
+    "preview_settings": "Preview and configuration",
+    "discussion": "Task discussion"
+  },
+  "next_step": {
+    "title": "Current stage and next step",
+    "assignee": "Assigned to {{name}}",
+    "read_failed": "Unable to read current conditions.",
+    "blockers": "{{count}} conditions need attention",
+    "offline": "The assigned agent is offline. Check its runtime before expecting execution.",
+    "stages": {
+      "requirements": "Confirm requirements",
+      "plan": "Execution plan pending",
+      "change": "Requirements change",
+      "running": "In progress",
+      "blocked": "Needs attention",
+      "paused": "Execution paused",
+      "review": "Delivery review pending",
+      "recovery": "Acceptance information needed",
+      "accepted": "Accepted",
+      "closed": "Closed",
+      "task": "Task activity"
+    },
+    "actions": {
+      "requirements": "Review requirements",
+      "plan": "View execution plan",
+      "change": "Review changes",
+      "running": "View progress",
+      "blocked": "View request and reply",
+      "paused": "View execution controls",
+      "review": "Review deliverables",
+      "recovery": "Complete acceptance information",
+      "accepted": "View release conditions",
+      "closed": "View results",
+      "task": "View activity"
+    },
+    "latest_run": "Latest execution"
+  },
+  "composer_ui": {
+    "preview_loading": "Confirming recipients and delivery…",
+    "preview_failed": "Unable to confirm delivery. Retry before sending.",
+    "comment_only": "This comment will be posted without starting an agent.",
+    "input_label": "Comment or instruction for this task",
+    "resume_draft": "Continue editing draft",
+    "post_comment": "Post comment",
+    "send_instruction": "Send instruction",
+    "send_queue": "Send and queue",
+    "draft": {
+      "restored": "Draft restored",
+      "saved": "Draft saved",
+      "failed": "Draft could not be saved. Keep this page open and try again.",
+      "clear_failed": "Comment posted, but the local draft could not be cleared. Avoid resending it after reloading."
+    },
+    "posted": "Comment posted.",
+    "recipient": "Recipient",
+    "queued": "Queued for processing",
+    "received": "Supplement received; check the execution for delivery progress",
+    "collapse_hint": "Esc to collapse",
+    "replying_to": "Replying to {{name}}",
+    "view_original": "View original discussion",
+    "reply_action": "Reply",
+    "back_to_task": "Back to task comment"
+  },
+  "discussion_picker": {
+    "title": "Choose a discussion to reply to",
+    "description": "Select the original message for this reply.",
+    "loading": "Loading discussions…",
+    "failed": "Unable to load discussions. Retry to choose a reply target.",
+    "empty": "There are no discussions to reply to yet.",
+    "attachment": "Attachment message",
+    "in_thread": "Reply within a discussion",
+    "reply": "Reply to this discussion",
+    "more": "Show more discussions",
+    "hint": "Confirm the original discussion. Delivery options appear in the composer.",
+    "change": "Change discussion",
+    "unavailable": "The selected discussion is unavailable. Your draft is kept. Retry loading or choose another discussion.",
+    "changed": "The original message has changed. Review the updated text before sending.",
+    "continue_reply": "Continue reply",
+    "choose": "Choose discussion and reply"
   }
 }

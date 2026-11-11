@@ -25,6 +25,8 @@ export interface UseCommentTriggerPreviewResult {
    * nothing destructive may act on it.
    */
   isCurrent: boolean;
+  isError: boolean;
+  retry: () => void;
 }
 
 export function isNoteCommentDraft(content: string): boolean {
@@ -125,10 +127,8 @@ export function useCommentTriggerPreview({
         : undefined,
   });
 
-  // Loading and errors intentionally surface as "no agents": the preview is
-  // an enhancement, and the composer renders nothing for an empty list.
   if (signature === "empty" || debouncedSignature === "empty") {
-    return { agents: [], blocked: [], hasAllMembersMention, isCurrent: signature === "empty" };
+    return { agents: [], blocked: [], hasAllMembersMention, isCurrent: signature === "empty", isError: false, retry: () => { void previewQuery.refetch(); } };
   }
 
   return {
@@ -136,5 +136,7 @@ export function useCommentTriggerPreview({
     blocked: previewQuery.data?.blocked ?? [],
     hasAllMembersMention,
     isCurrent: signature === debouncedSignature && previewQuery.isSuccess && !previewQuery.isPlaceholderData,
+    isError: signature === debouncedSignature && previewQuery.isError,
+    retry: () => { void previewQuery.refetch(); },
   };
 }

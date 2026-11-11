@@ -58,9 +58,13 @@ export const ReleaseReadinessSchema = z.object({
 export type ReleaseReadiness = z.infer<typeof ReleaseReadinessSchema>;
 export type DeliveryReviewInput = {
   expected_revision: number;
-  action: "accept" | "reject" | "undo";
+  action: "accept" | "reject" | "undo" | "claim" | "recover";
   reason?: string;
   checks?: string[];
+  recovery?: {
+    items: string[];
+    tasks: { issue_id: string; revision: number; role: string; repo_id: string; covers: string[] }[];
+  };
 };
 export const DeliveryDecisionSchema = z.object({
   action: z.enum(["accept", "reject", "undo"]),

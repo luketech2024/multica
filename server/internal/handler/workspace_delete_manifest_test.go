@@ -28,6 +28,8 @@ var workspaceDeletionManifest = map[string]workspaceDeleteAction{
 	"security_scans":                     workspaceDelete,
 	"credentials":                        workspaceDelete,
 	"deploy_targets":                     workspaceDelete,
+	"project_deployment":                 workspaceDelete,
+	"deployment_certificate":             workspaceDelete,
 	"cloud_agent_connection":             workspaceDelete,
 	"activity_log":                       workspaceDelete,
 	"agent":                              workspaceDelete,

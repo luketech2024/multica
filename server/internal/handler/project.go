@@ -829,6 +829,14 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to delete project deployment targets")
 		return
 	}
+	if err := qtx.DeleteProjectDeployment(r.Context(), db.DeleteProjectDeploymentParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
+		writeError(w, 500, "failed to delete application deployments")
+		return
+	}
+	if err := qtx.DeleteProjectCertificates(r.Context(), db.DeleteProjectCertificatesParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
+		writeError(w, 500, "failed to delete deployment certificates")
+		return
+	}
 	if err := qtx.DeleteProjectSecurity(r.Context(), db.DeleteProjectSecurityParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to delete project security records")
 		return

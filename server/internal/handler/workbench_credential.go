@@ -122,7 +122,7 @@ func (h *Handler) SaveWorkbenchCredential(w http.ResponseWriter, r *http.Request
 	}
 	characters := []rune(strings.TrimSpace(input.Secret))
 	lastFour := ""
-	if len(characters) > 4 {
+	if input.Kind != "ssh-password" && len(characters) > 4 {
 		lastFour = string(characters[len(characters)-4:])
 	}
 	input.Secret = ""

@@ -90,15 +90,18 @@ export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; deta
         </div>
       ))}
       {!readOnly && <Button variant="outline" size="sm" disabled={disabled || criteria.items.length >= 200} onClick={() => edit({ ...criteria, items: [...criteria.items, { id: "", text: "", origin: "user", covers: [], checked: null, note: null }] })}>{t(($) => $.requirements.add)}</Button>}
-      <label className="block space-y-1 text-caption">
+      {(!readOnly || criteria.bounds.length > 0) && <label className="block space-y-1 text-caption">
         <span>{t(($) => $.requirements.bounds)}</span>
         <Textarea
           value={criteria.bounds.join("\n")}
           readOnly={disabled}
           onChange={(event) => edit({ ...criteria, bounds: event.target.value.split("\n") })}
         />
-      </label>
+      </label>}
   </div>;
+  if (detailsTarget && readOnly && !locked && !criteria.change && issue.status !== "in_progress") {
+    return createPortal(fields, detailsTarget);
+  }
   return (
     <section className="space-y-3 rounded-xl border bg-surface p-3" aria-label={t(($) => $.requirements.title)}>
       <div className="flex items-center justify-between gap-2">
@@ -106,6 +109,7 @@ export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; deta
         <span className="text-caption text-muted-foreground">{t(($) => $.requirements.version, { version: criteria.version })}</span>
       </div>
       {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
+      {detailsTarget && !readOnly && <p className="text-body text-muted-foreground">{t(($) => $.workbench_ui.review_sidebar)}</p>}
       {locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
       {(criteria.change || issue.status === "in_progress") && <RequirementsChangeControls issue={issue} />}
       {detailsTarget === undefined ? fields : detailsTarget ? createPortal(fields, detailsTarget) : <details><summary className="cursor-pointer text-caption text-muted-foreground">{t(($) => $.requirements.title)}</summary>{fields}</details>}

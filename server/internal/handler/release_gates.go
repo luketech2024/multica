@@ -25,6 +25,9 @@ func readReleaseGates(ctx context.Context, q *db.Queries, order db.WorkbenchRele
 	if err := json.Unmarshal(order.Confirmations, &confirmation); err != nil {
 		return nil, err
 	}
+	if manifest.Delivery != nil {
+		return readApplicationReleaseGates(ctx, q, order, *manifest.Delivery, confirmation)
+	}
 	project, err := q.GetProjectInWorkspace(ctx, db.GetProjectInWorkspaceParams{WorkspaceID: order.WorkspaceID, ID: order.ProjectID})
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import type { UploadResult } from "@multica/core/hooks/use-file-upload";
 import type { Attachment } from "@multica/core/types";
+import { defaultStorage, setCurrentWorkspace } from "@multica/core/platform";
 import { useCommentComposerStore, useCommentDraftStore } from "@multica/core/issues/stores";
 import { WorkspaceSlugProvider } from "@multica/core/paths";
 import { renderWithI18n } from "../../test/i18n";
@@ -294,8 +295,8 @@ beforeEach(() => {
   apiListWorkspaces.mockReset();
   apiListQuickActions.mockReset();
   apiRenderQuickAction.mockReset();
-  apiPreviewCommentTriggers.mockReset();
-  apiListTasksByIssue.mockReset();
+  apiPreviewCommentTriggers.mockReset().mockResolvedValue({ agents: [], blocked: [] });
+  apiListTasksByIssue.mockReset().mockResolvedValue([]);
   apiCancelTask.mockReset();
   insertMarkdownSpy.mockReset();
   insertPlaceholderSpy.mockReset();
@@ -409,9 +410,9 @@ describe("comment composers", () => {
 
     // Readonly-first: shell shows the placeholder text; clicking mounts the
     // real editor in place.
-    expect(screen.getByTestId("comment-composer-shell")).toHaveTextContent("Leave a comment...");
+    expect(screen.getByTestId("comment-composer-shell")).toHaveTextContent("Add a comment to this task…");
     activateComposer("comment-composer-shell");
-    expect(screen.getByPlaceholderText("Leave a comment...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Add a comment to this task…")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attach file" })).toBeInTheDocument();
     expect(container.querySelectorAll("button")).toHaveLength(2);
 
@@ -423,9 +424,9 @@ describe("comment composers", () => {
   it("renders reply composer without a manual expand control", () => {
     const { container } = renderReplyInput();
 
-    expect(screen.getByTestId("reply-composer-shell")).toHaveTextContent("Leave a reply...");
+    expect(screen.getByTestId("reply-composer-shell")).toHaveTextContent("Reply to this discussion…");
     activateComposer("reply-composer-shell");
-    expect(screen.getByPlaceholderText("Leave a reply...")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Reply to this discussion…")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attach file" })).toBeInTheDocument();
     expect(container.querySelectorAll("button")).toHaveLength(2);
 
@@ -441,6 +442,7 @@ describe("comment composers", () => {
     fireEvent.change(screen.getByTestId("editor"), {
       target: { value: "hello from composer" },
     });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => {
@@ -468,7 +470,8 @@ describe("comment composers", () => {
 
     activateComposer("reply-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "only fix web" } });
-    await screen.findByText("Add to current run", {}, { timeout: 5000 });
+    await screen.findByText(/Add to current run/, {}, { timeout: 5000 });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("only fix web", undefined, undefined,
       ["turn-1"]), { timeout: 5000 });
@@ -501,6 +504,7 @@ describe("comment composers", () => {
     activateComposer("reply-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "only fix web" } });
     await screen.findByRole("button", { name: "Lambda trigger: Start after this run" }, { timeout: 5000 });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("only fix web", undefined, undefined, undefined), { timeout: 5000 });
 
@@ -508,6 +512,7 @@ describe("comment composers", () => {
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "and keep desktop as is" } });
     await chooseRecipientAction("Lambda trigger: Start after this run", /Add to current run/);
     await screen.findByRole("button", { name: "Lambda trigger: Add to current run" }, { timeout: 5000 });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
     await waitFor(() => expect(onSubmit).toHaveBeenLastCalledWith("and keep desktop as is", undefined, undefined,
       ["turn-1"]), { timeout: 5000 });
@@ -535,6 +540,7 @@ describe("comment composers", () => {
     fireEvent.click(await screen.findByText("2 agents will receive this", {}, { timeout: 5000 }));
     expect(await screen.findByRole("button", { name: "Lambda trigger: Add to current run" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Orion trigger: Add to current run" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("only fix web", undefined, undefined,
       ["turn-1", "turn-2"]), { timeout: 5000 });
@@ -574,6 +580,7 @@ describe("comment composers", () => {
     fireEvent.change(screen.getByTestId("editor"), {
       target: { value: "thread reply" },
     });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => {
@@ -618,6 +625,7 @@ describe("comment composers", () => {
 
     activateComposer("comment-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "sending" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     // In flight: text kept, editor wrapper locked (aria-busy), not cleared yet.
@@ -647,6 +655,7 @@ describe("comment composers", () => {
     // Discard the focus the lazy shell→editor swap performed; what follows is
     // entirely the post-send policy.
     focusCalls.focused = 0;
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => expect(focusCalls.blurred).toBeGreaterThan(0));
@@ -660,6 +669,7 @@ describe("comment composers", () => {
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "replied" } });
     // Discard the shell→editor activation focus; what follows is the refocus.
     focusCalls.focused = 0;
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => expect(focusCalls.focused).toBeGreaterThan(0));
@@ -672,6 +682,7 @@ describe("comment composers", () => {
 
     activateComposer("reply-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "replied" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => expect(onAccepted).toHaveBeenCalledTimes(1));
@@ -685,6 +696,7 @@ describe("comment composers", () => {
     activateComposer("reply-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "nope" } });
     focusCalls.focused = 0;
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
@@ -701,6 +713,7 @@ describe("comment composers", () => {
     renderCommentInput(onSubmit);
     activateComposer("comment-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "draft A" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(screen.getByTestId("editor"), { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
@@ -733,6 +746,7 @@ describe("comment composers", () => {
     activateComposer("comment-composer-shell");
     const editor = screen.getByTestId("editor");
     fireEvent.change(editor, { target: { value: "draft A" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
@@ -761,6 +775,7 @@ describe("comment composers", () => {
     activateComposer("reply-composer-shell");
     const editor = screen.getByTestId("editor");
     fireEvent.change(editor, { target: { value: "reply A" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
@@ -787,6 +802,7 @@ describe("comment composers", () => {
     const view = renderCommentInput(onSubmit);
     activateComposer("comment-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "draft A" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(screen.getByTestId("editor"), { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
@@ -808,6 +824,7 @@ describe("comment composers", () => {
     const view = renderCommentInput(onSubmit);
     activateComposer("comment-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "draft A" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(screen.getByTestId("editor"), { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
 
@@ -826,6 +843,7 @@ describe("comment composers", () => {
 
     activateComposer("comment-composer-shell");
     fireEvent.change(screen.getByTestId("editor"), { target: { value: "will fail" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
@@ -1006,6 +1024,7 @@ describe("comment composers — upload submit gate", () => {
     // The shortcut never touches the disabled button — the handler's own
     // re-read of the queue is the only thing standing between this keystroke
     // and a comment posted without its attachment.
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await Promise.resolve();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -1014,6 +1033,7 @@ describe("comment composers — upload submit gate", () => {
       pending.resolve(uploadAttachment("att-1", "https://cdn.example/att-1.png"));
     });
 
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
   });
@@ -1040,6 +1060,7 @@ describe("comment composers — upload submit gate", () => {
 
     // The shortcut path bypasses the button — the submit-time re-read of the
     // DRAFT's uploads is the only guard.
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await Promise.resolve();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -1056,6 +1077,7 @@ describe("comment composers — upload submit gate", () => {
         );
     });
     await waitFor(() => expect(isSendBlocked(getSubmitButton(container))).toBe(false));
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
   });
@@ -1109,6 +1131,7 @@ describe("comment composers — upload submit gate", () => {
     });
 
     await waitFor(() => expect(isSendBlocked(getSubmitButton(container))).toBe(false));
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.click(getSubmitButton(container));
 
     await waitFor(() =>
@@ -1135,6 +1158,7 @@ describe("comment composers — upload submit gate", () => {
     // The completed upload's link is in the body; the user deletes it. What
     // is not referenced must not ship — deleting really unbinds (MUL-5181).
     fireEvent.change(editor, { target: { value: "keep this, dropped the image" } });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
@@ -1247,6 +1271,7 @@ describe("comment composers — upload submit gate", () => {
 
     startPendingUpload(container);
 
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
     fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
     await Promise.resolve();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -1294,7 +1319,8 @@ describe.each(["reply", "description"])("annotations in %s drafts", (source) => 
     const onSubmit = vi.fn().mockResolvedValue("reply-new");
     renderAnnotatedComposer(onSubmit);
     expect(screen.queryByTestId("editor")).not.toBeInTheDocument();
-    const send = screen.getByRole("button", { name: "Send" });
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
+    const send = screen.getByRole("button", { name: /^(Send|Post comment)$/ });
     fireEvent.click(send);
     fireEvent.click(send);
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -1308,7 +1334,8 @@ describe.each(["reply", "description"])("annotations in %s drafts", (source) => 
     useCommentDraftStore.getState().addAnnotation(draftKey, annotation);
     const onSubmit = vi.fn().mockResolvedValue("reply-new");
     renderAnnotatedComposer(onSubmit);
-    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /^(Send|Post comment)$/ }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0]?.[0]).toBe("> Selected text\n\nPlease revise\n\n---\n\nOverall reply");
   });
@@ -1317,10 +1344,11 @@ describe.each(["reply", "description"])("annotations in %s drafts", (source) => 
     useCommentDraftStore.getState().addAnnotation(draftKey, { ...annotation, note: "" });
     const onSubmit = vi.fn().mockResolvedValue(false);
     renderAnnotatedComposer(onSubmit);
-    expect(isSendBlocked(screen.getByRole("button", { name: "Send" }) as HTMLButtonElement)).toBe(true);
+    expect(isSendBlocked(screen.getByRole("button", { name: /^(Send|Post comment)$/ }) as HTMLButtonElement)).toBe(true);
     expect(screen.queryByRole("button", { name: /1 annotation/ })).not.toBeInTheDocument();
     act(() => { useCommentDraftStore.getState().addAnnotation(draftKey, { ...annotation, note: "New note" }); });
-    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /^(Send|Post comment)$/ }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(useCommentDraftStore.getState().getAnnotations(draftKey)[0]?.note).toBe("New note");
   });
@@ -1330,10 +1358,82 @@ describe.each(["reply", "description"])("annotations in %s drafts", (source) => 
     let accept!: (id: string) => void;
     const onSubmit = vi.fn(() => new Promise<string>((resolve) => { accept = resolve; }));
     renderAnnotatedComposer(onSubmit);
-    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.queryByText("Confirming recipients and delivery…")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /^(Send|Post comment)$/ }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     act(() => { useCommentDraftStore.getState().addAnnotation(draftKey, { ...annotation, id: "b", quote: "Another point" }); });
     await act(async () => accept("reply-new"));
     expect(useCommentDraftStore.getState().getAnnotations(draftKey)).toHaveLength(2);
   });
+});
+
+
+describe("composer delivery clarity", () => {
+  it("blocks both send paths until delivery preview succeeds and permits retry", async () => {
+    apiPreviewCommentTriggers.mockRejectedValue(new Error("network"));
+    const { container, onSubmit } = renderCommentInput();
+    activateComposer("comment-composer-shell");
+    fireEvent.change(screen.getByTestId("editor"), { target: { value: "Please review" } });
+    expect(getSubmitButton(container)).toBeDisabled();
+    fireEvent.keyDown(screen.getByTestId("editor"), { key: "Enter", metaKey: true });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(await screen.findByText("Unable to confirm delivery. Retry before sending.")).toBeVisible();
+    apiPreviewCommentTriggers.mockResolvedValue({ agents: [], blocked: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(getSubmitButton(container)).toBeEnabled());
+    expect(screen.getByText("This comment will be posted without starting an agent.")).toBeVisible();
+    fireEvent.click(getSubmitButton(container));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+  });
+
+  it("collapses and restores a draft without clearing it", async () => {
+    renderCommentInput();
+    activateComposer("comment-composer-shell");
+    fireEvent.change(screen.getByTestId("editor"), { target: { value: "Keep my draft" } });
+    fireEvent.keyDown(screen.getByTestId("editor"), { key: "Escape" });
+    expect(screen.getByTestId("comment-composer-shell")).toHaveTextContent("Continue editing draft");
+    expect(useCommentDraftStore.getState().getDraft("new:issue-1")).toBe("Keep my draft");
+    activateComposer("comment-composer-shell");
+    expect(screen.getByTestId("editor")).toHaveValue("Keep my draft");
+  });
+
+  it("reports storage failure while keeping the typed text", async () => {
+    setCurrentWorkspace("draft-storage-test", "ws");
+    await act(async () => {});
+    renderCommentInput();
+    activateComposer("comment-composer-shell");
+    const save = vi.spyOn(defaultStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    try {
+      fireEvent.change(screen.getByTestId("editor"), { target: { value: "Unsaved text" } });
+      expect(screen.getByText("Draft could not be saved. Keep this page open and try again.")).toBeVisible();
+      expect(screen.getByTestId("editor")).toHaveValue("Unsaved text");
+    } finally { save.mockRestore(); setCurrentWorkspace(null, null); await act(async () => {}); }
+  });
+});
+
+
+it("uses the selected discussion for preview and restores its separate reply draft", async () => {
+  useCommentDraftStore.getState().setDraft("new:issue-1", "Task comment draft");
+  useCommentDraftStore.getState().setDraft("reply:issue-1:source", "Follow-up to the request");
+  renderWithProviders(<CommentInput issueId="issue-1" parentId="source" onSubmit={vi.fn().mockResolvedValue(true)} />);
+  expect(screen.getByTestId("editor")).toHaveValue("Follow-up to the request");
+  await waitFor(() => expect(apiPreviewCommentTriggers).toHaveBeenCalledWith("issue-1", "Follow-up to the request", "source", undefined));
+  expect(useCommentDraftStore.getState().getDraft("new:issue-1")).toBe("Task comment draft");
+});
+
+
+it("keeps an unavailable reply editable but blocks button and keyboard submission", async () => {
+  const onSubmit = vi.fn().mockResolvedValue(true);
+  renderWithProviders(<CommentInput issueId="issue-1" parentId="source" sendDisabled onSubmit={onSubmit} />);
+  activateComposer("comment-composer-shell");
+  const editor = screen.getByTestId("editor");
+  fireEvent.change(editor, { target: { value: "Preserved response" } });
+  await waitFor(() => expect(apiPreviewCommentTriggers).toHaveBeenCalled());
+  const send = screen.getByRole("button", { name: /^(Send|Post comment)$/ });
+  expect(send).toBeDisabled();
+  fireEvent.click(send);
+  fireEvent.keyDown(editor, { key: "Enter", metaKey: true });
+  expect(onSubmit).not.toHaveBeenCalled();
+  expect(editor).toHaveValue("Preserved response");
+  expect(useCommentDraftStore.getState().getDraft("reply:issue-1:source")).toBe("Preserved response");
 });

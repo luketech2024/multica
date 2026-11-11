@@ -22,7 +22,11 @@ RETURNING id,workspace_id,project_id,label,kind,usage,last_four,expires_at,rotat
 
 -- name: DeleteWorkbenchCredential :execrows
 DELETE FROM credentials WHERE credentials.workspace_id=$1 AND credentials.id=$2 AND credentials.revision=$3
-AND NOT EXISTS (SELECT 1 FROM deploy_targets WHERE credential_id=credentials.id);
+AND NOT EXISTS (SELECT 1 FROM deploy_targets WHERE credential_id=credentials.id)
+AND NOT EXISTS (SELECT 1 FROM project_deployment p WHERE p.workspace_id=credentials.workspace_id
+ AND p.config->'resources' @> jsonb_build_array(jsonb_build_object('credential_id',credentials.id::text)))
+AND NOT EXISTS (SELECT 1 FROM workbench_release_orders r WHERE r.workspace_id=credentials.workspace_id AND r.status IN ('deploying','failed','partial')
+ AND r.manifest->'delivery'->'snapshot'->'resources' @> jsonb_build_array(jsonb_build_object('credential_id',credentials.id::text)));
 
 -- name: ListCredentialTargets :many
 SELECT * FROM deploy_targets WHERE workspace_id=$1 AND credential_id=$2 ORDER BY project_id,label;

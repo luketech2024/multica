@@ -6,10 +6,13 @@ import { Button } from "@multica/ui/components/ui/button";
 import { ReadonlyContent } from "../../editor";
 import { useT } from "../../i18n";
 import { redactSecrets } from "./redact";
+import { useCurrentIssueRenderContext } from "../../issues/current-issue-render-context";
 
 export function WorkbenchRunSummary({ content, attachments }: Pick<ComponentProps<typeof ReadonlyContent>, "content" | "attachments">) {
   const { t } = useT("issues");
-  const [expanded, setExpanded] = useState(false);
+  const issue = useCurrentIssueRenderContext();
+  const [expanded, setExpanded] = useState<boolean>();
+  const showFullOutput = expanded ?? issue?.status === "blocked";
   const safeContent = redactSecrets(content);
   const summary = parseWorkbenchSummary(safeContent);
   if (!summary) return <ReadonlyContent content={safeContent} attachments={attachments} />;
@@ -19,14 +22,14 @@ export function WorkbenchRunSummary({ content, attachments }: Pick<ComponentProp
     [t(($) => $.run_summary.validation), summary.validation.join("\n")],
     [t(($) => $.run_summary.risks), summary.risks.join("\n")],
   ];
-  return <section className="space-y-2 rounded-xl border bg-surface p-3" aria-label={t(($) => $.run_summary.title)}>
-    <dl className="space-y-1 text-caption">
-      {sections.map(([label, value]) => <div key={label} className="flex min-w-0 gap-2">
-        <dt className="shrink-0 font-medium">{label}</dt>
-        <dd className="line-clamp-1 min-w-0 whitespace-pre-wrap break-words" title={value || undefined}>{value || t(($) => $.run_summary.missing)}</dd>
+  return <section className="space-y-3 rounded-xl border bg-surface p-4" aria-label={t(($) => $.run_summary.title)}>
+    <dl className="space-y-3 text-body">
+      {sections.map(([label, value]) => <div key={label} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3">
+        <dt className="font-medium text-muted-foreground">{label}</dt>
+        <dd className="min-w-0 whitespace-pre-wrap break-words">{value || t(($) => $.run_summary.missing)}</dd>
       </div>)}
     </dl>
-    <Button size="xs" variant="ghost" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? t(($) => $.run_summary.collapse) : t(($) => $.run_summary.expand)}</Button>
-    {expanded && <ReadonlyContent content={safeContent} attachments={attachments} />}
+    <Button size="sm" variant="ghost" aria-expanded={showFullOutput} onClick={() => setExpanded(!showFullOutput)}>{showFullOutput ? t(($) => $.run_summary.collapse) : t(($) => $.run_summary.expand)}</Button>
+    {showFullOutput && <ReadonlyContent content={safeContent} attachments={attachments} />}
   </section>;
 }

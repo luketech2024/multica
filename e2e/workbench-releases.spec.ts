@@ -29,7 +29,7 @@ test.describe("Workbench release orders", () => {
     const errors:string[]=[];
     page.on("pageerror",error=>errors.push(error.message));
     await page.goto(`/${slug}/releases?project=${project.id}`);
-    await page.getByRole("button",{name:"New release",exact:true}).click();
+    await page.getByRole("button",{name:"Publish accepted tasks",exact:true}).click();
     const dialog=page.getByRole("dialog");
     await dialog.getByRole("combobox", { name: "Environment", exact: true }).click();
     await page.getByRole("option", { name: "Production", exact: true }).click();
@@ -50,7 +50,7 @@ test.describe("Workbench release orders", () => {
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:".preview/release-gates.png",fullPage:true});
     await page.goto(`/${slug}/releases?project=${project.id}`);
-    await page.getByRole("button", { name: "New release", exact: true }).click();
+    await page.getByRole("button", { name: "Publish accepted tasks", exact: true }).click();
     await expect(dialog.getByRole("checkbox")).toBeChecked();
     await dialog.getByRole("button", { name: "New release", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Security · Not required for staging", exact: true })).toBeVisible({ timeout: 30000 });
@@ -72,7 +72,7 @@ test.describe("Workbench release orders", () => {
     await page.goto(`/${slug}/releases?project=${project.id}`);
     await expect(page.getByRole("heading", { name: "Releases", exact: true })).toBeVisible();
     await expect(page.getByText("No release orders yet.")).toBeVisible();
-    await page.getByRole("button", { name: "New release", exact: true }).click();
+    await page.getByRole("button", { name: "Publish accepted tasks", exact: true }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("combobox", { name: "Project", exact: true })).toContainText(project.title);
     await expect(dialog.getByText("No accepted, merged tasks are available for this environment.")).toBeVisible();

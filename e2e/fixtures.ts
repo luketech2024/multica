@@ -58,6 +58,11 @@ export class TestApiClient {
   private releaseFixtureProjectIds: string[] = [];
   private releaseFixturePullRequestIds: string[] = [];
 
+  trackApplicationReleaseProject(projectId: string) {
+    if (!this.createdProjectIds.includes(projectId)) throw new Error("Release cleanup requires a test-owned project");
+    this.releaseFixtureProjectIds.push(projectId);
+  }
+
   async login(email: string, name: string) {
     const client = new pg.Client(DATABASE_URL);
     await client.connect();

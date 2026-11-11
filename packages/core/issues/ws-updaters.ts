@@ -1,4 +1,6 @@
 import { issueStatusCategory } from "./status-category";
+import { parseWithFallback } from "../api/schema";
+import { IssueSchema } from "../api/schemas";
 import type { QueryClient } from "@tanstack/react-query";
 import { issueKeys } from "./queries";
 import { labelKeys } from "../labels/queries";
@@ -363,6 +365,20 @@ export function onIssueAuxiliaryRevision(
   invalidateStaleIssueOwnerProjections(qc, wsId, issueId, revision);
 }
 
+function normalizeIssueRequirements<T extends Partial<Issue>>(issue: T): T {
+  // An omitted field in a partial event must preserve the cached requirements.
+  if (!("acceptance_criteria" in issue)) return issue;
+  return {
+    ...issue,
+    acceptance_criteria: parseWithFallback<Issue["acceptance_criteria"]>(
+      issue.acceptance_criteria,
+      IssueSchema.shape.acceptance_criteria,
+      undefined,
+      { endpoint: "WS issue:created/updated acceptance_criteria" },
+    ),
+  };
+}
+
 function findIssueInFlatCaches(
   qc: QueryClient,
   wsId: string,
@@ -382,6 +398,7 @@ export function onIssueCreated(
   wsId: string,
   issue: Issue,
 ) {
+  issue = normalizeIssueRequirements(issue);
   // A custom status this client cannot resolve to a category has no bucket to
   // go in. Inserting nowhere would silently hide an issue that exists on the
   // server, so invalidate the list instead and let the refetch place it.
@@ -430,6 +447,7 @@ export function onIssueUpdated(
     projectChanged?: boolean;
   } = {},
 ) {
+  issue = normalizeIssueRequirements(issue);
   // Look up the OLD parent + cached entity before mutating cache state, so we
   // can keep the parent's children cache in sync (powers the sub-issues list
   // shown on the parent issue page) and diff-fallback the change flags.

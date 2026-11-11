@@ -29,9 +29,10 @@ import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { Switch } from "@multica/ui/components/ui/switch";
 import { cn } from "@multica/ui/lib/utils";
 import { api, ApiError } from "@multica/core/api";
+import { useCreateIssue } from "@multica/core/issues/mutations";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
-import { AppLink, resolveClickIntent } from "../navigation";
+import { AppLink, resolveClickIntent, useNavigation } from "../navigation";
 import { agentListOptions, squadListOptions } from "@multica/core/workspace/queries";
 import { projectListOptions } from "@multica/core/projects/queries";
 import {
@@ -127,6 +128,8 @@ export function AgentCreatePanel({
   const sendShortcut = useShortcut("send");
   const workspaceName = useCurrentWorkspace()?.name;
   const workspacePaths = useWorkspacePaths();
+  const navigation = useNavigation();
+  const createIssue = useCreateIssue();
   const wsId = useWorkspaceId();
   const anchorCommentId = typeof data?.anchor_comment_id === "string" ? data.anchor_comment_id : null;
   const sourcePreview = data?.source_context_preview as SourceContextPreview | undefined;
@@ -482,6 +485,24 @@ export function AgentCreatePanel({
               ...(activeAttachmentIds.length > 0 ? { attachment_ids: activeAttachmentIds } : {}),
             },
           });
+        } else if (projectId) {
+          const issue = await createIssue.mutateAsync({
+            title: Array.from(md.trim().split("\n")[0]!).slice(0, 200).join(""),
+            description: md,
+            project_id: projectId,
+            parent_issue_id: parentIssueId,
+            status: "todo",
+            priority,
+            due_date: dueDate || undefined,
+            assignee_type: actor.type,
+            assignee_id: actor.id,
+            use_project_assignee: false,
+            attachment_ids: activeAttachmentIds,
+            ...(!parentIssueId ? { acceptance_criteria: { v: 1 as const, version: 1, next_item_no: 1, items: [], bounds: [], gate: { spec: null, accept: null } } } : {}),
+          });
+          toast.success(issue.identifier + " · " + issue.title, {
+            action: { label: t(($) => $.create_issue.agent.open_created), onClick: () => navigation.push(workspacePaths.issueDetail(issue.id)) },
+          });
         } else {
           await api.quickCreateIssue({
             ...(actor.type === "agent"
@@ -497,7 +518,7 @@ export function AgentCreatePanel({
         }
         setLastActor(actor.type, actor.id);
         setLastMode("agent");
-        toast.success(t(($) => $.create_issue.agent.toast_sent), {
+        if (!projectId || anchorCommentId) toast.success(t(($) => $.create_issue.agent.toast_sent), {
           duration: 4000,
         });
         return true;

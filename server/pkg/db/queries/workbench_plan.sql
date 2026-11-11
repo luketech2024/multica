@@ -23,6 +23,23 @@ SELECT EXISTS (SELECT 1 FROM agent_task_queue
     WHERE issue_id IN (SELECT id FROM family)
     AND status IN ('queued','deferred','dispatched','running','waiting_local_directory'));
 
+-- name: WorkbenchPlanHasOtherActiveRuns :one
+WITH RECURSIVE family AS (
+    SELECT root.id FROM issue root WHERE root.id = @parent_id AND root.workspace_id = @workspace_id
+    UNION
+    SELECT child.id FROM issue child JOIN family ON child.parent_issue_id = family.id
+    WHERE child.workspace_id = @workspace_id
+)
+SELECT EXISTS (SELECT 1 FROM agent_task_queue run
+    WHERE run.issue_id IN (SELECT id FROM family)
+    AND (sqlc.narg('source_task_id')::uuid IS NULL OR run.id <> sqlc.narg('source_task_id')::uuid)
+    AND run.status IN ('queued','deferred','dispatched','running','waiting_local_directory'));
+
+-- name: RecoverWorkbenchHandoff :one
+UPDATE issue SET properties = @properties, revision = revision + 1, updated_at = now()
+WHERE id = @id AND workspace_id = @workspace_id AND revision = @expected_revision
+RETURNING *;
+
 -- name: ListWorkbenchDispatchCandidates :many
 SELECT child.* FROM issue child
 JOIN issue parent ON parent.id = child.parent_issue_id AND parent.workspace_id = child.workspace_id

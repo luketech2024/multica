@@ -290,8 +290,7 @@ function SingleRecipientChip({
   t: IssuesT;
 }) {
   const label = actionLabel(entry.action, entry.state, t);
-  // The avatar carries "who"; the sentence carries only the outcome, so it
-  // stays fixed-width and never truncates on long agent names.
+  const presenceLine = useTriggerPresenceLine(entry.agent.id, t);
   return (
     <RecipientActionMenu
       entry={entry}
@@ -300,14 +299,14 @@ function SingleRecipientChip({
       trigger={
         <button
           type="button"
-          aria-label={t(($) => $.comment.trigger_chip_aria, { name: entry.agent.name, state: label })}
+          aria-label={t(($) => $.comment.trigger_chip_aria, { name: entry.agent.name, state: entry.action === "start" && presenceLine ? `${label} · ${presenceLine}` : label })}
           className={cn(
             "inline-flex h-6 min-w-0 max-w-full animate-in fade-in cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-1.5 text-micro font-medium transition-colors duration-200",
             chipToneClass(entry.action),
           )}
         >
           <TriggerAgentAvatar agent={entry.agent} suppressed={entry.action === "skip"} />
-          <span className="truncate">{label}</span>
+          <span className="truncate">{entry.agent.name} · {label}{entry.action === "start" && presenceLine && <> · {presenceLine}</>}</span>
           <ChevronDown aria-hidden className="size-3 shrink-0 text-faint-foreground" />
         </button>
       }

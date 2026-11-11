@@ -5,13 +5,14 @@ import { Extension } from "@tiptap/core";
  * contenteditable does nothing (browsers don't blur contenteditables by
  * default), leaving users stuck in the editor with no keyboard escape hatch.
  */
-export function createBlurShortcutExtension() {
+export function createBlurShortcutExtension(onEscape?: () => void) {
   return Extension.create({
     name: "blurShortcut",
     addKeyboardShortcuts() {
       return {
         Escape: ({ editor }) => {
           editor.commands.blur();
+          onEscape?.();
           return true;
         },
       };

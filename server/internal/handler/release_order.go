@@ -23,7 +23,8 @@ func releaseOrderResponse(row db.WorkbenchReleaseOrder) map[string]any {
 		"identifier": fmt.Sprintf("REL-%02d", row.Number), "env": row.Env, "status": row.Status,
 		"manifest": json.RawMessage(row.Manifest), "revision": row.Revision, "created_by": uuidToString(row.CreatedBy),
 		"confirmations": json.RawMessage(row.Confirmations),
-		"created_at": timestampToString(row.CreatedAt), "updated_at": timestampToString(row.UpdatedAt),
+		"lease_until":   row.LeaseUntil,
+		"created_at":    timestampToString(row.CreatedAt), "updated_at": timestampToString(row.UpdatedAt),
 	}
 }
 
@@ -88,6 +89,7 @@ func (h *Handler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) 
 	}
 	prefix := h.getIssuePrefix(r.Context(), member.WorkspaceID)
 	items := []map[string]any{}
+	blocked := []map[string]any{}
 	for _, row := range rows {
 		ready, err := readIssueReleaseReadiness(r.Context(), h.Queries, row)
 		if err != nil {
@@ -95,6 +97,7 @@ func (h *Handler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		if len(ready.Blockers) > 0 {
+			blocked = append(blocked, map[string]any{"id": uuidToString(row.ID), "identifier": issueToResponse(row, prefix).Identifier, "title": row.Title, "blockers": ready.Blockers})
 			continue
 		}
 		available := true
@@ -106,6 +109,8 @@ func (h *Handler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) 
 		}
 		if available {
 			items = append(items, map[string]any{"id": uuidToString(row.ID), "identifier": issueToResponse(row, prefix).Identifier, "title": row.Title, "revision": row.Revision, "merges": ready.Merges})
+		} else {
+			blocked = append(blocked, map[string]any{"id": uuidToString(row.ID), "identifier": issueToResponse(row, prefix).Identifier, "title": row.Title, "blockers": []workbench.ReleaseBlocker{{Code: "reserved"}}})
 		}
 	}
 	var next *string
@@ -113,7 +118,7 @@ func (h *Handler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) 
 		value := uuidToString(rows[len(rows)-1].ID)
 		next = &value
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"candidates": items, "next_cursor": next})
+	writeJSON(w, http.StatusOK, map[string]any{"candidates": items, "blocked": blocked, "next_cursor": next})
 }
 
 func (h *Handler) ListReleaseOrders(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +224,27 @@ func (h *Handler) CreateReleaseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	manifest := workbench.ReleaseManifest{Tasks: []workbench.ReleaseTaskSnapshot{}, Repositories: []workbench.ReleaseRepositorySnapshot{}}
+	if input.Delivery != nil {
+		config, _, loadErr := readProjectDeployment(r.Context(), q, member.WorkspaceID, project.ID)
+		if loadErr != nil {
+			writeError(w, 500, "failed to read application configuration")
+			return
+		}
+		for _, change := range input.Delivery.Changes {
+			found := false
+			for _, app := range config.Applications {
+				if app.ID == change.ApplicationID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				writeError(w, 400, "release application must belong to the project")
+				return
+			}
+		}
+		manifest.Delivery = input.Delivery
+	}
 	repositories := map[string][]workbench.ReleaseMerge{}
 	for _, task := range input.Tasks {
 		current, loadErr := q.LockIssueForDescriptionUpdate(r.Context(), db.LockIssueForDescriptionUpdateParams{ID: parseUUID(task.ID), WorkspaceID: member.WorkspaceID})

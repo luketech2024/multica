@@ -1,0 +1,58 @@
+import { test, expect } from "@playwright/test";
+import { createTestApi, loginAsDefault } from "./helpers";
+import type { TestApiClient } from "./fixtures";
+
+test.describe("Acceptance recovery", () => {
+  test.use({ locale: "en-US" });
+  let api: TestApiClient;
+  test.afterEach(async () => { await api?.cleanup(); });
+
+  test("recovers completed work through visible controls and continues to release", async ({ page }) => {
+    test.setTimeout(120_000);
+    page.setDefaultTimeout(15_000);
+    api = await createTestApi();
+    const roles = Object.fromEntries(["sched", "product", "dev", "test", "sec", "ops"].map((role) => [role, { enabled: ["sched", "product", "test"].includes(role), agent_id: null, runtime_id: null }]));
+    const project = await api.createProject("Acceptance recovery check", { description: "Verify recovery, human acceptance and release selection.", workbench_roles: { v: 1, roles } });
+    const repo = await api.createProjectRepository(project.id, `https://github.com/acme/${project.id}`);
+    const parent = await api.createIssue("Completed report without structured acceptance", { project_id: project.id, status: "done" });
+    const child = await api.createIssue("Verified report export", { project_id: project.id, parent_issue_id: parent.id, status: "done" });
+    const slug = await loginAsDefault(page);
+    const errors: string[] = [];
+    page.on("pageerror", (error) => { errors.push(error.message); console.error(error.message); });
+    await page.goto(`/${slug}/releases?project=${project.id}`);
+    await page.getByRole("button", { name: "Publish accepted tasks", exact: true }).click();
+    let dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("button", { name: "New release", exact: true })).toBeDisabled();
+    await dialog.getByRole("link", { name: `${parent.identifier} · ${parent.title}` }).click();
+    await page.getByRole("button", { name: "Complete acceptance data", exact: true }).click();
+    dialog = page.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Acceptance items, one per line" }).fill("Export includes all report rows");
+    await dialog.getByRole("checkbox", { name: `${child.identifier} · ${child.title}` }).check();
+    await dialog.getByRole("combobox").nth(0).selectOption("test");
+    await dialog.getByRole("combobox").nth(1).selectOption(repo.id);
+    await dialog.getByRole("checkbox", { name: "A-01 · Export includes all report rows" }).check();
+    await dialog.getByRole("button", { name: "Confirm and associate subtasks" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("button", { name: "Accept delivery", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "Record evidence", exact: true }).click();
+    dialog = page.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Conclusion", exact: true }).fill("Verified all exported rows in the test fixture");
+    await dialog.locator('input[pattern]').fill("a".repeat(40));
+    await dialog.locator('input[type="url"]').fill("https://example.test/reports/export");
+    await dialog.getByRole("checkbox").check();
+    await dialog.getByRole("button", { name: "Save evidence", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await page.getByRole("button", { name: "Accept delivery", exact: true }).click();
+    await expect(page.getByText("Delivery accepted", { exact: true }).first()).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Complete acceptance data", exact: true })).toHaveCount(0);
+    await api.seedReleaseMerge(project.id, child.id, "a".repeat(40));
+    await page.goto(`/${slug}/releases?project=${project.id}`);
+    await page.getByRole("button", { name: "Publish accepted tasks", exact: true }).click();
+    dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("checkbox", { name: `${parent.identifier} · ${parent.title}` })).toBeChecked();
+    await dialog.getByRole("button", { name: "New release", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Release gates", exact: true })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+});

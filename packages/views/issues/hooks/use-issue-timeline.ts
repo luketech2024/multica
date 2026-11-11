@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -354,12 +354,15 @@ export function useIssueTimeline(issueId: string, userId?: string) {
   // text (editor locked + button spinning) until this settles and clears only
   // on success — so a slow send no longer leaves the box full next to an
   // already-posted comment, and a failed send keeps the draft.
+  const [lastSubmittedComment, setLastSubmittedComment] = useState<{ issueId: string; comment: Comment } | null>(null);
+
   const submitComment = useCallback(
     async (content: string, attachmentIds?: string[], suppressAgentIds?: string[], steerTaskIds?: string[]): Promise<string | false> => {
       if (!content.trim() || !userId) return false;
       try {
         const comment = await createComment({ content, attachmentIds, suppressAgentIds, steerTaskIds });
         warnUnhandledTriggers(comment?.trigger_outcomes, comment?.content);
+        setLastSubmittedComment({ issueId, comment });
         return comment.id;
       } catch (err) {
         toast.error(
@@ -370,7 +373,7 @@ export function useIssueTimeline(issueId: string, userId?: string) {
         return false;
       }
     },
-    [userId, createComment, warnUnhandledTriggers, t],
+    [issueId, userId, createComment, warnUnhandledTriggers, t],
   );
 
   const submitReply = useCallback(
@@ -386,6 +389,7 @@ export function useIssueTimeline(issueId: string, userId?: string) {
           steerTaskIds,
         });
         warnUnhandledTriggers(comment?.trigger_outcomes, comment?.content);
+        setLastSubmittedComment({ issueId, comment });
         return comment.id;
       } catch (err) {
         toast.error(
@@ -396,7 +400,7 @@ export function useIssueTimeline(issueId: string, userId?: string) {
         return false;
       }
     },
-    [userId, createComment, warnUnhandledTriggers, t],
+    [issueId, userId, createComment, warnUnhandledTriggers, t],
   );
 
   const editComment = useCallback(
@@ -525,7 +529,10 @@ export function useIssueTimeline(issueId: string, userId?: string) {
   return {
     timeline: optimisticTimeline,
     loading,
+    isError: query.isError,
+    refetch: query.refetch,
     submitComment,
+    lastSubmittedComment: lastSubmittedComment?.issueId === issueId ? lastSubmittedComment.comment : null,
     submitReply,
     editComment,
     deleteComment,

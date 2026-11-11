@@ -353,6 +353,64 @@ func (q *Queries) ListWorkbenchReviewCandidates(ctx context.Context, afterID pgt
 	return items, nil
 }
 
+const recoverWorkbenchHandoff = `-- name: RecoverWorkbenchHandoff :one
+UPDATE issue SET properties = $1, revision = revision + 1, updated_at = now()
+WHERE id = $2 AND workspace_id = $3 AND revision = $4
+RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at
+`
+
+type RecoverWorkbenchHandoffParams struct {
+	Properties       []byte      `json:"properties"`
+	ID               pgtype.UUID `json:"id"`
+	WorkspaceID      pgtype.UUID `json:"workspace_id"`
+	ExpectedRevision int64       `json:"expected_revision"`
+}
+
+func (q *Queries) RecoverWorkbenchHandoff(ctx context.Context, arg RecoverWorkbenchHandoffParams) (Issue, error) {
+	row := q.db.QueryRow(ctx, recoverWorkbenchHandoff,
+		arg.Properties,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.ExpectedRevision,
+	)
+	var i Issue
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeType,
+		&i.AssigneeID,
+		&i.CreatorType,
+		&i.CreatorID,
+		&i.ParentIssueID,
+		&i.AcceptanceCriteria,
+		&i.ContextRefs,
+		&i.Position,
+		&i.DueDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Number,
+		&i.ProjectID,
+		&i.OriginType,
+		&i.OriginID,
+		&i.FirstExecutedAt,
+		&i.StartDate,
+		&i.Metadata,
+		&i.Stage,
+		&i.Properties,
+		&i.Revision,
+		&i.LastActivityAt,
+		&i.TriageState,
+		&i.DuplicateOfIssueID,
+		&i.ExternalTicketNo,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const supersedeWorkbenchPlanChild = `-- name: SupersedeWorkbenchPlanChild :one
 UPDATE issue SET
     properties = jsonb_set(properties, '{workbench_handoff}',
@@ -438,6 +496,32 @@ type WorkbenchPlanHasActiveRunsParams struct {
 
 func (q *Queries) WorkbenchPlanHasActiveRuns(ctx context.Context, arg WorkbenchPlanHasActiveRunsParams) (bool, error) {
 	row := q.db.QueryRow(ctx, workbenchPlanHasActiveRuns, arg.ParentID, arg.WorkspaceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const workbenchPlanHasOtherActiveRuns = `-- name: WorkbenchPlanHasOtherActiveRuns :one
+WITH RECURSIVE family AS (
+    SELECT root.id FROM issue root WHERE root.id = $2 AND root.workspace_id = $3
+    UNION
+    SELECT child.id FROM issue child JOIN family ON child.parent_issue_id = family.id
+    WHERE child.workspace_id = $3
+)
+SELECT EXISTS (SELECT 1 FROM agent_task_queue run
+    WHERE run.issue_id IN (SELECT id FROM family)
+    AND ($1::uuid IS NULL OR run.id <> $1::uuid)
+    AND run.status IN ('queued','deferred','dispatched','running','waiting_local_directory'))
+`
+
+type WorkbenchPlanHasOtherActiveRunsParams struct {
+	SourceTaskID pgtype.UUID `json:"source_task_id"`
+	ParentID     pgtype.UUID `json:"parent_id"`
+	WorkspaceID  pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) WorkbenchPlanHasOtherActiveRuns(ctx context.Context, arg WorkbenchPlanHasOtherActiveRunsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, workbenchPlanHasOtherActiveRuns, arg.SourceTaskID, arg.ParentID, arg.WorkspaceID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err

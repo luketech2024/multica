@@ -21,6 +21,7 @@ vi.mock("@multica/core/paths", () => ({
   useWorkspacePaths: () => ({
     releases: () => "/acme/releases",
     releaseDetail: (id: string) => `/acme/releases/${id}`,
+    issueDetail: (id: string) => `/acme/issues/${id}`,
   }),
 }));
 vi.mock("@multica/core/projects", () => ({
@@ -34,6 +35,7 @@ vi.mock("@multica/core/api", () => ({
     listReleaseOrders: (...args: unknown[]) => mocks.list(...args),
     listReleaseCandidates: (...args: unknown[]) => mocks.candidates(...args),
     createReleaseOrder: (...args: unknown[]) => mocks.create(...args),
+    getProjectDeployment: async () => ({ config: { mode: "auto", applications: [], resources: [] }, revision: 0 }),
   },
 }));
 vi.mock("../navigation", () => ({
@@ -59,6 +61,18 @@ vi.mock("../navigation", () => ({
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+
+it("shows completed tasks blocked by acceptance with a recovery link", async () => {
+  mocks.list.mockResolvedValue({ releases: [], next_cursor: null });
+  mocks.candidates.mockResolvedValue({ candidates: [], blocked: [{ id: "old", identifier: "TEST-7", title: "Completed website", blockers: [{ code: "acceptance" }] }], next_cursor: null });
+  renderWithI18n(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><ReleasesPage /></QueryClientProvider>);
+  await screen.findByText("No release orders yet.");
+  fireEvent.click(screen.getByRole("button", { name: "Publish accepted tasks" }));
+  const dialog = within(await screen.findByRole("dialog"));
+  expect(await dialog.findByRole("link", { name: "TEST-7 · Completed website" })).toHaveAttribute("href", "/acme/issues/old");
+  expect(dialog.getByRole("button", { name: "New release" })).toBeDisabled();
+  expect(mocks.create).not.toHaveBeenCalled();
 });
 
 it("preserves a failed selection and reuses the request identity on retry", async () => {
@@ -95,7 +109,7 @@ it("preserves a failed selection and reuses the request identity on retry", asyn
     </QueryClientProvider>,
   );
   await screen.findByText("No release orders yet.");
-  fireEvent.click(screen.getByRole("button", { name: "New release" }));
+  fireEvent.click(screen.getByRole("button", { name: "Publish accepted tasks" }));
   const dialog = within(await screen.findByRole("dialog"));
   const first = await dialog.findByRole("checkbox", {
     name: "TASK-1 · First task",

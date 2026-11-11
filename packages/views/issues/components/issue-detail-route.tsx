@@ -75,7 +75,9 @@ export function IssueDetailRoute({ routeId, onDelete }: IssueDetailRouteProps) {
   const { canonicalId, issue, isResolving, notFound } = useCanonicalIssue(wsId, routeId);
   const highlight = useCommentHighlightHash();
 
-  const immutableId = issue?.acceptance_criteria?.team || issue?.workbench_handoff
+  // Legacy project tasks need a stable URL before acceptance recovery creates
+  // their team snapshot, or canonical navigation can discard an open form.
+  const immutableId = issue?.project_id || issue?.acceptance_criteria?.team || issue?.workbench_handoff
     ? canonicalId ?? undefined
     : undefined;
   useCanonicalIssueUrl(routeId, issue?.identifier, highlight.hash, immutableId);

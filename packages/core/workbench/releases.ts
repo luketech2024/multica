@@ -25,7 +25,7 @@ export function releaseOrderOptions(wsId: string, id: string) {
   return queryOptions({
     queryKey: ["releases", wsId, "detail", id],
     queryFn: () => api.getReleaseOrder(id),
-    refetchInterval: 15_000,
+    refetchInterval: (query) => query.state.data?.status === "deploying" ? 2_000 : 15_000,
   });
 }
 

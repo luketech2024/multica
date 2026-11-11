@@ -21,7 +21,8 @@ test.describe("Deployment target checks", () => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/${slug}/projects/${project.id}`);
-    await page.getByRole("tab", { name: /Environment and deployment/ }).click();
+    await page.getByRole("tab", { name: /Environments and deployments/ }).click();
+    await page.getByText("Existing repository deployment targets", { exact: true }).click();
     const section = page.getByRole("region", { name: "Deployment targets", exact: true });
     await expect(section).toBeVisible({ timeout: 30000 });
     const queued = page.waitForResponse((response) => response.url().endsWith(`/deploy-targets/${target.id}/check`));
@@ -31,7 +32,8 @@ test.describe("Deployment target checks", () => {
     await api.reportRuntimeDeployProbe(runtimeId, target.id);
     await expect(section.getByText("Passed · valid for 24 hours", { exact: true })).toBeVisible({ timeout: 15000 });
     await page.reload();
-    await expect(page.getByRole("tab", { name: /Environment and deployment/ })).toHaveAttribute("aria-selected", "true");
+    await page.getByText("Existing repository deployment targets", { exact: true }).click();
+    await expect(page.getByRole("tab", { name: /Environments and deployments/ })).toHaveAttribute("aria-selected", "true");
     await expect(section.getByText("Passed · valid for 24 hours", { exact: true })).toBeVisible();
     await section.getByRole("combobox", { name: "Environment", exact: true }).click();
     await page.getByRole("option", { name: "Production", exact: true }).click();
@@ -64,6 +66,7 @@ test.describe("Deployment target checks", () => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/${slug}/projects/${project.id}?tab=deployment`);
+    await page.getByText("Existing repository deployment targets", { exact: true }).click();
     const section = page.getByRole("region", { name: "Deployment targets", exact: true });
     await expect(section).toBeVisible({ timeout: 30000 });
     await section.getByRole("button", { name: "Edit", exact: true }).click();
@@ -76,6 +79,7 @@ test.describe("Deployment target checks", () => {
     await expect(section.getByText(/Deployment fixture · ••••1234/)).toBeVisible();
     await expect(page.getByText("invalid-fixture-key-1234", { exact: true })).toHaveCount(0);
     await page.reload();
+    await page.getByText("Existing repository deployment targets", { exact: true }).click();
     await expect(section.getByText("SSH private key is invalid or requires a passphrase", { exact: false })).toBeVisible();
     expect(errors).toEqual([]);
   });

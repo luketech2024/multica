@@ -36,7 +36,13 @@
       "evidence_stale": "納品レポートが古くなっています。",
       "evidence_failed": "納品レポートが失敗を示しています。",
       "role_missing": "有効なロールの納品結論がありません。"
-    }
+    },
+    "claim": "検収を担当する",
+    "recover": "検収資料を補完",
+    "recovery_hint": "検収項目を確認して完了したサブタスクを関連付け、保存後に実際の納品証拠を登録してください。",
+    "recovery_items": "検収項目（1行に1項目）",
+    "no_completed_children": "完了済みサブタスクがありません。",
+    "confirm_recovery": "項目を確認して関連付ける"
   },
   "delivery": {
     "unverified": "現在の有効性は未確認です。",
@@ -774,7 +780,7 @@
     "delete_failed": "コメントを削除できませんでした",
     "reply_count_other": "返信 {{count}} 件",
     "replying_to": "{{name}} への返信: {{preview}}",
-    "leave_comment_placeholder": "コメントを残す...",
+    "leave_comment_placeholder": "このタスクにコメントを追加…",
     "send_tooltip": "送信",
     "trigger_source_issue_assignee": "担当",
     "trigger_source_mention_agent": "@メンション",
@@ -826,7 +832,7 @@
     "restart_failed": "現在の実行を停止できませんでした。メッセージは送信されていません。"
   },
   "reply": {
-    "placeholder": "返信を残す...",
+    "placeholder": "このスレッドに返信…",
     "annotations": {
       "confirm_add": "注釈を追加",
       "save": "注釈を保存",
@@ -2048,5 +2054,95 @@
   },
   "workspace_switcher": {
     "title": "タスク切り替え"
+  },
+  "workbench_ui": {
+    "view_total": "このビューの全タスク {{total}} 件",
+    "mine_hint": "自分への割り当てにはエージェント担当のタスクは含まれません。",
+    "band_hint": "ステータスの絞り込み：{{band}}",
+    "mine_empty": "自分に割り当てられたタスクのみ表示しています。エージェント担当のタスクは非表示です。絞り込みを解除すると他のタスクも表示されます。",
+    "band_empty": "選択したステータスにより、ブロック中を含む他の状態のタスクが非表示になっています。絞り込みを解除してください。",
+    "blocked_title": "タスクがブロック中",
+    "blocked_hint": "最新のエージェント返信で原因を確認し、そのスレッドで返信してください。",
+    "blocked_no_reply": "タスクの説明と実行ログで原因を確認してください。",
+    "read_reply": "最新のエージェント返信を読む",
+    "review_sidebar": "右パネルの受け入れ基準を確認してから、ここで確定してください。",
+    "preview_settings": "プレビューと設定",
+    "discussion": "タスクのディスカッション"
+  },
+  "next_step": {
+    "title": "現在の段階と次の操作",
+    "assignee": "担当者 {{name}}",
+    "read_failed": "現在の条件を読み込めません。",
+    "blockers": "対応が必要な条件 {{count}} 件",
+    "offline": "担当エージェントはオフラインです。実行環境を確認してください。",
+    "stages": {
+      "requirements": "要件確認待ち",
+      "plan": "実行計画待ち",
+      "change": "要件変更中",
+      "running": "実行中",
+      "blocked": "対応が必要",
+      "paused": "実行一時停止",
+      "review": "成果の検収待ち",
+      "recovery": "検収情報が必要",
+      "accepted": "検収済み",
+      "closed": "終了",
+      "task": "タスクの履歴"
+    },
+    "actions": {
+      "requirements": "要件を確認",
+      "plan": "実行計画を表示",
+      "change": "変更を確認",
+      "running": "進捗を表示",
+      "blocked": "依頼を確認して返信",
+      "paused": "実行操作を表示",
+      "review": "成果を検収",
+      "recovery": "検収情報を補完",
+      "accepted": "リリース条件を表示",
+      "closed": "結果を表示",
+      "task": "履歴を表示"
+    },
+    "latest_run": "最新の実行"
+  },
+  "composer_ui": {
+    "preview_loading": "送信先と処理方法を確認中…",
+    "preview_failed": "処理方法を確認できません。再試行してください。",
+    "comment_only": "コメントのみ投稿し、エージェントは起動しません。",
+    "input_label": "このタスクへのコメントや指示",
+    "resume_draft": "下書きの編集を続ける",
+    "post_comment": "コメントを投稿",
+    "send_instruction": "指示を送信",
+    "send_queue": "送信して待機",
+    "draft": {
+      "restored": "下書きを復元しました",
+      "saved": "下書きを保存しました",
+      "failed": "下書きを保存できません。ページを開いたまま再試行してください。",
+      "clear_failed": "投稿済みですが下書きを削除できません。再読み込み後の重複送信にご注意ください。"
+    },
+    "posted": "コメントを投稿しました。",
+    "recipient": "送信先",
+    "queued": "処理待ち",
+    "received": "補足を受け付けました。配信状況は実行履歴で確認できます",
+    "collapse_hint": "Esc で折りたたむ",
+    "replying_to": "{{name}} のスレッドに返信",
+    "view_original": "元のディスカッションを見る",
+    "reply_action": "返信",
+    "back_to_task": "タスクのコメントに戻る"
+  },
+  "discussion_picker": {
+    "title": "返信するディスカッションを選択",
+    "description": "今回の返信に対応する元のメッセージを選択してください。",
+    "loading": "ディスカッションを読み込み中…",
+    "failed": "読み込めませんでした。再試行して返信先を選択してください。",
+    "empty": "返信できるディスカッションはありません。",
+    "attachment": "添付ファイルのメッセージ",
+    "in_thread": "ディスカッション内の返信",
+    "reply": "このディスカッションに返信",
+    "more": "さらに表示",
+    "hint": "元のディスカッションを確認すると、入力欄に送信方法が表示されます。",
+    "change": "ディスカッションを変更",
+    "unavailable": "選択したディスカッションは利用できません。下書きは保持されています。再読み込みするか、別のディスカッションを選択してください。",
+    "changed": "元のメッセージが更新されました。送信前に内容を確認してください。",
+    "continue_reply": "返信を続ける",
+    "choose": "ディスカッションを選んで返信"
   }
 }

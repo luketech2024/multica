@@ -33,6 +33,7 @@ import { ProjectResourcesSection } from "./project-resources-section";
 import { deployTargetsOptions } from "@multica/core/workbench/configuration";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
 import { DeployTargetsSection } from "./deploy-targets-section";
+import { ApplicationDeploymentSection } from "./application-deployment-section";
 import { AutopilotsPage } from "../../autopilots/components/autopilots-page";
 import { RepositoryProfilesSection } from "./repository-profiles-section";
 import { ProjectRolesSection } from "./project-roles-section";
@@ -129,7 +130,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const wsPaths = useWorkspacePaths();
   const router = useNavigation();
   const requestedTab = router.searchParams.get("tab");
-  const projectTab = requestedTab === "deployment" || requestedTab === "autopilots" || requestedTab === "settings" ? requestedTab : "tasks";
+  const projectTab = requestedTab === "applications" || requestedTab === "deployment" || requestedTab === "autopilots" || requestedTab === "settings" ? requestedTab : "tasks";
   const targets = useQuery(deployTargetsOptions(wsId, projectId));
   const selectProjectTab = (value: string) => {
     const params = new URLSearchParams(router.searchParams);
@@ -541,15 +542,19 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <Tabs value={projectTab} onValueChange={(value) => selectProjectTab(String(value))} className="min-h-0 flex-1 gap-0">
             <TabsList className="mx-6 mb-4" aria-label={project.title}>
               <TabsTrigger value="tasks">{t(($) => $.deployment.tasks)}</TabsTrigger>
+              <TabsTrigger value="applications">{t(($) => $.application_deployment.applications)}</TabsTrigger>
               <TabsTrigger value="autopilots">{tLayout(($) => $.nav.autopilots)}</TabsTrigger>
               <TabsTrigger value="deployment">
-                {t(($) => $.deployment.title)}
-                {targets.data && <span className="text-caption tabular-nums">{targets.data.targets.length}</span>}
+                {t(($) => $.application_deployment.environment_deployment)}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="settings" className="min-h-0 overflow-auto px-6 pb-6"><div className="max-w-3xl rounded-xl border border-surface-border bg-surface p-5">{sidebarContent}</div></TabsContent>
             <TabsContent value="deployment" className="min-h-0 overflow-auto px-6 pb-6">
-              <DeployTargetsSection key={projectId} projectId={projectId} />
+              <ApplicationDeploymentSection key={projectId} projectId={projectId} view="deployment" />
+              {!!targets.data?.targets.length && <details className="mt-6"><summary>{t(($) => $.application_deployment.legacy_targets)}</summary><DeployTargetsSection key={projectId} projectId={projectId} /></details>}
+            </TabsContent>
+            <TabsContent value="applications" className="min-h-0 overflow-auto px-6 pb-6">
+              <ApplicationDeploymentSection key={projectId} projectId={projectId} />
             </TabsContent>
             <TabsContent value="autopilots" className="flex min-h-0 flex-col">
               <AutopilotsPage projectId={projectId} />

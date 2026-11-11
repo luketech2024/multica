@@ -844,7 +844,7 @@ func (h *Handler) compileIssueTableQuery(w http.ResponseWriter, r *http.Request,
 		switch band.Band {
 		case "all":
 		case "running":
-			where = append(where, "i.status='in_progress'")
+			where = append(where, "(i.status='in_progress' OR EXISTS (SELECT 1 FROM agent_task_queue atq WHERE atq.issue_id = i.id AND atq.status = 'running'))")
 		case "review":
 			where = append(where, "i.status='in_review'")
 		case "today":

@@ -4163,6 +4163,18 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	// the identical lineage was accepted on the create path.
 	_, touchedType := rawFields["assignee_type"]
 	_, touchedID := rawFields["assignee_id"]
+	if req.ConfirmRequirements && prevIssue.Status != "paused" && !prevIssue.ParentIssueID.Valid {
+		confirmed, _ := workbench.ParseRequirements(params.AcceptanceCriteria)
+		if confirmed.Team != nil {
+			role := confirmed.Team.Config.Roles["sched"]
+			if role.Enabled && role.AgentID != nil {
+				params.AssigneeType, params.AssigneeID = strToText("agent"), parseUUID(*role.AgentID)
+				rawFields["assignee_type"], _ = json.Marshal("agent")
+				rawFields["assignee_id"], _ = json.Marshal(*role.AgentID)
+				touchedType, touchedID = true, true
+			}
+		}
+	}
 
 	// Project workflow (MUL-7420): keep the status inside the project's
 	// workflow, and hand the issue off when it enters a step with a handler.
@@ -4243,7 +4255,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	slog.Info("issue updated", append(logger.RequestAttrs(r), "issue_id", id, "workspace_id", workspaceID)...)
 
 	h.fillStatusCategory(r.Context(), issue.WorkspaceID, &resp)
-	assigneeChanged := (req.AssigneeType != nil || req.AssigneeID != nil || handoff != nil) &&
+	assigneeChanged := (req.AssigneeType != nil || req.AssigneeID != nil || handoff != nil || req.ConfirmRequirements) &&
 		(prevIssue.AssigneeType.String != issue.AssigneeType.String || uuidToString(prevIssue.AssigneeID) != uuidToString(issue.AssigneeID))
 	statusChanged := (req.Status != nil || params.Status.Valid) && prevIssue.Status != issue.Status
 	priorityChanged := req.Priority != nil && prevIssue.Priority != issue.Priority
@@ -4271,7 +4283,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		service.IssueTriggerInput{
 			Issue:              issue,
 			PrevStatus:         prevIssue.Status,
-			AssigneeChanged:    assigneeChanged || handoff != nil,
+			AssigneeChanged:    assigneeChanged || handoff != nil || req.ConfirmRequirements,
 			StatusChanged:      statusChanged,
 			EnteredHandoffStep: handoff != nil,
 		},

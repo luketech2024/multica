@@ -163,6 +163,22 @@ Components are `api` (Go backend), `web` (Next.js), `daemon` (agent daemon) and
 idempotent: re-running it against a live environment reuses the database, the
 profile and any component already healthy.
 
+For local acceptance testing, build the web app before switching the managed
+server to production mode. This removes route compilation from page navigation.
+Run these commands in the checkout's shell (WSL on Windows).
+
+```bash
+make web-build
+bash scripts/dev-env.sh down --components web
+make up C=web MULTICA_WEB_MODE=production
+```
+
+Set `MULTICA_WEB_MODE=production` in the checkout's environment file to keep this
+mode across restarts. Re-run `make web-build` after code changes, with the web
+component stopped, then start it again. To resume hot reload, set
+`MULTICA_WEB_MODE=development` and restart the web component. Use the same
+`ENV_FILE` for the build and the managed environment when overriding its path.
+
 Three properties are worth knowing because the old flow lacked them:
 
 - **API, Web and Desktop renderer ports, database names and profiles are allocated, not recomputed.** The
@@ -647,6 +663,18 @@ Warning:
 - after that you must run `make setup-main` or `make setup-worktree` again
 
 ## Typical Flows
+
+### Windows CLI From Source
+
+In PowerShell, build the Windows runtime connector with
+`./scripts/build-cli.ps1`. If Go is outside PATH, pass
+`-GoCommand 'C:\path\to\go.exe'`. Fetch release tags first if the checkout has
+none. The script embeds the Git-described version, source commit and build date
+so runtime capability checks can identify the local build.
+
+The output is `server/bin/multica-local.exe`. Stop the daemon using its existing
+profile before rebuilding a running executable, then start it with the same
+profile. Verify the reported version with `daemon status --profile <profile>`.
 
 ### Stable Main Environment
 

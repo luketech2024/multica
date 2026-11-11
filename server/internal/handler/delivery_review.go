@@ -54,10 +54,11 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		ExpectedRevision int64    `json:"expected_revision"`
-		Action           string   `json:"action"`
-		Reason           string   `json:"reason"`
-		Checks           []string `json:"checks"`
+		ExpectedRevision int64                  `json:"expected_revision"`
+		Action           string                 `json:"action"`
+		Reason           string                 `json:"reason"`
+		Checks           []string               `json:"checks"`
+		Recovery         *deliveryRecoveryInput `json:"recovery"`
 	}
 	actorType, actorID := "", ""
 	if r.Method == http.MethodPost {
@@ -88,8 +89,12 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	criteria, err := workbench.ParseRequirements(current.AcceptanceCriteria)
-	if err != nil || !current.ProjectID.Valid || current.ParentIssueID.Valid || criteria.Team == nil {
+	if err != nil || !current.ProjectID.Valid || current.ParentIssueID.Valid {
 		writeError(w, http.StatusConflict, "delivery review requires a project parent task")
+		return
+	}
+	if r.Method == http.MethodPost && input.Action == "recover" {
+		h.recoverDelivery(w, r, tx, q, current, criteria, input.ExpectedRevision, input.Recovery, actorID)
 		return
 	}
 	state, err := readDeliveryReview(r.Context(), q, current, criteria)
@@ -101,7 +106,7 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, state)
 		return
 	}
-	if current.AssigneeType.String != "member" || uuidToString(current.AssigneeID) != actorID {
+	if input.Action != "claim" && (current.AssigneeType.String != "member" || uuidToString(current.AssigneeID) != actorID) {
 		writeError(w, http.StatusForbidden, "only the assigned member can review delivery")
 		return
 	}
@@ -131,7 +136,17 @@ func (h *Handler) ReviewIssueDelivery(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	criteria, status, err := workbench.ReviewDelivery(criteria, current.Status, input.Action, input.Reason, actorID, input.Checks, state.Blockers, time.Now())
+	status := current.Status
+	if input.Action == "claim" {
+		if criteria.Gate.Accept != nil || (status != "in_review" && status != "done") || current.AssigneeType.String == "member" && current.AssigneeID.Valid && uuidToString(current.AssigneeID) != actorID {
+			writeError(w, http.StatusConflict, "only an unassigned human review can be claimed")
+			return
+		}
+		current.AssigneeType, current.AssigneeID = strToText("member"), parseUUID(actorID)
+		status = "in_review"
+	} else {
+		criteria, status, err = workbench.ReviewDelivery(criteria, current.Status, input.Action, input.Reason, actorID, input.Checks, state.Blockers, time.Now())
+	}
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return

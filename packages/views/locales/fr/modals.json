@@ -263,7 +263,8 @@
       "error_agent_unavailable_fallback": "L'agent est indisponible. Choisissez-en un autre.",
       "error_daemon_version": "Le CLI du daemon de cet agent ({{current}}) est inférieur au minimum requis {{min}}. Mettez le daemon à jour pour utiliser la création avec un agent.",
       "error_unknown": "Échec de l'envoi. Réessayez.",
-      "sub_issue_of": "Sous-tâche de {{identifier}}"
+      "sub_issue_of": "Sous-tâche de {{identifier}}",
+      "open_created": "Ouvrir la tâche"
     }
   },
   "mark_duplicate": {

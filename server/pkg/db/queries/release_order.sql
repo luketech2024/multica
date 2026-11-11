@@ -38,8 +38,7 @@ SELECT EXISTS(SELECT 1 FROM workbench_release_orders WHERE workspace_id=$1 AND p
 
 -- name: ListWorkbenchReleaseCandidates :many
 SELECT * FROM issue i WHERE i.workspace_id= @workspace_id AND i.project_id= @project_id
-    AND i.parent_issue_id IS NULL AND i.status='done' AND i.id< @before_id
-    AND i.acceptance_criteria->'gate'->'accept' IS NOT NULL
+    AND i.parent_issue_id IS NULL AND i.status IN ('done','in_review') AND i.id< @before_id
 ORDER BY i.id DESC LIMIT 100;
 
 -- name: ListWorkbenchReleaseReservations :many

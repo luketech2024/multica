@@ -16,10 +16,11 @@ import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 import { useT } from "../../i18n";
 import { ReleaseReadiness } from "./release-readiness";
+import { DeliveryRecovery } from "./delivery-recovery";
 
 export function DeliveryReview({ issue }: { issue: Issue }) {
-  if (issue.parent_issue_id || !issue.acceptance_criteria?.plan) return null;
-  if (issue.status !== "in_review" && issue.status !== "done") return null;
+  if (issue.parent_issue_id || !issue.project_id) return null;
+  if (!["in_review", "done", "blocked"].includes(issue.status)) return null;
   return <ReviewCard issue={issue} />;
 }
 
@@ -31,7 +32,7 @@ function ReviewCard({ issue }: { issue: Issue }) {
   const { getActorName } = useActorName();
   const review = useQuery({
     ...deliveryReviewOptions(wsId, issue.id, issue.revision),
-    enabled: issue.status === "in_review",
+    enabled: !issue.acceptance_criteria?.gate.accept,
   });
   const mutation = useReviewDelivery(wsId, issue.id);
   const [verified, setVerified] = useState<{ revision: number; ids: string[] }>();
@@ -65,6 +66,7 @@ function ReviewCard({ issue }: { issue: Issue }) {
 
   return <section className="mb-6 space-y-3 rounded-xl border bg-surface p-4" aria-label={t(($) => $.delivery_review.title)}>
     <h3 className="text-label font-medium">{t(($) => $.delivery_review.title)}</h3>
+    {!issue.acceptance_criteria?.plan && <DeliveryRecovery issue={issue} />}
     {issue.status === "done" && issue.acceptance_criteria?.gate.accept ? (
       <div className="space-y-1 text-caption">
         <p className="text-success">{t(($) => $.delivery_review.accepted)}</p>
@@ -97,7 +99,7 @@ function ReviewCard({ issue }: { issue: Issue }) {
           }} />
           <span>{check.text}{check.check && <span className="block text-muted-foreground">{check.check}</span>}</span>
         </label>)}
-        {assigned ? <>
+        {assigned && issue.status === "in_review" ? <>
           {reason !== undefined && <label className="block space-y-1 text-caption">
             {t(($) => $.delivery_review.reason)}
             <Textarea value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} />
@@ -111,7 +113,14 @@ function ReviewCard({ issue }: { issue: Issue }) {
             </>}
             <Button disabled={!ready || mutation.isPending} aria-busy={mutation.isPending} onClick={() => void act("accept")}>{t(($) => $.delivery_review.accept)}</Button>
           </div>
-        </> : <p className="text-caption text-muted-foreground">{t(($) => $.delivery_review.waiting)}</p>}
+        </> : <div className="space-y-2 text-caption text-muted-foreground">
+          <p>{t(($) => $.delivery_review.waiting)}</p>
+          {issue.acceptance_criteria?.plan && ["in_review", "done"].includes(issue.status)
+            && (issue.assignee_type !== "member" || !issue.assignee_id || assigned)
+            && ["owner", "admin", "member"].includes(member.role ?? "") && (
+            <Button variant="outline" disabled={mutation.isPending} onClick={() => void act("claim")}>{t(($) => $.delivery_review.claim)}</Button>
+          )}
+        </div>}
       </>}
     </>}
     {error && <p role="alert" className="text-caption text-destructive">{error}</p>}

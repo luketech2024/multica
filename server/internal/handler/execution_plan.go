@@ -28,10 +28,6 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	actorType, actorID := h.resolveActor(r, uuidToString(member.UserID), uuidToString(issue.WorkspaceID))
-	if actorType != "member" {
-		writeError(w, http.StatusForbidden, "only a member can approve an execution plan")
-		return
-	}
 	var input struct {
 		ExpectedRevision int64                `json:"expected_revision"`
 		Version          int                  `json:"version"`
@@ -61,6 +57,10 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	criteria, err := workbench.ParseRequirements(current.AcceptanceCriteria)
 	if err != nil || !current.ProjectID.Valid || current.ParentIssueID.Valid {
 		writeError(w, http.StatusConflict, "execution plans require a parent task in a project")
+		return
+	}
+	if actorType != "member" && (actorType != "agent" || criteria.Team == nil || criteria.Team.Config.Roles["sched"].AgentID == nil || *criteria.Team.Config.Roles["sched"].AgentID != actorID || current.AssigneeType.String != "agent" || uuidToString(current.AssigneeID) != actorID || criteria.NeedsResplit) {
+		writeError(w, http.StatusForbidden, "only a member or the assigned project scheduler can save the confirmed plan")
 		return
 	}
 	if criteria.Plan != nil && criteria.Plan.Key == input.Key {
@@ -98,7 +98,7 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	active, err := q.WorkbenchPlanHasActiveRuns(r.Context(), db.WorkbenchPlanHasActiveRunsParams{ParentID: current.ID, WorkspaceID: current.WorkspaceID})
+	active, err := q.WorkbenchPlanHasOtherActiveRuns(r.Context(), db.WorkbenchPlanHasOtherActiveRunsParams{ParentID: current.ID, WorkspaceID: current.WorkspaceID, SourceTaskID: h.workbenchSourceTaskID(r, current, actorType, actorID)})
 	if err != nil || active {
 		writeError(w, http.StatusConflict, "stop affected execution before replacing its plan")
 		return
@@ -131,6 +131,10 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	changed := []db.Issue{}
 	for _, child := range previous {
+		if actorType == "agent" && len(workbench.HandoffJSON(child.Properties)) == 0 {
+			writeError(w, http.StatusConflict, "existing unplanned subtasks require member review before replacement")
+			return
+		}
 		updated, err := q.SupersedeWorkbenchPlanChild(r.Context(), db.SupersedeWorkbenchPlanChildParams{ID: child.ID, WorkspaceID: current.WorkspaceID})
 		if err != nil {
 			writeError(w, http.StatusConflict, "failed to retire the previous plan")
@@ -168,7 +172,7 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		child, err := q.CreateIssue(r.Context(), db.CreateIssueParams{
 			ID: ids[task.Key], WorkspaceID: current.WorkspaceID, ProjectID: current.ProjectID, ParentIssueID: current.ID,
 			Title: strings.TrimSpace(task.Title), Description: strToText(task.Description), Status: "todo", Priority: current.Priority,
-			AssigneeType: strToText(assigneeType), AssigneeID: assigneeID, CreatorType: actorType, CreatorID: member.UserID,
+			AssigneeType: strToText(assigneeType), AssigneeID: assigneeID, CreatorType: actorType, CreatorID: parseUUID(actorID),
 			Number: number, Position: position, Properties: properties,
 		})
 		if err != nil {

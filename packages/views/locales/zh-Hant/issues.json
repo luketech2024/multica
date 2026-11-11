@@ -36,7 +36,13 @@
       "evidence_stale": "交付報告已過期。",
       "evidence_failed": "交付報告未通過。",
       "role_missing": "啟用角色缺少交付結論。"
-    }
+    },
+    "claim": "由我驗收",
+    "recover": "補齊驗收資料",
+    "recovery_hint": "確認驗收條目並關聯已完成的子任務，儲存後在下方登記實際交付證據。",
+    "recovery_items": "驗收條目，每行一條",
+    "no_completed_children": "暫無已完成的子任務可關聯。",
+    "confirm_recovery": "確認條目並關聯子任務"
   },
   "delivery": {
     "unverified": "目前有效性尚未核驗。",
@@ -774,7 +780,7 @@
     "delete_failed": "刪除評論失敗",
     "reply_count_other": "{{count}} 條回覆",
     "replying_to": "回覆 {{name}}：{{preview}}",
-    "leave_comment_placeholder": "留下評論...",
+    "leave_comment_placeholder": "為此任務補充留言…",
     "send_tooltip": "傳送",
     "trigger_source_issue_assignee": "負責人",
     "trigger_source_mention_agent": "@提及",
@@ -826,7 +832,7 @@
     "restart_failed": "沒能停止當前執行，訊息還沒有傳送。"
   },
   "reply": {
-    "placeholder": "回覆...",
+    "placeholder": "回覆此則討論…",
     "annotations": {
       "confirm_add": "新增批註",
       "save": "儲存批註",
@@ -2048,5 +2054,95 @@
   },
   "workspace_switcher": {
     "title": "任務切換"
+  },
+  "workbench_ui": {
+    "view_total": "目前檢視全部任務 {{total}} 項",
+    "mine_hint": "「只看我的」僅包含指派給你本人的任務。",
+    "band_hint": "目前狀態篩選為「{{band}}」",
+    "mine_empty": "目前僅顯示指派給你本人的任務，智慧體負責的任務已被篩除。清除篩選可查看其他任務。",
+    "band_empty": "目前狀態篩選會隱藏其他狀態的任務，包括受阻任務。清除篩選可查看其他任務。",
+    "blocked_title": "任務受阻",
+    "blocked_hint": "查看最新智慧體回覆，了解受阻原因，再於對應討論中回覆。",
+    "blocked_no_reply": "請根據任務說明與執行記錄確認受阻原因。",
+    "read_reply": "查看最新智慧體回覆",
+    "review_sidebar": "請在右欄核對驗收條目，再於此處確認。",
+    "preview_settings": "預覽與設定",
+    "discussion": "任務討論"
+  },
+  "next_step": {
+    "title": "目前階段與下一步",
+    "assignee": "處理人 {{name}}",
+    "read_failed": "目前條件讀取失敗。",
+    "blockers": "有 {{count}} 項條件需要處理",
+    "offline": "負責的智慧體已離線，請檢查對應執行環境。",
+    "stages": {
+      "requirements": "需求待確認",
+      "plan": "執行計畫待處理",
+      "change": "需求變更中",
+      "running": "執行中",
+      "blocked": "需要處理",
+      "paused": "執行已暫停",
+      "review": "成果待驗收",
+      "recovery": "驗收資訊待補齊",
+      "accepted": "已驗收",
+      "closed": "已關閉",
+      "task": "任務動態"
+    },
+    "actions": {
+      "requirements": "查看並確認需求",
+      "plan": "查看執行計畫",
+      "change": "查看需求變更",
+      "running": "查看執行進展",
+      "blocked": "查看請求並補充",
+      "paused": "查看執行控制",
+      "review": "查看成果並驗收",
+      "recovery": "補齊驗收資訊",
+      "accepted": "查看發布條件",
+      "closed": "查看結果",
+      "task": "查看動態"
+    },
+    "latest_run": "最近一次執行"
+  },
+  "composer_ui": {
+    "preview_loading": "正在確認傳送對象與方式…",
+    "preview_failed": "傳送方式確認失敗，請重試後傳送。",
+    "comment_only": "本次僅發表評論，不觸發智慧體執行。",
+    "input_label": "為此任務補充評論或指令",
+    "resume_draft": "繼續編輯草稿",
+    "post_comment": "發表評論",
+    "send_instruction": "傳送補充",
+    "send_queue": "傳送並排隊",
+    "draft": {
+      "restored": "草稿已恢復",
+      "saved": "草稿已儲存",
+      "failed": "草稿儲存失敗，請保持頁面開啟並重試。",
+      "clear_failed": "評論已發表，但本機草稿清理失敗。重新整理後請勿重複傳送。"
+    },
+    "posted": "評論已發表。",
+    "recipient": "接收對象",
+    "queued": "已排隊等待處理",
+    "received": "補充已接收，傳遞進展可在執行紀錄中查看",
+    "collapse_hint": "Esc 收起",
+    "replying_to": "回覆 {{name}} 的討論",
+    "view_original": "查看原討論",
+    "reply_action": "回覆",
+    "back_to_task": "返回任務評論"
+  },
+  "discussion_picker": {
+    "title": "選擇要回覆的討論",
+    "description": "選擇本次補充所對應的原訊息。",
+    "loading": "正在載入討論…",
+    "failed": "討論載入失敗，請重試後選擇回覆目標。",
+    "empty": "暫無可回覆的討論。",
+    "attachment": "附件訊息",
+    "in_thread": "討論內的回覆",
+    "reply": "回覆這則討論",
+    "more": "載入更多討論",
+    "hint": "確認原討論後，在輸入區查看實際傳送方式。",
+    "change": "更換討論",
+    "unavailable": "所選討論暫不可用，草稿已保留。請重試載入或重新選擇討論。",
+    "changed": "原訊息已更新，請核對最新內容後傳送。",
+    "continue_reply": "繼續回覆",
+    "choose": "選擇討論並回覆"
   }
 }

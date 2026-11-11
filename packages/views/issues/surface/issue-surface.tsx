@@ -228,7 +228,7 @@ function IssueSurfaceContent({
   useQuery({ ...workspaceWakeupSummariesOptions(workspaceId), refetchInterval: 10_000 });
   const { t } = useT("projects");
   const viewMode = useViewStore((state) => state.viewMode);
-  const workbench = useWorkbenchBand(!!enableWorkbenchBand && viewMode !== "gantt", viewMode === "board");
+  const workbench = useWorkbenchBand(!!enableWorkbenchBand && viewMode !== "gantt", false);
   const workbenchActive = !!workbench.selection && (workbench.selection.only_mine || workbench.selection.band !== "all");
   const controller = useIssueSurfaceController({
     workbench: workbench.selection,
@@ -325,7 +325,7 @@ function IssueSurfaceContent({
           // branch precedes `renderEmpty` on purpose: every surface's own empty
           // copy describes the unfiltered case.
           controller.hasActiveFilters ? (
-            <FilteredEmptyState workbenchActive={workbenchActive} clearWorkbench={workbench.clear} />
+            <FilteredEmptyState workbenchActive={workbenchActive} onlyMine={workbench.selection?.only_mine} clearWorkbench={workbench.clear} />
           ) : renderEmpty ? (
             renderEmpty(renderContext)
           ) : (
@@ -479,7 +479,7 @@ function FilterDependencyErrorState({
   );
 }
 
-function FilteredEmptyState({ workbenchActive, clearWorkbench }: { workbenchActive?: boolean; clearWorkbench?: () => void }) {
+function FilteredEmptyState({ workbenchActive, onlyMine, clearWorkbench }: { workbenchActive?: boolean; onlyMine?: boolean; clearWorkbench?: () => void }) {
   const { t } = useT("issues");
   const clearFilters = useViewStore((s) => s.clearFilters);
   const resetFiltersTo = useViewStore((s) => s.resetFiltersTo);
@@ -502,6 +502,7 @@ function FilteredEmptyState({ workbenchActive, clearWorkbench }: { workbenchActi
     <CollectionPageState
       size="compact"
       icon={FilterX}
+      description={workbenchActive ? t(($) => onlyMine ? $.workbench_ui.mine_empty : $.workbench_ui.band_empty) : undefined}
       title={
         atBaseline && baseline?.unread
           ? t(($) => $.filtered_empty.unread_title)

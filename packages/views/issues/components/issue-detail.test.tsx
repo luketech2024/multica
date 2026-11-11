@@ -330,6 +330,7 @@ const mockApiObj = vi.hoisted(() => ({
   unsubscribeFromIssueSubtree: vi.fn().mockResolvedValue(undefined),
   getActiveTasksForIssue: vi.fn().mockResolvedValue({ tasks: [] }),
   listTasksByIssue: vi.fn().mockResolvedValue([]),
+  previewCommentTriggers: vi.fn().mockResolvedValue({ agents: [], blocked: [] }),
   rerunIssue: vi.fn(),
   listTaskMessages: vi.fn().mockResolvedValue([]),
   listChildIssues: vi.fn().mockResolvedValue({ issues: [] }),
@@ -750,6 +751,68 @@ describe("IssueDetail (shared)", () => {
     // Reset project mock — individual tests override per case. Default fixture
     // has project_id: null so getProject is not invoked.
     mockApiObj.getProject.mockReset();
+  });
+
+  it("requires an explicit discussion choice before replying from a blocked stage", async () => {
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, status: "blocked" });
+    renderIssueDetail();
+    const bar = await screen.findByRole("region", { name: "Current stage and next step" });
+    await screen.findByText("I can help with this");
+    const inlineReplies = screen.queryAllByTestId("reply-composer-shell").length;
+    expect(inlineReplies).toBe(0);
+    fireEvent.click(within(bar).getByRole("button", { name: "Choose discussion and reply" }));
+    const picker = await screen.findByRole("dialog");
+    expect(screen.queryByRole("button", { name: "Back to task comment" })).not.toBeInTheDocument();
+    const olderDiscussion = within(picker).getByText("Started working on this").closest("article")!;
+    fireEvent.click(within(olderDiscussion).getByRole("button", { name: "Reply to this discussion" }));
+    const back = await screen.findByRole("button", { name: "Back to task comment" });
+    expect(back).toBeVisible();
+    expect(screen.queryAllByTestId("reply-composer-shell")).toHaveLength(0);
+    const editor = await screen.findByPlaceholderText("Reply to this discussion…");
+    fireEvent.change(editor, { target: { value: "Here is the requested detail" } });
+    await waitFor(() => expect(mockApiObj.previewCommentTriggers).toHaveBeenCalledWith("issue-1", "Here is the requested detail", "comment-1", undefined));
+    fireEvent.click(back);
+    expect(screen.queryByRole("button", { name: "Back to task comment" })).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId("reply-composer-shell")).toHaveLength(inlineReplies);
+  });
+
+  it("keeps the selected reply stable on arrival and preserves its draft when the target changes or disappears", async () => {
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, status: "blocked" });
+    const { queryClient } = renderIssueDetailWithHighlight("comment-1");
+    await screen.findByText("I can help with this");
+    fireEvent.click(within(document.getElementById("comment-comment-1")!).getByRole("button", { name: "Reply" }));
+    const editor = await screen.findByPlaceholderText("Reply to this discussion…");
+    fireEvent.change(editor, { target: { value: "Keep this response" } });
+    const entries = [...mockTimeline, { ...mockTimeline[1], id: "new-arrival", content: "A newer request" }];
+    await act(async () => { queryClient.setQueryData(["issues", "timeline", "issue-1"], entries); });
+    await waitFor(() => expect(mockApiObj.previewCommentTriggers).toHaveBeenCalledWith("issue-1", "Keep this response", "comment-1", undefined));
+    expect(editor).toHaveValue("Keep this response");
+    await act(async () => { queryClient.setQueryData(["issues", "timeline", "issue-1"], entries.map((entry) => entry.id === "comment-1" ? { ...entry, content: "Updated original" } : entry)); });
+    expect(await screen.findByText("The original message has changed. Review the updated text before sending.")).toBeVisible();
+    await act(async () => { queryClient.setQueryData(["issues", "timeline", "issue-1"], entries.filter((entry) => entry.id !== "comment-1")); });
+    expect(await screen.findByText("The selected discussion is unavailable. Your draft is kept. Retry loading or choose another discussion.")).toBeVisible();
+    expect(editor).toHaveValue("Keep this response");
+    expect(screen.getByRole("button", { name: /^(Send|Post comment)$/ })).toBeDisabled();
+  });
+
+  it("uses one composer for discussion replies and aligns messages by author", async () => {
+    mockApiObj.listTimeline.mockResolvedValue([
+      ...mockTimeline,
+      { ...mockTimeline[0], id: "nested-own", parent_id: "comment-2", content: "My reply in this thread" },
+    ]);
+    renderIssueDetail();
+    const agentMessage = await screen.findByText("I can help with this");
+    expect(agentMessage.closest("[data-message-side]")).toHaveAttribute("data-message-side", "left");
+    const ownMessage = document.querySelector("#comment-comment-1 [data-message-side]");
+    expect(ownMessage).toHaveAttribute("data-message-side", "right");
+    expect(screen.getByText("My reply in this thread").closest("[data-message-side]")).toHaveAttribute("data-message-side", "right");
+    expect(screen.queryAllByTestId("reply-composer-shell")).toHaveLength(0);
+    const agentThread = document.getElementById("comment-comment-2")!;
+    fireEvent.click(within(agentThread).getByRole("button", { name: "Reply" }));
+    await screen.findByRole("button", { name: "Back to task comment" });
+    const editor = await screen.findByPlaceholderText("Reply to this discussion…");
+    fireEvent.change(editor, { target: { value: "Reply to this discussion" } });
+    await waitFor(() => expect(mockApiObj.previewCommentTriggers).toHaveBeenCalledWith("issue-1", "Reply to this discussion", "comment-2", undefined));
   });
 
   it("passes the issue's agent assignment to the local-directory hint", async () => {
@@ -1199,7 +1262,10 @@ describe("IssueDetail (shared)", () => {
     });
 
     expect(screen.queryByTestId("panel-group")).not.toBeInTheDocument();
-    expect(screen.queryByText("Properties")).not.toBeInTheDocument();
+    const properties = screen.getByRole("button", { name: "Properties" });
+    expect(properties).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(properties);
+    expect(properties).toHaveAttribute("aria-expanded", "true");
   });
 
   // The peek's close button lives in the host's trailing controls, so every
@@ -1279,7 +1345,9 @@ describe("IssueDetail (shared)", () => {
 
     // `bottom-0` is unique to the composer wrapper — the sticky affordances
     // inside the timeline (comment headers, resolve bars) all pin to `top-0`.
-    expect(container.querySelector(".sticky.bottom-0")).not.toBeNull();
+    const composer = screen.getByTestId("comment-composer-shell");
+    expect(composer.closest("[data-issue-content-column]")).toBeNull();
+    expect(container.querySelector("[data-testid=issue-next-step]")).not.toBeNull();
   });
 
   it("lets the composer ride the end of the timeline on mobile", async () => {
@@ -1287,13 +1355,13 @@ describe("IssueDetail (shared)", () => {
     // scroll position, and the part it covers is its own send button.
     mockViewport.isMobile = true;
 
-    const { container } = renderIssueDetail();
+    renderIssueDetail();
 
     await waitFor(() => {
       expect(screen.getByText("Implement authentication")).toBeInTheDocument();
     });
 
-    expect(container.querySelector(".sticky.bottom-0")).toBeNull();
+    expect(screen.getByTestId("comment-composer-shell").closest("[data-issue-content-column]")).not.toBeNull();
   });
 
   it("realigns after Virtuoso measures the newly posted row", async () => {
@@ -1312,10 +1380,11 @@ describe("IssueDetail (shared)", () => {
 
     await screen.findByText("Implement authentication");
     fireEvent.click(screen.getByTestId("comment-composer-shell"));
-    const editor = await screen.findByPlaceholderText("Leave a comment...");
+    const editor = await screen.findByPlaceholderText("Add a comment to this task…");
     fireEvent.change(editor, { target: { value: "A new update" } });
     const composer = editor.closest<HTMLElement>("[aria-busy], .relative.flex.flex-col.rounded-lg")!;
-    fireEvent.click(within(composer).getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(within(composer).getByRole("button", { name: "Post comment" })).toBeEnabled());
+    fireEvent.click(within(composer).getByRole("button", { name: "Post comment" }));
 
     expect(scrollToIndexSpy).not.toHaveBeenCalled();
     await waitFor(() => {

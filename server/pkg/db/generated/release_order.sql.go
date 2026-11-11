@@ -14,7 +14,7 @@ import (
 const confirmWorkbenchRelease = `-- name: ConfirmWorkbenchRelease :one
 UPDATE workbench_release_orders SET confirmations=$3, revision=revision+1,updated_at=now()
 WHERE workspace_id=$1 AND id=$2 AND revision=$4
-  AND status IN ('draft','prechecking','ready') RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations
+  AND status IN ('draft','prechecking','ready') RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations, lease_until
 `
 
 type ConfirmWorkbenchReleaseParams struct {
@@ -47,13 +47,14 @@ func (q *Queries) ConfirmWorkbenchRelease(ctx context.Context, arg ConfirmWorkbe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Confirmations,
+		&i.LeaseUntil,
 	)
 	return i, err
 }
 
 const createWorkbenchRelease = `-- name: CreateWorkbenchRelease :one
 INSERT INTO workbench_release_orders (id,workspace_id,project_id,number,env,request_id,request_hash,manifest,created_by)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations, lease_until
 `
 
 type CreateWorkbenchReleaseParams struct {
@@ -96,12 +97,13 @@ func (q *Queries) CreateWorkbenchRelease(ctx context.Context, arg CreateWorkbenc
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Confirmations,
+		&i.LeaseUntil,
 	)
 	return i, err
 }
 
 const getWorkbenchRelease = `-- name: GetWorkbenchRelease :one
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders WHERE workspace_id=$1 AND id=$2
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations, lease_until FROM workbench_release_orders WHERE workspace_id=$1 AND id=$2
 `
 
 type GetWorkbenchReleaseParams struct {
@@ -127,12 +129,13 @@ func (q *Queries) GetWorkbenchRelease(ctx context.Context, arg GetWorkbenchRelea
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Confirmations,
+		&i.LeaseUntil,
 	)
 	return i, err
 }
 
 const getWorkbenchReleaseByRequest = `-- name: GetWorkbenchReleaseByRequest :one
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders WHERE workspace_id=$1 AND request_id=$2
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations, lease_until FROM workbench_release_orders WHERE workspace_id=$1 AND request_id=$2
 `
 
 type GetWorkbenchReleaseByRequestParams struct {
@@ -158,6 +161,7 @@ func (q *Queries) GetWorkbenchReleaseByRequest(ctx context.Context, arg GetWorkb
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Confirmations,
+		&i.LeaseUntil,
 	)
 	return i, err
 }
@@ -181,8 +185,7 @@ func (q *Queries) IssueHasWorkbenchRelease(ctx context.Context, arg IssueHasWork
 
 const listWorkbenchReleaseCandidates = `-- name: ListWorkbenchReleaseCandidates :many
 SELECT id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, start_date, metadata, stage, properties, revision, last_activity_at, triage_state, duplicate_of_issue_id, external_ticket_no, completed_at FROM issue i WHERE i.workspace_id= $1 AND i.project_id= $2
-    AND i.parent_issue_id IS NULL AND i.status='done' AND i.id< $3
-    AND i.acceptance_criteria->'gate'->'accept' IS NOT NULL
+    AND i.parent_issue_id IS NULL AND i.status IN ('done','in_review') AND i.id< $3
 ORDER BY i.id DESC LIMIT 100
 `
 
@@ -284,7 +287,7 @@ func (q *Queries) ListWorkbenchReleaseReservations(ctx context.Context, arg List
 }
 
 const listWorkbenchReleases = `-- name: ListWorkbenchReleases :many
-SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations FROM workbench_release_orders
+SELECT id, workspace_id, project_id, number, env, status, request_id, request_hash, manifest, revision, created_by, created_at, updated_at, confirmations, lease_until FROM workbench_release_orders
 WHERE workspace_id= $1 AND id< $2
     AND ($3::uuid IS NULL OR project_id=$3::uuid)
     AND ($4::text='' OR env= $4)
@@ -327,6 +330,7 @@ func (q *Queries) ListWorkbenchReleases(ctx context.Context, arg ListWorkbenchRe
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Confirmations,
+			&i.LeaseUntil,
 		); err != nil {
 			return nil, err
 		}

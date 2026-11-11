@@ -67,11 +67,11 @@ func (h *Handler) SaveDeliveryEvidence(w http.ResponseWriter, r *http.Request) {
 		writeRevisionConflict(w, "issue", child.ID, input.Evidence.IssueRevision, child.Revision)
 		return
 	}
-	if child.Status != "done" {
-		writeError(w, http.StatusConflict, "finish the subtask before recording its delivery evidence")
+	if child.Status != "done" && child.Status != "in_progress" && child.Status != "in_review" {
+		writeError(w, http.StatusConflict, "delivery requires a started or completed subtask")
 		return
 	}
-	active, err := q.WorkbenchPlanHasActiveRuns(r.Context(), db.WorkbenchPlanHasActiveRunsParams{ParentID: child.ID, WorkspaceID: current.WorkspaceID})
+	active, err := q.WorkbenchPlanHasOtherActiveRuns(r.Context(), db.WorkbenchPlanHasOtherActiveRunsParams{ParentID: child.ID, WorkspaceID: current.WorkspaceID, SourceTaskID: h.workbenchSourceTaskID(r, child, actorType, actorID)})
 	if err != nil || active {
 		writeError(w, http.StatusConflict, "wait for subtask execution to settle before recording evidence")
 		return
@@ -90,6 +90,19 @@ func (h *Handler) SaveDeliveryEvidence(w http.ResponseWriter, r *http.Request) {
 	evidence.Version, evidence.Role, evidence.RepoID = criteria.Version, handoff.Role, handoff.RepoID
 	evidence.DescriptionHash = workbench.DeliveryDescriptionHash(current.Description.String)
 	evidence.RecordedAt, evidence.RecordedBy, evidence.ActorType = time.Now().UTC().Format(time.RFC3339Nano), actorID, actorType
+	// Commit completion and its evidence together so the recorded revision remains current.
+	if child.Status != "done" {
+		child, err = q.UpdateIssue(r.Context(), db.UpdateIssueParams{
+			ID: child.ID, Status: strToText("done"), ExpectedRevision: pgtype.Int8{Int64: child.Revision, Valid: true},
+			AssigneeType: child.AssigneeType, AssigneeID: child.AssigneeID, ProjectID: child.ProjectID, ParentIssueID: child.ParentIssueID,
+			StartDate: child.StartDate, DueDate: child.DueDate, Stage: child.Stage, DuplicateOfIssueID: child.DuplicateOfIssueID,
+		})
+		if err != nil {
+			writeError(w, http.StatusConflict, "subtask completion could not be saved")
+			return
+		}
+	}
+	evidence.IssueRevision = child.Revision
 	if criteria.Delivery == nil {
 		criteria.Delivery = map[string]workbench.DeliveryEvidence{}
 	}
@@ -118,7 +131,7 @@ func (h *Handler) SaveDeliveryEvidence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.publishRequirementsActivity(activity)
-	h.publishIssueSnapshots(r.Context(), []db.Issue{after}, actorType, actorID)
+	h.publishIssueSnapshots(r.Context(), []db.Issue{child, after}, actorType, actorID)
 	response := issueToResponse(after, h.getIssuePrefix(r.Context(), after.WorkspaceID))
 	h.fillStatusCategory(r.Context(), after.WorkspaceID, &response)
 	writeJSON(w, http.StatusOK, response)

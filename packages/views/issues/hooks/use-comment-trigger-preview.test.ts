@@ -274,7 +274,7 @@ describe("useCommentTriggerPreview", () => {
 
     await advancePreviewDebounce();
 
-    expect(result.current).toEqual({
+    expect(result.current).toMatchObject({
       agents: [],
       blocked: [],
       hasAllMembersMention: false,
@@ -294,7 +294,7 @@ describe("useCommentTriggerPreview", () => {
 
     await advancePreviewDebounce();
 
-    expect(result.current).toEqual({
+    expect(result.current).toMatchObject({
       agents: [],
       blocked: [],
       hasAllMembersMention: true,

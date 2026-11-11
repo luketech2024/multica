@@ -58,11 +58,12 @@ export function useRecipientActions({
     const ids = new Set(agentKey.split(","));
     return all.filter((task) => ids.has(task.agent_id) && ACTIVE_STATUSES.has(task.status));
   }, [agentKey]);
-  const { data: tasks = NO_TASKS } = useQuery({
+  const taskQuery = useQuery({
     ...issueTasksOptions(issueId),
     enabled: !!issueId && agents.length > 0,
     select: selectActive,
   });
+  const tasks = taskQuery.data ?? NO_TASKS;
   // The personal default can turn steering off for every composer; it only
   // decides what happens without a per-message choice.
   const steerWithoutChoice = useCommentComposerStore((s) => s.runningAgentReply !== "after_run");
@@ -117,5 +118,9 @@ export function useRecipientActions({
     agentId: r.agent.id, action: r.action, state: r.state,
   }))), [recipients]);
 
-  return { recipients, attachmentsBlockSteer, routing, setAction, reset };
+  return { recipients, attachmentsBlockSteer, routing, setAction, reset,
+    ready: agents.length === 0 || taskQuery.isSuccess,
+    isError: agents.length > 0 && taskQuery.isError,
+    retry: () => { void taskQuery.refetch(); },
+  };
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { issueKeys } from "@multica/core/issues/queries";
 import { setApiInstance } from "@multica/core/api";
 import type { ApiClient } from "@multica/core/api/client";
 import { NavigationProvider } from "../../navigation";
@@ -100,6 +101,16 @@ describe("IssueDetailRoute comment deep links", () => {
     await waitFor(() => expect(IssueDetail).toHaveBeenCalled());
     rerender(route("#comment-second"));
     expectHighlight("second");
+  });
+
+  it("keeps a legacy project task URL stable before acceptance recovery", async () => {
+    setApiInstance({
+      getIssue: vi.fn().mockResolvedValue({ id: issueId, identifier: "TRS-134", project_id: "project" }),
+    } as unknown as ApiClient);
+    render(route("#comment-adapter-comment", issueId));
+    await waitFor(() => expect(qc.getQueryData(issueKeys.detail("ws-1", issueId))).toHaveProperty("project_id", "project"));
+    await waitFor(() => expectHighlight("adapter-comment"));
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it.each(["", "#activity"])("clears the highlight for adapter hash %j", async (hash) => {

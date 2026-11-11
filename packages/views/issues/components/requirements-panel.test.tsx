@@ -24,17 +24,30 @@ const initial: Issue = {
   metadata: {}, properties: {}, created_at: "2026-11-06T00:00:00Z", updated_at: "2026-11-06T00:00:00Z", revision: 3,
   acceptance_criteria: { v: 1, version: 1, next_item_no: 2, items: [{ id: "A-01", text: "Export report", origin: "user", covers: [], checked: null, note: null }], bounds: ["No billing"], gate: { spec: null, accept: null } },
 };
-function mount(issue = initial) {
+function mount(issue = initial, detailsTarget?: HTMLElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   client.setQueryData(issueKeys.detail("ws-1", issue.id), structuredClone(issue));
   function Detail() {
     const { data } = useQuery<Issue>({ queryKey: issueKeys.detail("ws-1", issue.id), queryFn: async () => issue, enabled: false });
-    return data ? <RequirementsPanel issue={data} /> : null;
+    return data ? <RequirementsPanel issue={data} detailsTarget={detailsTarget} /> : null;
   }
   renderWithI18n(<QueryClientProvider client={client}><Detail /></QueryClientProvider>);
   return client;
 }
 describe("requirements panel", () => {
+  it("keeps empty blocked requirements in the sidebar without a duplicate confirmation card", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    try {
+      mount({ ...initial, status: "blocked", acceptance_criteria: { ...initial.acceptance_criteria!, items: [], bounds: [] } }, target);
+      expect(target.textContent).not.toBe("");
+      expect(screen.queryByRole("region", { name: "Requirements confirmation" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    } finally {
+      cleanup();
+      target.remove();
+    }
+  });
   it("shows the saved team configuration for this task", () => {
     const roles = ProjectRolesSchema.parse({ revision: 2, config: { v: 1, roles: Object.fromEntries(projectRoleOrder.map((role) => [role, { enabled: role !== "sec" }])) } });
     mount({ ...initial, acceptance_criteria: { ...initial.acceptance_criteria!, team: { ...roles, project_id: "project" } } });

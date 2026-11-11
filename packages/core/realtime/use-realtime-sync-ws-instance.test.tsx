@@ -539,7 +539,15 @@ describe("useRealtimeSync — Table server membership invalidation", () => {
     const affected: QueryKey[] = [workingFacet(), workspaceWorkingAgentsKeys.list("ws-1", "issue")];
     // Test both server membership forms, including an explicit empty id set,
     // across rows, descriptors and ordinary facets such as status counts.
-    const filterCases: IssueTableQuerySpec["filters"][] = [{}, { working_only: false }, { working_only: true }, { working_issue_ids: [] }, { working_issue_ids: ["i1"] }];
+    const day = { start: "2026-11-07T00:00:00Z", end: "2026-11-08T00:00:00Z" };
+    const filterCases: IssueTableQuerySpec["filters"][] = [
+      {}, { working_only: false }, { working_only: true },
+      { working_issue_ids: [] }, { working_issue_ids: ["i1"] },
+      { workbench: { band: "running", only_mine: false, ...day } },
+      { workbench: { band: "running", only_mine: true, ...day } },
+      { workbench: { band: "review", only_mine: false, ...day } },
+      { workbench: { band: "all", only_mine: false, ...day } },
+    ];
     for (const filters of filterCases) {
       const query = { ...spec, filters };
       const keys = [
@@ -547,10 +555,11 @@ describe("useRealtimeSync — Table server membership invalidation", () => {
         issueKeys.tableGroups("ws-1", query, { kind: "status" }),
         issueKeys.tableFacets("ws-1", { query, facets: [{ kind: "status" }] }),
       ];
-      (filters.working_only || filters.working_issue_ids ? affected : untouched).push(...keys);
+      (filters.working_only || filters.working_issue_ids || filters.workbench?.band === "running" ? affected : untouched).push(...keys);
     }
     // A saved view's sidebar preview filters on working_only server-side.
     affected.push(issueKeys.sidebar("ws-1", "view:v1", { table: { ...spec, filters: { working_only: true } } }, 5));
+    affected.push(issueKeys.sidebar("ws-1", "view:running", { table: { ...spec, filters: { workbench: { band: "running", only_mine: false, ...day } } } }, 5));
     untouched.push(issueKeys.sidebar("ws-1", "view:v2", { table: spec }, 5));
     untouched.push(issueKeys.sidebar("ws-1", "project:p1", { project_id: "p1" }, 5));
     for (const key of [...untouched, ...affected]) qc.setQueryData(key, []);

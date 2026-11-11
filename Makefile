@@ -183,8 +183,20 @@ env-exec: ## Run a command with this environment's variables (ARGS="-- pnpm dev:
 api-dev: ## Run only the Go backend for the current env file
 	cd server && go run -ldflags "-X main.commit=$(COMMIT)" ./cmd/server
 
-web-dev: ## Run only the Next.js dev server for the current env file
+MULTICA_WEB_MODE ?= development
+
+.PHONY: web-build
+web-build: ## Build the local web preview with the current environment
+	pnpm --filter @multica/web build
+
+web-dev: ## Run the managed web server (MULTICA_WEB_MODE=production for a built preview)
+ifeq ($(MULTICA_WEB_MODE),production)
+	pnpm --filter @multica/web exec next start --port $(FRONTEND_PORT)
+else ifeq ($(MULTICA_WEB_MODE),development)
 	pnpm dev:web
+else
+	$(error MULTICA_WEB_MODE must be development or production)
+endif
 
 desktop-dev: ## Run only the Electron desktop app for the current env file
 	pnpm dev:desktop
