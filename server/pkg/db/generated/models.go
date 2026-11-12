@@ -1296,6 +1296,29 @@ type NotificationPreference struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type OnespecFlow struct {
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	IssueID     pgtype.UUID        `json:"issue_id"`
+	State       []byte             `json:"state"`
+	Revision    int64              `json:"revision"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OnespecProjectConfig struct {
+	WorkspaceID          pgtype.UUID `json:"workspace_id"`
+	ProjectID            pgtype.UUID `json:"project_id"`
+	Enabled              bool        `json:"enabled"`
+	RuntimeID            pgtype.UUID `json:"runtime_id"`
+	OverviewRepositoryID pgtype.UUID `json:"overview_repository_id"`
+	Revision             int64       `json:"revision"`
+}
+
+type OnespecWorkspaceConfig struct {
+	WorkspaceID      pgtype.UUID `json:"workspace_id"`
+	DefaultRuntimeID pgtype.UUID `json:"default_runtime_id"`
+	Revision         int64       `json:"revision"`
+}
+
 type PersonalAccessToken struct {
 	ID          pgtype.UUID        `json:"id"`
 	UserID      pgtype.UUID        `json:"user_id"`
@@ -1769,6 +1792,20 @@ type TaskUsageHourlyRollupState struct {
 	LastRunFinishedAt pgtype.Timestamptz `json:"last_run_finished_at"`
 	LastRunRows       int64              `json:"last_run_rows"`
 	LastError         pgtype.Text        `json:"last_error"`
+}
+
+type TaskUserInput struct {
+	ID          pgtype.UUID        `json:"id"`
+	TaskID      pgtype.UUID        `json:"task_id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	IssueID     pgtype.UUID        `json:"issue_id"`
+	RequestKey  string             `json:"request_key"`
+	Request     []byte             `json:"request"`
+	Response    []byte             `json:"response"`
+	Status      string             `json:"status"`
+	AnsweredBy  pgtype.UUID        `json:"answered_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

@@ -2,8 +2,10 @@ package service
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -41,7 +43,20 @@ const PlatformSkillName = "multica-platform"
 // agent's procedure, not a platform contract, so shipping it workspace-wide
 // spent that budget on nine agents out of ten that can never use it.
 var builtinSkillSystemKey = map[string]string{
-	"multica-onboarding": MikaSystemKey,
+	"multica-onboarding":            MikaSystemKey,
+	"multica-onespec-coordinate":    "onespec:sched",
+	"multica-onespec-generate-prd":  "onespec:product",
+	"multica-onespec-change":        "onespec:product",
+	"multica-onespec-design":        "onespec:dev",
+	"multica-onespec-task":          "onespec:dev",
+	"multica-onespec-implement":     "onespec:dev",
+	"multica-onespec-complete":      "onespec:dev",
+	"multica-onespec-bugfix":        "onespec:dev",
+	"multica-onespec-testcase":      "onespec:test",
+	"multica-onespec-checklist":     "onespec:test",
+	"multica-onespec-release":       "onespec:ops",
+	"multica-onespec-documentation": "onespec:docs",
+	"multica-onespec-git":           "onespec:git",
 }
 
 // BuiltinSkills returns the platform's built-in skills for an agent with the
@@ -144,4 +159,16 @@ func loadBuiltinSkill(fsys embed.FS, root, name string) (AgentSkillData, bool) {
 		return nil
 	})
 	return skill, true
+}
+
+var oneSpecSkillSlug = regexp.MustCompile(`[^a-z0-9]+`)
+
+func ValidateOneSpecSkillNames(skills []AgentSkillData) error {
+	for _, skill := range skills {
+		name := strings.Trim(oneSpecSkillSlug.ReplaceAllString(strings.ToLower(strings.TrimSpace(skill.Name)), "-"), "-")
+		if strings.HasPrefix(name, "multica-onespec-") {
+			return fmt.Errorf("workspace skill %q conflicts with the platform OneSpec namespace; rename or unbind it", skill.Name)
+		}
+	}
+	return nil
 }

@@ -12,10 +12,16 @@ export function WorkbenchRunSummary({ content, attachments }: Pick<ComponentProp
   const { t } = useT("issues");
   const issue = useCurrentIssueRenderContext();
   const [expanded, setExpanded] = useState<boolean>();
-  const showFullOutput = expanded ?? issue?.status === "blocked";
+  const showFullOutput = expanded ?? (!issue?.compact && issue?.status === "blocked");
   const safeContent = redactSecrets(content);
   const summary = parseWorkbenchSummary(safeContent);
   if (!summary) return <ReadonlyContent content={safeContent} attachments={attachments} />;
+  if (issue?.compact) return <section className="space-y-2 text-body" aria-label={t(($) => $.run_summary.title)}>
+    <p className="whitespace-pre-wrap break-words">{summary.conclusion}</p>
+    {summary.risks.length > 0 && <p className="whitespace-pre-wrap break-words text-muted-foreground">{summary.risks.join("\n")}</p>}
+    <Button size="sm" variant="ghost" aria-expanded={showFullOutput} onClick={() => setExpanded(!showFullOutput)}>{showFullOutput ? t(($) => $.run_summary.collapse) : t(($) => $.run_summary.expand)}</Button>
+    {showFullOutput && <ReadonlyContent content={safeContent} attachments={attachments} />}
+  </section>;
   const sections = [
     [t(($) => $.run_summary.conclusion), summary.conclusion],
     [t(($) => $.run_summary.changes), summary.changes.join("\n")],

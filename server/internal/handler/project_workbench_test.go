@@ -97,7 +97,7 @@ func TestProjectRolesPersistenceRequiredRolesAndRevision(t *testing.T) {
 	project := dbfx.Project(t, "Project role configuration")
 	var initial ProjectRolesResponse
 	testutil.Call(t, testHandler.GetProjectWorkbenchRoles, testutil.WithURLParams(newRequest("GET", "/api/projects/"+project+"/workbench-roles", nil), "id", project)).Want(http.StatusOK).JSON(&initial)
-	if initial.Revision != 1 || len(initial.Config.Roles) != 6 {
+	if initial.Revision != 1 || len(initial.Config.Roles) != len(workbench.ProjectRoleOrder) {
 		t.Fatal("missing initial project roles")
 	}
 	write := func(config workbench.ProjectRoles, revision int64, status int) ProjectRolesResponse {

@@ -6439,6 +6439,9 @@ func SettleTerminalTaskState(ctx context.Context, q *db.Queries, tasks ...db.Age
 	if _, err := q.SettleTerminalTaskSupplements(ctx, taskIDs); err != nil {
 		return fmt.Errorf("settle terminal task supplements: %w", err)
 	}
+	if err := q.SettleTaskUserInputs(ctx, taskIDs); err != nil {
+		return fmt.Errorf("settle user input requests: %w", err)
+	}
 	return SettleDeliveredDelegatedFailureRecoveries(ctx, q, tasks...)
 }
 
@@ -7201,6 +7204,11 @@ func (s *TaskService) LoadAgentSkillBundles(ctx context.Context, agentID pgtype.
 	skills, err := s.LoadAgentSkills(ctx, agentID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if strings.HasPrefix(agentSystemKey, "onespec:") {
+		if err := ValidateOneSpecSkillNames(skills); err != nil {
+			return nil, nil, err
+		}
 	}
 	skills = append(skills, s.BuiltinSkills(agentSystemKey, legacyRedirects)...)
 	bundles, refs := BuildAgentSkillBundles(skills)

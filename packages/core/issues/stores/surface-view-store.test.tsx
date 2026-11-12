@@ -60,6 +60,28 @@ afterEach(async () => {
 });
 
 describe("issue surface view store registry", () => {
+  it("defaults projects to parent tasks and migrates previously stored project views once", async () => {
+    const entry = { state: { showSubIssues: true, sortBy: "title", sortDirection: "asc" }, updatedAt: "2026-11-11T00:00:00Z" };
+    localStorage.setItem(`${ISSUE_SURFACE_VIEW_STORAGE_KEY}:acme`, JSON.stringify({
+      version: 1,
+      state: { surfaces: { "project:existing": entry, "workspace:all": entry, "view:saved": entry } },
+    }));
+    setCurrentWorkspace("acme", "ws_a");
+    await flush();
+    const existing = getIssueSurfaceViewStore("project:existing");
+    expect(existing.getState().showSubIssues).toBe(false);
+    expect(existing.getState().sortBy).toBe("title");
+    expect(getIssueSurfaceViewStore("project:fresh").getState().showSubIssues).toBe(false);
+    expect(getIssueSurfaceViewStore("workspace:all").getState().showSubIssues).toBe(true);
+    expect(getIssueSurfaceViewStore("view:saved").getState().showSubIssues).toBe(true);
+    existing.getState().toggleShowSubIssues();
+    setCurrentWorkspace(null, null);
+    await flush();
+    setCurrentWorkspace("acme", "ws_a");
+    await flush();
+    expect(existing.getState().showSubIssues).toBe(true);
+  });
+
   it("migrates legacy defaults without rewriting explicit preferences", async () => {
     localStorage.setItem(
       `${ISSUE_SURFACE_VIEW_STORAGE_KEY}:acme`,

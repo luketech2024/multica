@@ -1401,7 +1401,12 @@ func (h *Handler) DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		},
 		{
 			name: "delete administration data",
-			run:  func() error { return qtx.DeleteWorkspaceAdministration(ctx, requester.WorkspaceID) },
+			run: func() error {
+				if err := qtx.DeleteOneSpecWorkspace(ctx, requester.WorkspaceID); err != nil {
+					return err
+				}
+				return qtx.DeleteWorkspaceAdministration(ctx, requester.WorkspaceID)
+			},
 		},
 		{
 			// At this point workspaceMember has resolved → workspaceID is a

@@ -2070,12 +2070,18 @@
     "discussion": "任务讨论"
   },
   "next_step": {
+    "open_execution": "进入 {{identifier}} 执行任务",
+    "planned_hint": "已拆分 {{count}} 个执行任务。进入执行任务查看进度或补充所需信息。",
+    "start_execution": "开始执行",
+    "starting": "正在启动…",
+    "start_hint": "核对任务要求后，点击开始执行，由负责的智能体处理。缺少的信息可在任务讨论中补充。",
     "title": "当前阶段与下一步",
     "assignee": "处理人 {{name}}",
     "read_failed": "当前条件读取失败。",
     "blockers": "有 {{count}} 项条件需要处理",
     "offline": "负责的智能体已离线，请检查对应运行时。",
     "stages": {
+      "planned": "执行任务已拆分",
       "requirements": "需求待确认",
       "plan": "执行计划待处理",
       "change": "需求变更中",
@@ -2089,6 +2095,7 @@
       "task": "任务动态"
     },
     "actions": {
+      "planned": "查看执行任务",
       "requirements": "查看并确认需求",
       "plan": "查看执行计划",
       "change": "查看需求变更",
@@ -2144,5 +2151,45 @@
     "changed": "原消息已更新，请核对最新内容后发送。",
     "continue_reply": "继续回复",
     "choose": "选择讨论并回复"
+  },
+  "task_workspace": {
+    "attachment_destination": "附件属于另一个任务。请移除附件后，在当前对象下重新添加。",
+    "system_message": "任务消息",
+    "choose_target": "这条消息是针对任务的哪一部分？",
+    "control_unavailable": "当前任务或账号暂不支持执行控制。",
+    "wait_for_stop": "请等待执行停止后再继续。",
+    "control_text_only": "暂停或继续指令请单独发送，不附带附件。",
+    "details": "详情",
+    "navigation": "打开导航",
+    "attention": "需要你处理",
+    "running": "正在执行 · {{count}} 项",
+    "queued": "等待执行 · {{count}} 项",
+    "history": "此前记录（{{count}}）",
+    "empty": "补充信息或提出问题。",
+    "handle": "查看并处理",
+    "collapse": "收起",
+    "send_to": "发送给",
+    "coordinator": "整体任务",
+    "unavailable": "原接收对象已不可用，请选择有效的任务或讨论。",
+    "discuss": "补充信息",
+    "background": "任务背景",
+    "records": "需求与记录",
+    "pause_task": "暂停任务",
+    "blocked": "执行受阻 · {{count}} 项",
+    "pause_scope": "暂停本任务及其子任务的执行"
+  },
+  "conversation": {
+    "more": "更多发送选项",
+    "answer": "回答问题",
+    "answered": "已回答",
+    "answer_sent": "回答已提交",
+    "question_closed": "问题已结束",
+    "waiting": "等待你的回答",
+    "select_option": "请选择可用选项。回答仅支持文本。",
+    "answer_failed": "回答提交失败，请确认问题仍有效后重试。",
+    "load_failed": "智能体问题加载失败。",
+    "edit_restarts": "修改正文将停止关联执行，并按所选发送方式重新处理消息。",
+    "correct": "发送更正",
+    "correction_hint": "发送一条新消息来更正这次指引。"
   }
 }

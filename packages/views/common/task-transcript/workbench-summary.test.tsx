@@ -8,6 +8,15 @@ import { CurrentIssueRenderContextProvider } from "../../issues/current-issue-re
 vi.mock("../../editor", () => ({ ReadonlyContent: ({ content }: { content: string }) => <div data-testid="full-output">{content}</div> }));
 afterEach(cleanup);
 describe("workbench summary disclosure", () => {
+  it("keeps compact conversations brief and makes the original output available", () => {
+    const content = "Detailed deployment log\n<!-- wb-summary v1 -->\n结论：Needs a server\n改动：No deployment yet\n风险：Choose the target host\n<!-- /wb-summary -->";
+    renderWithI18n(<CurrentIssueRenderContextProvider value={{ id: "issue", identifier: "TEST-3", status: "blocked", compact: true }}><WorkbenchRunSummary content={content} /></CurrentIssueRenderContextProvider>);
+    expect(screen.getByText("Needs a server")).toBeInTheDocument();
+    expect(screen.getByText("Choose the target host")).toBeInTheDocument();
+    expect(screen.queryByTestId("full-output")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show full output" }));
+    expect(screen.getByTestId("full-output")).toHaveTextContent("Detailed deployment log");
+  });
   it("reveals the questions when an issue becomes blocked and allows collapsing them", () => {
     const content = "Who will use the result?\n<!-- wb-summary v1 -->\n结论：Needs clarification\n<!-- /wb-summary -->";
     const view = (status: string) => <CurrentIssueRenderContextProvider value={{ id: "issue", identifier: "TEST-3", status }}><WorkbenchRunSummary content={content} /></CurrentIssueRenderContextProvider>;

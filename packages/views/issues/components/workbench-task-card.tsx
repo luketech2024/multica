@@ -10,9 +10,10 @@ import { ActorAvatar } from "../../common/actor-avatar";
 import { useT, useTimeAgo } from "../../i18n";
 import { StatusBadge } from "./status-heading";
 
-export function WorkbenchTaskCardContent({ issue, project, compact = false }: {
+export function WorkbenchTaskCardContent({ issue, project, childProgress, compact = false }: {
   issue: Issue;
   project?: Project;
+  childProgress?: { done: number; total: number };
   compact?: boolean;
 }) {
   const { t } = useT("issues");
@@ -61,7 +62,11 @@ export function WorkbenchTaskCardContent({ issue, project, compact = false }: {
           )}
           <span className="truncate text-muted-foreground">{assignee}</span>
         </span>
-        {issue.status === "in_review" ? (
+        {childProgress && childProgress.total > 0 ? (
+          <span className="shrink-0 text-micro text-muted-foreground" title={t(($) => $.display.card_child_progress)}>
+            {t(($) => $.detail.sub_issues_label)} {childProgress.done}/{childProgress.total}
+          </span>
+        ) : issue.status === "in_review" ? (
           <span className="shrink-0 rounded-full bg-brand/12 px-2 text-brand-text">{t(($) => $.workbench_card.review)}</span>
         ) : (
           <time dateTime={issue.updated_at} title={issue.updated_at} className="max-w-[30%] shrink-0 truncate text-micro text-muted-foreground">

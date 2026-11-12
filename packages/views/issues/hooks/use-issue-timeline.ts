@@ -114,26 +114,8 @@ function applyCommentSnapshot(
   }
 }
 
-export function useIssueTimeline(issueId: string, userId?: string) {
-  const { t } = useT("issues");
+export function useIssueTimelineEvents(issueId: string) {
   const qc = useQueryClient();
-
-  const query = useQuery(issueTimelineOptions(issueId));
-  const { data, isLoading: loading } = query;
-
-  const timeline = useMemo<TimelineEntry[]>(() => data ?? [], [data]);
-
-  // Stable mutation handles. TanStack v5 returns a fresh result wrapper from
-  // useMutation per render, but the inner mutateAsync / mutate functions are
-  // stable. Pull just those so the useCallback identities downstream don't
-  // flip on every parent re-render — listing the whole mutation object would
-  // defeat React.memo on CommentCard.
-  const { mutateAsync: createComment } = useCreateComment(issueId);
-  const { mutateAsync: updateComment } = useUpdateComment(issueId);
-  const { mutateAsync: deleteCommentAsync } = useDeleteComment(issueId);
-  const { mutateAsync: resolveCommentAsync } = useResolveComment(issueId);
-  const { mutate: toggleCommentReaction } = useToggleCommentReaction(issueId);
-
   // Reconnect recovery: invalidate so the next render refetches the full
   // timeline. Cheaper than diffing across a possibly-long disconnect.
   useWSReconnect(
@@ -314,6 +296,32 @@ export function useIssueTimeline(issueId: string, userId?: string) {
       [qc, issueId],
     ),
   );
+
+}
+
+export function useIssueTimeline(issueId: string, userId?: string) {
+  useIssueTimelineEvents(issueId);
+  return useIssueTimelineActions(issueId, userId);
+}
+
+export function useIssueTimelineActions(issueId: string, userId?: string) {
+  const { t } = useT("issues");
+
+  const query = useQuery(issueTimelineOptions(issueId));
+  const { data, isLoading: loading } = query;
+
+  const timeline = useMemo<TimelineEntry[]>(() => data ?? [], [data]);
+
+  // Stable mutation handles. TanStack v5 returns a fresh result wrapper from
+  // useMutation per render, but the inner mutateAsync / mutate functions are
+  // stable. Pull just those so the useCallback identities downstream don't
+  // flip on every parent re-render — listing the whole mutation object would
+  // defeat React.memo on CommentCard.
+  const { mutateAsync: createComment } = useCreateComment(issueId);
+  const { mutateAsync: updateComment } = useUpdateComment(issueId);
+  const { mutateAsync: deleteCommentAsync } = useDeleteComment(issueId);
+  const { mutateAsync: resolveCommentAsync } = useResolveComment(issueId);
+  const { mutate: toggleCommentReaction } = useToggleCommentReaction(issueId);
 
   // --- Mutation functions ---
 

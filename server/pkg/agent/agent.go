@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 	"log/slog"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ type Backend interface {
 
 // ExecOptions configures a single execution.
 type ExecOptions struct {
+	OnUserInput func(context.Context, protocol.UserInputRequest, func(protocol.UserInputResponse) error) error
 	// EnableTaskSupplement installs provider hooks only for runs whose daemon/server
 	// capability handshake enabled additional messages.
 	EnableTaskSupplement bool

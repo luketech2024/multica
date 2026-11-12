@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type ReactElement } from "react";
-import { ChevronDown, TriangleAlert, Users } from "@multica/ui/icons";
+import { ChevronDown, Ellipsis, TriangleAlert, Users } from "@multica/ui/icons";
+import { Button } from "@multica/ui/components/ui/button";
 import type { CommentTriggerPreviewAgent, CommentTriggerOutcome } from "@multica/core/types";
 import type { AgentRunState, RecipientAction } from "@multica/core/issues/run-steering";
 import { useAgentPresenceDetail } from "@multica/core/agents";
@@ -43,6 +44,7 @@ const AVATAR_SIZE = AVATAR_SIZE_PX.xs;
 const MAX_STACK_HEADS = 4;
 
 interface CommentTriggerChipsProps {
+  compact?: boolean;
   recipients: RecipientEntry[];
   // Explicit @agent / @squad mentions that will NOT trigger if posted as-is
   // (MUL-4525 §2). Each renders as a named warning chip so the user sees WHICH
@@ -141,6 +143,7 @@ function chipToneClass(action: RecipientAction): string {
 }
 
 export function CommentTriggerChips({
+  compact = false,
   recipients,
   blocked = [],
   hasAllMembersMention = false,
@@ -162,6 +165,16 @@ export function CommentTriggerChips({
     ) : recipients.length > 1 ? (
       <MultiRecipientChip recipients={recipients} onActionChange={onActionChange} t={t} />
     ) : null;
+
+  if (compact && recipients.length > 0) {
+    const labels = [...new Set(recipients.map((entry) => actionLabel(entry.action, entry.state, t)))];
+    return <div className="flex min-w-0 items-center gap-2">
+      <span role="status" className="min-w-0 flex-1 text-caption text-muted-foreground">{labels.join(" · ")}{blocked.length > 0 && <span className="text-warning"> · {t(($) => $.comment.trigger_wont_trigger)}</span>}</span>
+      <Popover><PopoverTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label={t(($) => $.conversation.more)} />}><Ellipsis /></PopoverTrigger>
+        <PopoverContent align="end" className="w-80"><CommentTriggerChips recipients={recipients} blocked={blocked} hasAllMembersMention={hasAllMembersMention} draftContent={draftContent} onActionChange={onActionChange} /></PopoverContent>
+      </Popover>
+    </div>;
+  }
 
   if (blocked.length === 0 && !hasAllMembersMention) return allowed;
 

@@ -3983,6 +3983,15 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if req.ConfirmRequirements {
+		if _, e := h.Queries.GetOneSpecFlow(r.Context(), db.GetOneSpecFlowParams{WorkspaceID: prevIssue.WorkspaceID, IssueID: prevIssue.ID}); e == nil {
+			writeError(w, 409, "confirm the versioned requirements in the OneSpec workflow")
+			return
+		} else if !errors.Is(e, pgx.ErrNoRows) {
+			writeError(w, 500, "failed to check workflow")
+			return
+		}
+	}
 	if len(req.AcceptanceCriteria) > 0 || req.ConfirmRequirements {
 		if req.ExpectedRevision == nil {
 			writeError(w, http.StatusBadRequest, "expected_revision is required for requirements changes")
@@ -4704,6 +4713,9 @@ func (h *Handler) deleteIssuesAndCollectAttachmentURLs(ctx context.Context, issu
 			}
 		} else if !errors.Is(contextErr, pgx.ErrNoRows) {
 			return issueDeleteResult{}, fmt.Errorf("load issue source context for delete: %w", contextErr)
+		}
+		if err := qtx.DeleteOneSpecIssue(ctx, db.DeleteOneSpecIssueParams{WorkspaceID: issue.WorkspaceID, IssueID: issue.ID}); err != nil {
+			return issueDeleteResult{}, fmt.Errorf("delete OneSpec workflow: %w", err)
 		}
 		if err := qtx.DeleteIssue(ctx, db.DeleteIssueParams{ID: issue.ID, WorkspaceID: issue.WorkspaceID}); err != nil {
 			return issueDeleteResult{}, fmt.Errorf("delete issue: %w", err)

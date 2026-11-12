@@ -21,6 +21,13 @@ it("keeps done but unaccepted legacy work in acceptance recovery", () => {
 it("keeps blocked clarification work out of acceptance recovery", () => {
   expect(workbenchNextStep(issue({ status: "blocked" }))).toEqual({ step: "blocked", destination: "activity" });
 });
+it("directs a planned parent still in todo to its execution tasks", () => {
+  expect(workbenchNextStep(issue({ acceptance_criteria: {
+    ...criteria,
+    gate: { spec: { passed_at: "now", passed_by: "human" }, accept: null },
+    plan: { version: 2, key: "plan", digest: "digest", issues: ["child"] },
+  } }))).toEqual({ step: "planned", destination: "children" });
+});
 it("requires delivery review after a planned parent completes", () => {
   expect(workbenchNextStep(issue({ status: "done", acceptance_criteria: { ...criteria, plan: { version: 2, key: "p", digest: "d", issues: [] } } }))).toEqual({ step: "review", destination: "review" });
 });

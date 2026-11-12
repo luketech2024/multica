@@ -2070,12 +2070,18 @@
     "discussion": "작업 토론"
   },
   "next_step": {
+    "open_execution": "{{identifier}} 열기",
+    "planned_hint": "실행 작업 {{count}}개가 생성되었습니다. 작업을 열어 진행 상황을 확인하거나 필요한 정보를 추가하세요.",
+    "start_execution": "실행 시작",
+    "starting": "시작 중…",
+    "start_hint": "작업 요구 사항을 확인한 후 담당 에이전트의 실행을 시작하세요. 부족한 정보는 작업 토론에 추가할 수 있습니다.",
     "title": "현재 단계 및 다음 작업",
     "assignee": "담당자 {{name}}",
     "read_failed": "현재 조건을 불러올 수 없습니다.",
     "blockers": "조치가 필요한 조건 {{count}}개",
     "offline": "담당 에이전트가 오프라인입니다. 런타임을 확인하세요.",
     "stages": {
+      "planned": "실행 작업 생성됨",
       "requirements": "요구사항 확인 대기",
       "plan": "실행 계획 대기",
       "change": "요구사항 변경 중",
@@ -2089,6 +2095,7 @@
       "task": "작업 활동"
     },
     "actions": {
+      "planned": "실행 작업 보기",
       "requirements": "요구사항 확인",
       "plan": "실행 계획 보기",
       "change": "변경 사항 확인",
@@ -2144,5 +2151,45 @@
     "changed": "원본 메시지가 변경되었습니다. 전송 전에 최신 내용을 확인하세요.",
     "continue_reply": "답글 계속 작성",
     "choose": "토론 선택 후 답글"
+  },
+  "task_workspace": {
+    "attachment_destination": "첨부 파일이 다른 작업에 속합니다. 삭제한 후 현재 대상에 다시 첨부하세요.",
+    "system_message": "작업 업데이트",
+    "choose_target": "이 메시지는 작업의 어느 부분에 관한 것인가요?",
+    "control_unavailable": "이 작업 또는 계정에서는 실행을 제어할 수 없습니다.",
+    "wait_for_stop": "실행이 중지된 후 재개하세요.",
+    "control_text_only": "일시 중지 또는 재개 지시는 첨부 파일 없이 보내세요.",
+    "details": "상세 정보",
+    "navigation": "탐색",
+    "attention": "처리가 필요합니다",
+    "running": "{{count}}개 실행 중",
+    "queued": "{{count}}개 실행 대기",
+    "history": "이전 기록 ({{count}})",
+    "empty": "정보를 추가하거나 질문하세요.",
+    "handle": "확인 및 처리",
+    "collapse": "접기",
+    "send_to": "받는 대상",
+    "coordinator": "전체 작업",
+    "unavailable": "이 대상은 사용할 수 없습니다. 유효한 작업이나 대화를 선택하세요.",
+    "discuss": "정보 추가",
+    "background": "작업 배경",
+    "records": "요구사항 및 기록",
+    "pause_task": "작업 일시 중지",
+    "blocked": "{{count}}개 실행 작업에 처리가 필요합니다",
+    "pause_scope": "이 작업과 하위 작업의 실행 일시 중지"
+  },
+  "conversation": {
+    "more": "추가 전송 옵션",
+    "answer": "질문에 답변",
+    "answered": "답변 완료",
+    "answer_sent": "답변 제출됨",
+    "question_closed": "질문 종료됨",
+    "waiting": "답변을 기다리는 중",
+    "select_option": "선택지를 선택하세요. 답변은 텍스트만 지원합니다.",
+    "answer_failed": "답변을 제출하지 못했습니다. 질문이 유효한지 확인한 후 다시 시도하세요.",
+    "load_failed": "에이전트 질문을 불러오지 못했습니다.",
+    "edit_restarts": "본문을 변경하면 연결된 실행이 중지되고 선택한 전송 방식으로 메시지를 다시 처리합니다.",
+    "correct": "수정 지침 보내기",
+    "correction_hint": "새 메시지로 이 지침을 수정하세요."
   }
 }

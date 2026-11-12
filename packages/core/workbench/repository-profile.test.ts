@@ -30,7 +30,13 @@ it("retains manual overrides and unverified repository evidence", () => {
       RepositoryProfileSchema,
       "repository-profile",
     ),
-  ).toEqual(profile);
+  ).toEqual({
+    ...profile,
+    stack: {
+      ...profile.stack,
+      derived: { ...profile.stack.derived, build: "" },
+    },
+  });
 });
 it.each([
   { ...profile, revision: -1 },

@@ -9,6 +9,7 @@ import {
 import type { AgentTask } from "@multica/core/types";
 
 export type DiscussionReplyTarget = {
+  correction?: boolean;
   parentId: string;
   draftThreadId?: string;
   name: string;
@@ -21,6 +22,7 @@ export type CurrentIssueRenderContextValue = Readonly<{
   identifier: string;
   status?: string;
   composeReply?: (target: DiscussionReplyTarget) => void;
+  compact?: boolean;
 }>;
 
 /**

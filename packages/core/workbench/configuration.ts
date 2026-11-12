@@ -48,11 +48,19 @@ export function useSaveRepositoryProfile(wsId: string, projectId: string, reposi
 export function useControlIssueExecution(wsId: string, issueId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ action, revision }: { action: import("./execution-control").ExecutionControlAction; revision: number }) =>
-      api.controlIssueExecution(issueId, action, revision),
+    mutationFn: async ({ action, revision }: { action: import("./execution-control").ExecutionControlAction; revision?: number }) => {
+      if (revision === undefined) {
+        const current = await api.getIssue(issueId);
+        if (action === "pause" && current.workbench_pause) return current;
+        revision = current.revision;
+      }
+      if (!revision) throw new Error("Task revision is unavailable");
+      return api.controlIssueExecution(issueId, action, revision);
+    },
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: issueKeys.all(wsId) });
       await qc.invalidateQueries({ queryKey: issueKeys.tasks(issueId) });
+      await qc.invalidateQueries({ queryKey: issueKeys.timeline(issueId) });
     },
   });
 }
@@ -113,6 +121,7 @@ export function useChangeIssueRequirements(wsId: string, issueId: string) {
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: issueKeys.all(wsId) });
       await qc.invalidateQueries({ queryKey: issueKeys.tasks(issueId) });
+      await qc.invalidateQueries({ queryKey: issueKeys.timeline(issueId) });
     },
   });
 }
@@ -275,3 +284,6 @@ export function useDeleteWorkbenchCredential(wsId: string) {
 
 export { templateMergeFields, mergeBusinessTemplateFields, type TemplateMergeField } from "./template-merge";
 export { initializeDefaultTeam } from "./default-team";
+
+export * from "./onespec";
+export { currentExecutionIssues, taskWorkspaceProgress, conversationCommand, conversationDestination, canControlWorkspaceExecution } from "./task-workspace";

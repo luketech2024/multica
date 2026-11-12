@@ -33,7 +33,7 @@ export function ProjectWorkbenchMetrics({ project, expanded = false }: {
       ...issueTableFacetsOptions(wsId, {
         query: {
           scope: { kind: "project", project_id: project.id },
-          filters: filter,
+          filters: { ...filter, include_sub_issues: false },
           sort: { field: "updated_at", direction: "desc" },
         },
         facets: [{ kind: "status" }],

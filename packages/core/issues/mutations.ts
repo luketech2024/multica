@@ -1258,8 +1258,14 @@ export function useRetryTaskSupplement(issueId: string) {
 
 export function useRetryIssueRun(issueId: string) {
   const client = useQueryClient();
+  const wsId = useWorkspaceId();
   return useMutation({
-    mutationFn: (taskId: string) => api.rerunIssue(issueId, taskId),
-    onSuccess: () => client.invalidateQueries({ queryKey: issueKeys.tasks(issueId) }),
+    mutationFn: (taskId?: string) => api.rerunIssue(issueId, taskId),
+    onSuccess: () => Promise.all([
+      client.invalidateQueries({ queryKey: issueKeys.tasks(issueId) }),
+      client.invalidateQueries({ queryKey: issueKeys.timeline(issueId) }),
+      client.invalidateQueries({ queryKey: issueKeys.detail(wsId, issueId) }),
+      client.invalidateQueries({ queryKey: issueKeys.childrenAll(wsId) }),
+    ]),
   });
 }

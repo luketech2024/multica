@@ -11,7 +11,7 @@ import {
 import { Button } from "@multica/ui/components/ui/button";
 import { useT } from "../../i18n";
 
-export function ExecutionControl({ issue }: { issue: Issue }) {
+export function ExecutionControl({ issue, pauseLabel }: { issue: Issue; pauseLabel?: string }) {
   const { t } = useT("issues");
   const wsId = useWorkspaceId();
   const member = useCurrentMember(wsId);
@@ -62,7 +62,7 @@ export function ExecutionControl({ issue }: { issue: Issue }) {
           aria-busy={mutation.isPending}
           onClick={() => void act("pause")}
         >
-          {t(($) => $.execution_control.pause)}
+          {pauseLabel ?? t(($) => $.execution_control.pause)}
         </Button>
       )}
       {(pause?.phase === "stopping" || pause?.phase === "unknown") && (

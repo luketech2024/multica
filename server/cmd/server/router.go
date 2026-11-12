@@ -1664,6 +1664,9 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 
 		r.Get("/tasks/{taskId}/status", h.GetTaskStatus)
 		r.Post("/tasks/{taskId}/start", h.StartTask)
+		r.Post("/tasks/{taskId}/input-requests", h.CreateUserInput)
+		r.Get("/tasks/{taskId}/input-requests/{requestId}", h.GetUserInput)
+		r.Post("/tasks/{taskId}/input-requests/{requestId}/resolve", h.ResolveUserInput)
 		r.Post("/tasks/{taskId}/supplements/claim", h.ClaimTaskSupplement)
 		r.Post("/tasks/{taskId}/supplements/{commentId}/ack", h.AckTaskSupplement)
 		r.Post("/tasks/{taskId}/wait-local-directory", h.MarkTaskWaitingLocalDirectory)
@@ -1777,6 +1780,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				r.Group(func(r chi.Router) {
 					r.Use(middleware.RequireWorkspaceMemberFromURL(queries, "id"))
 					r.Get("/", h.GetWorkspace)
+					r.Get("/onespec", h.GetOneSpecWorkspace)
 					r.Get("/members", h.ListMembersWithUser)
 					r.Post("/leave", h.LeaveWorkspace)
 					r.Get("/invitations", h.ListWorkspaceInvitations)
@@ -1813,6 +1817,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				// Admin-level access
 				r.Group(func(r chi.Router) {
 					r.Use(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin"))
+					r.Put("/onespec", h.SaveOneSpecWorkspace)
 					r.Put("/", h.UpdateWorkspace)
 					r.Patch("/", h.UpdateWorkspace)
 					r.Post("/members", h.CreateInvitation)
@@ -2124,6 +2129,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Get("/", h.GetIssue)
 					r.Put("/", h.UpdateIssue)
 					r.Post("/requirements-change", h.ChangeIssueRequirements)
+					r.Get("/onespec", h.GetOneSpecFlow)
+					r.Post("/onespec/{action}", h.UpdateOneSpecFlow)
 					r.Post("/execution-plan", h.SaveExecutionPlan)
 					r.Post("/delivery-evidence", h.SaveDeliveryEvidence)
 					r.Get("/delivery-review", h.ReviewIssueDelivery)
@@ -2157,6 +2164,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Put("/system-wakeups/{rule}", h.UpdateIssueSystemWakeup)
 					r.Get("/active-task", h.GetActiveTaskForIssue)
 					r.Post("/tasks/{taskId}/cancel", h.CancelTask)
+					r.Get("/input-requests", h.ListUserInputs)
+					r.With(handler.RequireHumanActor).Post("/input-requests/{requestId}/answer", h.AnswerUserInput)
 					r.With(handler.RequireHumanActor).Post("/tasks/{taskId}/supplements", h.CreateTaskSupplement)
 					r.With(handler.RequireHumanActor).Post("/tasks/{taskId}/supplements/{commentId}/retry", h.RetryTaskSupplement)
 					r.Post("/rerun", h.RerunIssue)
@@ -2267,6 +2276,9 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Post("/deployment/resources/{resourceId}/check", h.CheckDeploymentResource)
 					r.Get("/certificates", h.ListDeploymentCertificates)
 					r.Post("/certificates", h.UploadDeploymentCertificate)
+					r.Get("/onespec", h.GetOneSpecProject)
+					r.Put("/onespec", h.SaveOneSpecProject)
+					r.Post("/onespec/team", h.ProvisionOneSpecTeam)
 					r.Get("/workbench-roles", h.GetProjectWorkbenchRoles)
 					r.Put("/workbench-roles", h.SaveProjectWorkbenchRoles)
 					r.Get("/business-template", h.GetProjectBusinessTemplate)

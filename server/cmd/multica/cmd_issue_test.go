@@ -3944,6 +3944,7 @@ func newIssueAssignTestCmd() *cobra.Command {
 
 func newIssueStatusTestCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "status"}
+	cmd.Flags().Int64("expected-revision", 0, "")
 	cmd.Flags().Bool("no-start", false, "")
 	cmd.Flags().String("duplicate-of", "", "")
 	cmd.Flags().String("output", "table", "")
@@ -4064,6 +4065,7 @@ func TestRunIssueStatusNoStartSendsSuppressRun(t *testing.T) {
 
 	cmd := newIssueStatusTestCmd()
 	_ = cmd.Flags().Set("no-start", "true")
+	_ = cmd.Flags().Set("expected-revision", "7")
 	if err := runIssueStatus(cmd, []string{"MUL-1", "in_progress"}); err != nil {
 		t.Fatalf("runIssueStatus: %v", err)
 	}
@@ -4072,6 +4074,19 @@ func TestRunIssueStatusNoStartSendsSuppressRun(t *testing.T) {
 	}
 	if got := body["suppress_run"]; got != true {
 		t.Fatalf("suppress_run = %#v, want true", got)
+	}
+	if got := body["expected_revision"]; got != float64(7) {
+		t.Fatalf("expected_revision = %#v, want 7", got)
+	}
+}
+
+func TestRunIssueStatusRejectsInvalidRevision(t *testing.T) {
+	for _, value := range []string{"0", "-1"} {
+		cmd := newIssueStatusTestCmd()
+		_ = cmd.Flags().Set("expected-revision", value)
+		if err := runIssueStatus(cmd, []string{"MUL-1", "blocked"}); err == nil {
+			t.Fatal("expected invalid revision to fail before sending a request")
+		}
 	}
 }
 

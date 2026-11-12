@@ -59,7 +59,7 @@ it("creates missing role agents with one runtime selection and retains a manual 
   const initialize = await screen.findByRole("button", {name:"Create default team"});
   await waitFor(() => expect(initialize).toBeEnabled());
   fireEvent.click(initialize);
-  await waitFor(() => expect(createAgent).toHaveBeenCalledTimes(5));
+  await waitFor(() => expect(createAgent).toHaveBeenCalledTimes(7));
   await waitFor(() => expect(screen.queryByRole("button", {name:"Create default team"})).not.toBeInTheDocument());
   const scheduling = screen.getAllByRole("combobox", {name:"Agent"})[0]!;
   expect(scheduling).toHaveValue("agent-a");

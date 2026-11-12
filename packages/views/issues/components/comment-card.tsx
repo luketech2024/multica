@@ -6,6 +6,8 @@ import { WorkbenchRunSummary } from "../../common/task-transcript/workbench-summ
 import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronRight, CornerUpLeft, ListChevronsDownUp, Copy, Link2, Loader2, MessageSquarePlus, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "@multica/ui/icons";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { issueTasksOptions } from "@multica/core/issues/queries";
 import { Card } from "@multica/ui/components/ui/card";
 import { Button, buttonVariants } from "@multica/ui/components/ui/button";
 import {
@@ -393,7 +395,7 @@ function useEditAttachmentState(
     editingCommentId: entry.id,
     content: editing ? content : "",
   });
-  // An edit neither steers nor stops a run: it can only skip a recipient.
+  // Editing does not steer. The server cancels runs triggered by changed text.
   const { recipients, routing, setAction: setRecipientAction, reset: resetRecipients } = useRecipientActions({
     issueId,
     agents: triggerPreview.agents,
@@ -401,6 +403,11 @@ function useEditAttachmentState(
     steerByDefault: NEVER_STEER,
     resetKey: `${issueId}:${entry.id}:${entry.parent_id ?? ""}`,
   });
+  const editTasks = useQuery({ ...issueTasksOptions(issueId), enabled: editing, refetchInterval: editing ? 2000 : false });
+  const changesText = content !== (entry.content ?? "");
+  const stopsRun = changesText && editTasks.data?.some((task) => ["queued", "dispatched", "running", "waiting_local_directory", "deferred"].includes(task.status)
+    && (task.trigger_comment_id === entry.id || task.coalesced_comment_ids?.includes(entry.id)));
+  const editNotice = stopsRun ? t(($) => $.conversation.edit_restarts) : undefined;
 
   const editorAttachments = pendingAttachments.length > 0
     ? [...(entry.attachments ?? []), ...pendingAttachments]
@@ -545,6 +552,7 @@ function useEditAttachmentState(
   });
 
   return {
+    editNotice,
     editing,
     saving,
     uploading: gate.uploading,
@@ -668,9 +676,10 @@ function CommentRow({
   const locale = useLocale();
   const timeAgo = useTimeAgo();
   const { getActorName } = useActorName();
-  const conversation = !!useCurrentIssueRenderContext()?.composeReply;
 
   const edit = useEditAttachmentState(issueId, entry, onEdit);
+
+  const renderContext = useCurrentIssueRenderContext();
 
   const isOwn = entry.actor_type === "member" && entry.actor_id === currentUserId;
   // A message that steered a run is part of that run's input: it cannot be
@@ -692,11 +701,11 @@ function CommentRow({
   return (
     <div
       data-comment-block
-      data-message-side={conversation ? (isOwn ? "right" : "left") : undefined}
+      data-message-side={isOwn ? "right" : "left"}
       className={cn(
         "pb-3",
-        conversation && "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
-        conversation && (isOwn ? "ml-auto bg-accent" : "mr-auto bg-card"),
+        "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
+        isOwn ? "ml-auto bg-accent" : "mr-auto bg-card",
       )}
     >
       {/* Header pins to the timeline's scroll parent within this reply's own
@@ -705,8 +714,9 @@ function CommentRow({
           this reply ends. The header stays opaque and matches this comment's
           highlight state while it occludes the body scrolling underneath. */}
       <StickyHeaderShell
+        sticky={!renderContext?.compact}
         highlighted={isHighlighted}
-        className={cn("flex items-center gap-2.5 px-4 max-md:px-3 pt-3 pb-1", conversation && isOwn && "!bg-accent")}
+        className={cn("flex items-center gap-2.5 px-4 max-md:px-3 pt-3 pb-1", isOwn && "flex-row-reverse !bg-accent")}
       >
         <ActorAvatar
           actorType={entry.actor_type}
@@ -747,7 +757,7 @@ function CommentRow({
           </span>
         )}
 
-        <div data-comment-actions className="ml-auto flex shrink-0 items-center gap-0.5">
+        <div data-comment-actions className={cn("flex shrink-0 items-center gap-0.5", isOwn ? "mr-auto" : "ml-auto")}>
           {!edit.editing && <QuickEmojiPicker
             onSelect={(emoji) => onToggleReaction(entry.id, emoji)}
             ariaLabel={t(($) => $.comment.add_reaction)}
@@ -773,6 +783,14 @@ function CommentRow({
               }
             />
             <DropdownMenuContent align="end">
+              {renderContext?.compact && renderContext.composeReply && <DropdownMenuItem onClick={() => renderContext.composeReply?.({
+                parentId: entry.id, name: entry.actor_name || getActorName(entry.actor_type, entry.actor_id),
+                correction: isOwn && receipts.length > 0,
+                steerByDefault: receipts.length ? (task) => receipts.some((receipt) => receipt.task_id === task.id) : undefined,
+              })}>
+                <CornerUpLeft className="h-3.5 w-3.5" />
+                {t(($) => isOwn && receipts.length ? $.conversation.correct : $.composer_ui.reply_action)}
+              </DropdownMenuItem>}
               {/* Groups: act on it (edit, resolve), take it elsewhere, then delete alone. */}
               {canEditEntry && (
                 <DropdownMenuItem onClick={edit.startEdit}>
@@ -881,6 +899,7 @@ function CommentRow({
               }
             />
           )}
+          {edit.editNotice && <p role="status" className="mt-2 text-caption text-warning">{edit.editNotice}</p>}
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="min-w-0 flex-1">
               <CommentTriggerChips
@@ -997,8 +1016,9 @@ export function AgentRunComment({ run, standalone = false, commentProps, enterin
   return (
     <div ref={motionRef} data-run-slot-id={run.task.id}
       data-run-comment-id={!reply ? run.task.id : undefined}
+      data-message-side={!reply ? "left" : undefined}
       id={!standalone ? `comment-${slotEntry?.id ?? run.task.id}` : undefined}
-      className={cn("transition-colors duration-700", standalone ? !reply && "rounded-xl border" : "border-t border-border/50", !reply && "py-1.5",
+      className={cn("transition-colors duration-700", !reply && "my-3 mr-auto w-[88%] max-md:w-[96%] rounded-xl border border-border/50 py-1.5",
         highlighted ? highlightedCommentBackgroundClass : standalone && !reply && "bg-card")}>
       {commentProps && reply ? standalone ? (
         <CommentCard {...commentProps} runs={commentProps.runs ?? [run]} runViewState={viewState} />
@@ -1048,7 +1068,8 @@ function CommentCardImpl({
   onResolvedExpandChange,
   highlightedCommentId,
 }: CommentCardProps) {
-  const composeReply = useCurrentIssueRenderContext()?.composeReply;
+  const renderContext = useCurrentIssueRenderContext();
+  const composeReply = renderContext?.composeReply;
   const { t } = useT("issues");
   const locale = useLocale();
   const timeAgo = useTimeAgo();
@@ -1208,7 +1229,7 @@ function CommentCardImpl({
     // overflow-clip (not -hidden) clips the rounded corners WITHOUT creating a
     // scroll container, so the sticky collapse affordances below resolve to the
     // timeline's scroll parent instead of this card. See PR #3623.
-    <Card ref={annotation.cardRef} {...annotation.captureProps} className={cn("!py-0 !gap-0 overflow-clip transition-colors duration-700", composeReply && "border-0 bg-transparent shadow-none")}>
+    <Card ref={annotation.cardRef} {...annotation.captureProps} className="!py-0 !gap-0 overflow-clip transition-colors duration-700 border-0 bg-transparent shadow-none">
       {annotation.popup}
       {onCollapseResolved && (
         <button
@@ -1230,21 +1251,21 @@ function CommentCardImpl({
             stays stuck behind every reply. */}
         <div
           data-comment-block
-          data-message-side={composeReply ? (isOwn ? "right" : "left") : undefined}
+          data-message-side={isOwn ? "right" : "left"}
           className={cn(
             "transition-colors duration-700",
-            composeReply && "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
-            composeReply && (isOwn ? "ml-auto bg-accent" : "mr-auto bg-card"),
+            "my-3 w-[88%] rounded-xl overflow-clip border border-border/50 max-md:w-[96%]",
+            isOwn ? "ml-auto bg-accent" : "mr-auto bg-card",
             isHighlighted && highlightedCommentBackgroundClass,
           )}
         >
           {/* Keep the author aligned with replies; thread controls sit on the right. */}
           <StickyHeaderShell
-            sticky={stickyHeader}
+            sticky={stickyHeader && !renderContext?.compact}
             highlighted={isHighlighted}
-            className={cn("px-4 max-md:px-3", composeReply && isOwn && "!bg-accent", !open ? "py-3" : stickyHeader ? "pt-3 pb-1" : "pt-3 pb-2")}
+            className={cn("px-4 max-md:px-3", isOwn && "!bg-accent", !open ? "py-3" : stickyHeader ? "pt-3 pb-1" : "pt-3 pb-2")}
           >
-            <div className="flex items-center gap-2.5">
+            <div className={cn("flex items-center gap-2.5", isOwn && "flex-row-reverse")}>
               {deleted ? (
                 // The thread's root was deleted; its replies still hang off it.
                 <span className="min-w-0 truncate text-body italic text-muted-foreground">
@@ -1297,7 +1318,7 @@ function CommentCardImpl({
                 </span>
               )}
 
-              <div data-comment-actions className="ml-auto flex shrink-0 items-center gap-0.5">
+              <div data-comment-actions className={cn("flex shrink-0 items-center gap-0.5", isOwn ? "mr-auto" : "ml-auto")}>
                 <DeferredTooltip
                   content={toggleLabel}
                   trigger={
@@ -1341,6 +1362,10 @@ function CommentCardImpl({
                       }
                     />
                     <DropdownMenuContent align="end">
+                      {renderContext?.compact && composeReply && <DropdownMenuItem disabled={replyTargetMissing} onClick={isOwn && receipts.length ? () => composeReply({ parentId: entry.id, name: entry.actor_name || getActorName(entry.actor_type, entry.actor_id), correction: true, steerByDefault: (task) => receipts.some((receipt) => receipt.task_id === task.id) }) : openReplyComposer}>
+                        <CornerUpLeft className="h-3.5 w-3.5" />
+                        {t(($) => isOwn && receipts.length ? $.conversation.correct : $.composer_ui.reply_action)}
+                      </DropdownMenuItem>}
                       {/* Groups: act on it (edit, resolve), take it elsewhere, then delete alone. */}
                       {canEditEntry && (
                         <DropdownMenuItem onClick={edit.startEdit}>
@@ -1444,6 +1469,7 @@ function CommentCardImpl({
                     saving={edit.saving}
                   />
                 ) : null}
+                {edit.editNotice && <p role="status" className="mt-2 text-caption text-warning">{edit.editNotice}</p>}
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {edit.standaloneEditAttachments.length > 0 && (
@@ -1561,7 +1587,7 @@ function CommentCardImpl({
               {threadRows.map(renderThreadRow)}
 
               {/* Only one editor owns a discussion draft at a time. */}
-              <div className="px-4 max-md:px-3 py-2.5">
+              {!renderContext?.compact && <div className="px-4 max-md:px-3 py-2.5">
                 {composeReply ? (
                   <Button size="sm" variant="ghost" disabled={replyTargetMissing} onClick={openReplyComposer}>
                     {t(($) => $.composer_ui.reply_action)}
@@ -1582,7 +1608,7 @@ function CommentCardImpl({
                     onAccepted={onReplyAccepted}
                   />
                 )}
-              </div>
+              </div>}
             </>
           )}
           </>

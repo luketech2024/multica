@@ -2070,12 +2070,18 @@
     "discussion": "任務討論"
   },
   "next_step": {
+    "open_execution": "進入 {{identifier}} 執行任務",
+    "planned_hint": "已拆分 {{count}} 個執行任務。進入執行任務查看進度或補充所需資訊。",
+    "start_execution": "開始執行",
+    "starting": "正在啟動…",
+    "start_hint": "核對任務要求後，點擊開始執行，由負責的智慧體處理。缺少的資訊可在任務討論中補充。",
     "title": "目前階段與下一步",
     "assignee": "處理人 {{name}}",
     "read_failed": "目前條件讀取失敗。",
     "blockers": "有 {{count}} 項條件需要處理",
     "offline": "負責的智慧體已離線，請檢查對應執行環境。",
     "stages": {
+      "planned": "執行任務已拆分",
       "requirements": "需求待確認",
       "plan": "執行計畫待處理",
       "change": "需求變更中",
@@ -2089,6 +2095,7 @@
       "task": "任務動態"
     },
     "actions": {
+      "planned": "查看執行任務",
       "requirements": "查看並確認需求",
       "plan": "查看執行計畫",
       "change": "查看需求變更",
@@ -2144,5 +2151,45 @@
     "changed": "原訊息已更新，請核對最新內容後傳送。",
     "continue_reply": "繼續回覆",
     "choose": "選擇討論並回覆"
+  },
+  "task_workspace": {
+    "attachment_destination": "附件屬於另一個任務。請移除後，在目前對象下重新新增。",
+    "system_message": "任務訊息",
+    "choose_target": "這則訊息是針對任務的哪一部分？",
+    "control_unavailable": "目前任務或帳號暫不支援執行控制。",
+    "wait_for_stop": "請等待執行停止後再繼續。",
+    "control_text_only": "暫停或繼續指令請單獨傳送，不附帶附件。",
+    "details": "詳情",
+    "navigation": "開啟導覽",
+    "attention": "需要你處理",
+    "running": "正在執行 · {{count}} 項",
+    "queued": "等待執行 · {{count}} 項",
+    "history": "先前記錄（{{count}}）",
+    "empty": "補充資訊或提出問題。",
+    "handle": "查看並處理",
+    "collapse": "收起",
+    "send_to": "傳送給",
+    "coordinator": "整體任務",
+    "unavailable": "原接收對象已無法使用，請選擇有效的任務或討論。",
+    "discuss": "補充資訊",
+    "background": "任務背景",
+    "records": "需求與記錄",
+    "pause_task": "暫停任務",
+    "blocked": "執行受阻 · {{count}} 項",
+    "pause_scope": "暫停本任務及其子任務的執行"
+  },
+  "conversation": {
+    "more": "更多傳送選項",
+    "answer": "回答問題",
+    "answered": "已回答",
+    "answer_sent": "回答已提交",
+    "question_closed": "問題已結束",
+    "waiting": "等待你的回答",
+    "select_option": "請選擇可用選項。回答僅支援文字。",
+    "answer_failed": "回答提交失敗，請確認問題仍有效後重試。",
+    "load_failed": "智慧體問題載入失敗。",
+    "edit_restarts": "修改正文將停止關聯執行，並按所選傳送方式重新處理訊息。",
+    "correct": "傳送更正",
+    "correction_hint": "傳送一則新訊息來更正這次指引。"
   }
 }

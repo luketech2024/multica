@@ -6,6 +6,20 @@ import type { Attachment } from "../../types";
 
 const flush = () => new Promise((resolve) => queueMicrotask(() => resolve(null)));
 
+it("retains the conversation destination across text and attachment updates", () => {
+  const store = useCommentDraftStore.getState();
+  const key = "new:destination-test";
+  store.setDraft(key, "Check deployment");
+  store.setDestination(key, "execution-child");
+  store.setDraft(key, "Check deployment logs");
+  store.setAttachments(key, [makeAttachment("destination-file")]);
+  expect(useCommentDraftStore.getState().drafts[key]?.destinationIssueId).toBe("execution-child");
+  const saved = useCommentDraftStore.getState().drafts[key];
+  store.setDestination(key, "execution-child");
+  expect(useCommentDraftStore.getState().drafts[key]).toBe(saved);
+  store.clearDraft(key);
+});
+
 // Node 25 ships a partial `localStorage` shim under jsdom that's missing
 // `clear`/`removeItem`; replace it with a real in-memory Storage so persist
 // can round-trip values.

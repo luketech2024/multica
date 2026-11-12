@@ -3062,6 +3062,8 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 	// place a claimed task's agent payload is assembled.
 	if agent.SystemKey.String == service.MikaSystemKey {
 		resp.Agent.Instructions = service.ComposeMikaInstructions(agent.Name, agent.Instructions)
+	} else {
+		resp.Agent.Instructions = service.ComposeOneSpecInstructions(agent.SystemKey.String, agent.Instructions)
 	}
 	if useSkillRefs {
 		_, skillRefs, err := h.TaskService.LoadAgentSkillBundles(r.Context(), task.AgentID, agent.SystemKey.String, legacySkillRedirects)
@@ -3074,6 +3076,11 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 		skills, err := h.TaskService.LoadAgentSkills(r.Context(), task.AgentID)
 		if err != nil {
 			return resp, deliveredCommentIDs, issueSnapshot, agentSkillCount, builtinSkillCount, h.rejectClaimSkillLoad(task, err)
+		}
+		if strings.HasPrefix(agent.SystemKey.String, "onespec:") {
+			if err := service.ValidateOneSpecSkillNames(skills); err != nil {
+				return resp, deliveredCommentIDs, issueSnapshot, agentSkillCount, builtinSkillCount, h.rejectClaimSkillLoad(task, err)
+			}
 		}
 		agentSkillCount = len(skills)
 		builtinSkills := h.TaskService.BuiltinSkills(agent.SystemKey.String, legacySkillRedirects)
@@ -3128,7 +3135,20 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 			return resp, deliveredCommentIDs, issueSnapshot, agentSkillCount, builtinSkillCount, failure
 		}
 		resp.ThreadName = issue.Title
-		resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
+		flowIssueID := issue.ID
+		if issue.ParentIssueID.Valid {
+			flowIssueID = issue.ParentIssueID
+		}
+		if flowRow, err := h.Queries.GetOneSpecFlow(r.Context(), db.GetOneSpecFlowParams{WorkspaceID: issue.WorkspaceID, IssueID: flowIssueID}); err == nil {
+			resp.Agent.Instructions += "\nCurrent OneSpec workflow snapshot\n" + string(flowRow.State)
+			if issue.ParentIssueID.Valid {
+				resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
+			}
+		} else if errors.Is(err, pgx.ErrNoRows) {
+			resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
+		} else {
+			return resp, deliveredCommentIDs, issueSnapshot, agentSkillCount, builtinSkillCount, h.rejectClaimSourceLoad(r.Context(), task, err, "OneSpec workflow", uuidToString(flowIssueID))
+		}
 		issueNumber = issue.Number
 
 		// Issue-state delta (MUL-7344). Every field below already sits on the

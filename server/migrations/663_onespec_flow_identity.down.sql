@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS onespec_flow_identity;

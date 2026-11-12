@@ -708,6 +708,7 @@ func init() {
 
 	// issue status
 	issueStatusCmd.Flags().Bool("no-start", false, "Change status without starting an agent run")
+	issueStatusCmd.Flags().Int64("expected-revision", 0, "Current issue revision from issue get --output json (required for workbench status changes)")
 	issueStatusCmd.Flags().String("duplicate-of", "", "Mark the issue as a duplicate of this original issue (key like MUL-123, or full UUID); the status must be cancelled")
 	issueStatusCmd.Flags().String("output", "table", "Output format: table or json")
 
@@ -2016,6 +2017,10 @@ func runIssueStatus(cmd *cobra.Command, args []string) error {
 	id := args[0]
 	status := args[1]
 	noStart, _ := cmd.Flags().GetBool("no-start")
+	expectedRevision, _ := cmd.Flags().GetInt64("expected-revision")
+	if cmd.Flags().Changed("expected-revision") && expectedRevision < 1 {
+		return fmt.Errorf("--expected-revision must be a positive integer")
+	}
 
 	if err := validateIssueStatus(status); err != nil {
 		return err
@@ -2039,6 +2044,9 @@ func runIssueStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	body := map[string]any{"status": status}
+	if expectedRevision > 0 {
+		body["expected_revision"] = expectedRevision
+	}
 	if duplicateOf != "" {
 		original, err := resolveIssueRef(ctx, client, duplicateOf)
 		if err != nil {

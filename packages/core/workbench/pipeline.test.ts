@@ -23,7 +23,7 @@ function child(status: string, overrides: Partial<Issue> = {}): Issue {
 }
 it("uses the task team snapshot and counts only current planned subtasks", () => {
   const result = workbenchPipeline(criteria(), [child("done"), child("blocked", { id: "old" })]);
-  expect(result.map((stage) => stage.role)).toEqual(["sched", "product", "dev", "test", "ops"]);
+  expect(result.map((stage) => stage.role)).toEqual(["sched", "product", "dev", "test", "ops", "docs", "git"]);
   expect(result.find((stage) => stage.role === "dev")).toMatchObject({ state: "complete", tasks: [{ id: "dev" }] });
   expect(result.find((stage) => stage.role === "test")?.state).toBe("waiting");
 });

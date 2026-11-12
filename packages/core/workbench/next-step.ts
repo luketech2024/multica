@@ -2,7 +2,7 @@ import type { Issue } from "../types";
 import { issueStatusCategory } from "../issues/status-category";
 
 export type WorkbenchDestination = "requirements" | "review" | "execution" | "activity" | "children";
-export type WorkbenchStep = "requirements" | "plan" | "change" | "running" | "blocked" | "paused" | "review" | "recovery" | "accepted" | "closed" | "task";
+export type WorkbenchStep = "requirements" | "plan" | "planned" | "change" | "running" | "blocked" | "paused" | "review" | "recovery" | "accepted" | "closed" | "task";
 
 /** Business gates take precedence over the outcome of any single agent run. */
 export function workbenchNextStep(issue: Issue): { step: WorkbenchStep; destination: WorkbenchDestination } {
@@ -26,5 +26,8 @@ export function workbenchNextStep(issue: Issue): { step: WorkbenchStep; destinat
     return { step: "plan", destination: "requirements" };
   }
   if (category === "started") return { step: "running", destination: parent ? "children" : "activity" };
+  if (parent && criteria?.gate.spec && criteria.plan?.version === criteria.version) {
+    return { step: "planned", destination: "children" };
+  }
   return { step: "task", destination: "activity" };
 }

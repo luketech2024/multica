@@ -1,4 +1,5 @@
 "use client";
+import { OneSpecConfigurationSection } from "../../projects/components/onespec-configuration-section";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Copy } from "@multica/ui/icons";
@@ -477,6 +478,7 @@ export function WorkspaceTab() {
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
+      <OneSpecConfigurationSection />
 
       {/* Danger Zone — gated on the member query settling so the owner-only
           Delete button and the sole-owner Leave guidance don't flash in

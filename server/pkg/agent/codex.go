@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/multica-ai/multica/server/pkg/protocol"
 	"github.com/multica-ai/multica/server/pkg/redact"
 )
 
@@ -1270,6 +1271,8 @@ func (b *codexBackend) executeOnce(ctx context.Context, prompt string, opts Exec
 	}
 
 	c = &codexClient{
+		userInputCtx:             runCtx,
+		onUserInput:              opts.OnUserInput,
 		cfg:                      b.cfg,
 		stdin:                    stdin,
 		pending:                  make(map[int]*pendingRPC),
@@ -1740,6 +1743,10 @@ func (b *codexBackend) executeOnce(ctx context.Context, prompt string, opts Exec
 					stopFirstTurnNoProgressTimer()
 				}
 			case <-firstTurnNoProgressTimerC:
+				if c.waitingForUser.Load() > 0 {
+					firstTurnNoProgressTimer.Reset(firstTurnNoProgressTimeout)
+					continue
+				}
 				waitingForTurn = false
 				finishFirstItemWait("no_progress_timeout")
 				finalStatus = "timeout"
@@ -1760,6 +1767,10 @@ func (b *codexBackend) executeOnce(ctx context.Context, prompt string, opts Exec
 					"last_activity", lastSemanticActivityDescription,
 				)
 			case <-semanticTimer.C:
+				if c.waitingForUser.Load() > 0 {
+					resetTimer(semanticTimer, semanticInactivityTimeout)
+					continue
+				}
 				waitingForTurn = false
 				finishFirstItemWait("semantic_inactivity_timeout")
 				finalStatus = "timeout"
@@ -2401,6 +2412,11 @@ func describeCodexSemanticActivity(msg Message) string {
 // ── codexClient: JSON-RPC 2.0 transport ──
 
 type codexClient struct {
+	userInputCtx           context.Context
+	onUserInput            func(context.Context, protocol.UserInputRequest, func(protocol.UserInputResponse) error) error
+	waitingForUser         atomic.Int32
+	userInputMu            sync.Mutex
+	userInputs             map[string]context.CancelFunc
 	cfg                    Config
 	stdin                  interface{ Write([]byte) (int, error) }
 	mu                     sync.Mutex
@@ -2798,7 +2814,7 @@ func (c *codexClient) notify(method string) {
 	_, _ = c.stdin.Write(data)
 }
 
-func (c *codexClient) respond(id int, result any) {
+func (c *codexClient) respond(id any, result any) error {
 	msg := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
@@ -2806,10 +2822,11 @@ func (c *codexClient) respond(id int, result any) {
 	}
 	data, _ := json.Marshal(msg)
 	data = append(data, '\n')
-	_, _ = c.stdin.Write(data)
+	_, err := c.stdin.Write(data)
+	return err
 }
 
-func (c *codexClient) respondError(id int, code int, message string) {
+func (c *codexClient) respondError(id any, code int, message string) {
 	msg := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
@@ -2957,6 +2974,10 @@ func (c *codexClient) handleServerRequest(raw map[string]json.RawMessage) {
 
 	var method string
 	_ = json.Unmarshal(raw["method"], &method)
+	if method == "item/tool/requestUserInput" {
+		c.requestUserInput(raw)
+		return
+	}
 
 	// Auto-approve all exec/patch requests in daemon mode
 	switch method {
@@ -3018,6 +3039,7 @@ func codexPermissionsApprovalResponse(params json.RawMessage, logger *slog.Logge
 }
 
 func (c *codexClient) handleNotification(raw map[string]json.RawMessage) {
+	c.resolveUserInputNotification(raw)
 	var method string
 	_ = json.Unmarshal(raw["method"], &method)
 

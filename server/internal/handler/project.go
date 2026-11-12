@@ -825,6 +825,10 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to delete project views")
 		return
 	}
+	if err := qtx.DeleteOneSpecProject(r.Context(), db.DeleteOneSpecProjectParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
+		writeError(w, 500, "failed to delete OneSpec project configuration")
+		return
+	}
 	if err := qtx.DeleteProjectDeployTargets(r.Context(), db.DeleteProjectDeployTargetsParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID}); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to delete project deployment targets")
 		return

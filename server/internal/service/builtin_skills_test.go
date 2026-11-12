@@ -209,8 +209,20 @@ func TestBuiltinSkillPayloadCarriesNoSourceReferences(t *testing.T) {
 			for _, f := range skill.Files {
 				files[f.Path] = f.Content
 			}
+			checks := banned
+			if strings.HasPrefix(skill.Name, "multica-onespec-") {
+				// Code-workflow templates legitimately contain example source paths and test commands.
+				// They must still be independent of Multica's implementation checkout.
+				checks = []struct {
+					what string
+					re   *regexp.Regexp
+				}{
+					{"a Multica implementation path", regexp.MustCompile(`(?:server/)?internal/(?:handler|service|daemon)/|server/migrations/`)},
+					{"a Go implementation identifier", regexp.MustCompile(`\b(?:service|handler|protocol|skillpkg|repocache|execenv)\.[A-Z][A-Za-z0-9]*`)},
+				}
+			}
 			for path, content := range files {
-				for _, b := range banned {
+				for _, b := range checks {
 					if m := b.re.FindString(content); m != "" {
 						t.Errorf("%s leaks %s (%q); the reader's machine has no copy of this repository — "+
 							"state the user-observable behavior instead, and keep the evidence in builtin_skills_test.go", path, b.what, m)

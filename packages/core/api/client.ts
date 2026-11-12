@@ -1,4 +1,6 @@
+import { OneSpecConfigurationSchema, OneSpecResponseSchema, type OneSpecConfiguration } from "../workbench/onespec-schemas";
 import type { ZodType } from "zod";
+import { parseTaskUserInputs, TaskUserInputSchema, type TaskUserInput, type UserInputResponse } from "../issues/user-input-schema";
 import { ProjectDeploymentSchema, DeploymentHostDiscoverySchema, DeploymentConnectionCheckSchema, DeploymentCertificatesSchema, DeploymentCertificateSchema, type DeploymentResource, type ProjectDeployment, type CertificateUpload, type ApplicationRelease } from "../workbench/application-deployment-schemas";
 import { ReleaseOrderSchema, ReleaseOrdersSchema, ReleaseCandidatesSchema, type ReleaseOrder, type ReleaseOrders, type ReleaseCandidates, type ReleaseOrderInput, type ReleaseConfirmationInput } from "../workbench/release-schemas";
 import { DeliveryReviewSchema, ReleaseReadinessSchema, type DeliveryReviewState, type DeliveryReviewInput, type ReleaseReadiness } from "../workbench/delivery";
@@ -3024,6 +3026,18 @@ export class ApiClient {
     });
   }
 
+  async listUserInputs(issueId: string) {
+    return parseTaskUserInputs(await this.fetch(`/api/issues/${issueId}/input-requests`));
+  }
+
+  async answerUserInput(issueId: string, requestId: string, response: UserInputResponse) {
+    const endpoint = `/api/issues/${issueId}/input-requests/${requestId}/answer`;
+    const raw = await this.fetch(endpoint, { method: "POST", body: JSON.stringify(response) });
+    const parsed = parseWithFallback<TaskUserInput | null>(raw, TaskUserInputSchema, null, { endpoint });
+    if (!parsed) throw new Error("Invalid answer response");
+    return parsed;
+  }
+
   async retryTaskSupplement(issueId: string, taskId: string, commentId: string): Promise<void> {
     await this.fetch(`/api/issues/${issueId}/tasks/${taskId}/supplements/${commentId}/retry`, {
       method: "POST",
@@ -4374,6 +4388,41 @@ export class ApiClient {
   async updateSecurityCheck(id: string, input: SecurityDecision) {
     const endpoint = `/api/security/checks/${encodeURIComponent(id)}`;
     return parseWorkbenchResponse(await this.fetch(endpoint, { method: "PATCH", body: JSON.stringify(input) }), SecurityCheckSchema, endpoint);
+  }
+
+  async getOneSpecConfiguration(wsId: string, projectId?: string) {
+    const endpoint = projectId
+      ? `/api/projects/${projectId}/onespec`
+      : `/api/workspaces/${wsId}/onespec`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), OneSpecConfigurationSchema, endpoint);
+  }
+
+  async saveOneSpecConfiguration(wsId: string, input: OneSpecConfiguration, projectId?: string) {
+    const endpoint = projectId
+      ? `/api/projects/${projectId}/onespec`
+      : `/api/workspaces/${wsId}/onespec`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {
+      method: "PUT",
+      body: JSON.stringify({ ...input, expected_revision: input.revision }),
+    }), OneSpecConfigurationSchema, endpoint);
+  }
+
+  async provisionOneSpecTeam(projectId: string) {
+    const endpoint = `/api/projects/${projectId}/onespec/team`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST" }), ProjectRolesSchema, endpoint);
+  }
+
+  async getOneSpecFlow(issueId: string) {
+    const endpoint = `/api/issues/${issueId}/onespec`;
+    return parseWorkbenchResponse(await this.fetch(endpoint), OneSpecResponseSchema, endpoint);
+  }
+
+  async updateOneSpecFlow(issueId: string, action: string, input: Record<string, unknown>) {
+    const endpoint = `/api/issues/${issueId}/onespec/${action}`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }), OneSpecResponseSchema, endpoint);
   }
 
   async getProjectWorkbenchRoles(projectId: string) {

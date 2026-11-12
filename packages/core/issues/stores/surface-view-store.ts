@@ -35,7 +35,7 @@ const basePersist = viewStorePersistOptions(ISSUE_SURFACE_VIEW_STORAGE_KEY);
 const surfaceStores = new Map<string, StoreApi<IssueViewState>>();
 const suppressSurfacePersist = new Set<string>();
 
-const SURFACE_DEFAULTS_VERSION = 1;
+const SURFACE_DEFAULTS_VERSION = 2;
 
 function defaultsForSurface(
   surfaceKey: string,
@@ -45,6 +45,7 @@ function defaultsForSurface(
   if (!surfaceKey.startsWith("project:")) return defaults;
   return {
     ...defaults,
+    showSubIssues: false,
     cardProperties: { ...defaults.cardProperties, project: false },
   };
 }
@@ -141,7 +142,10 @@ const issueSurfaceViewRegistryStore = createStore<IssueSurfaceViewRegistryState>
               surfaceKey,
               {
                 ...entry,
-                state: migrateLegacySurfaceState(surfaceKey, entry.state),
+                state: {
+                  ...(version < 1 ? migrateLegacySurfaceState(surfaceKey, entry.state) : entry.state),
+                  ...(surfaceKey.startsWith("project:") ? { showSubIssues: false } : {}),
+                },
               },
             ]),
           ),

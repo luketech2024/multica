@@ -56,6 +56,8 @@
     "./issues/comment-deletion": "./issues/comment-deletion.ts",
     "./issues/comment-trigger-outcomes": "./issues/comment-trigger-outcomes.ts",
     "./issues/run-steering": "./issues/run-steering.ts",
+    "./issues/user-input": "./issues/user-input.ts",
+    "./issues/user-input-schema": "./issues/user-input-schema.ts",
     "./issues/unread": "./issues/unread.ts",
     "./issues/subscribed": "./issues/subscribed.ts",
     "./issues/date": "./issues/date.ts",

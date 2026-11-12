@@ -13,10 +13,11 @@ import { BusinessTemplateContent } from "../../projects/components/business-temp
 import { RequirementsChangeControls } from "./requirements-change-controls";
 import { ExecutionPlanEditor } from "./execution-plan-editor";
 
-export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; detailsTarget?: HTMLElement | null }) {
+export function RequirementsPanel({ issue, detailsTarget, oneSpecManaged = false }: { issue: Issue; detailsTarget?: HTMLElement | null; oneSpecManaged?: boolean }) {
   const { t } = useTranslation("issues");
   const { t: projectT } = useTranslation("projects");
   const update = useUpdateIssue();
+  const managed=oneSpecManaged;
   const [draft, setDraft] = useState<{ value: AcceptanceCriteria; revision: number }>();
   const [error, setError] = useState<string>();
   const criteria = draft?.value ?? issue.acceptance_criteria;
@@ -110,7 +111,7 @@ export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; deta
       </div>
       {locked && <p className="text-caption text-success">{t(($) => $.requirements.locked)}</p>}
       {detailsTarget && !readOnly && <p className="text-body text-muted-foreground">{t(($) => $.workbench_ui.review_sidebar)}</p>}
-      {locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
+      {!managed && locked && criteria.team && <ExecutionPlanEditor issue={issue} />}
       {(criteria.change || issue.status === "in_progress") && <RequirementsChangeControls issue={issue} />}
       {detailsTarget === undefined ? fields : detailsTarget ? createPortal(fields, detailsTarget) : <details><summary className="cursor-pointer text-caption text-muted-foreground">{t(($) => $.requirements.title)}</summary>{fields}</details>}
       {error && <p role="alert" className="text-caption text-destructive">{error}</p>}
@@ -119,7 +120,7 @@ export function RequirementsPanel({ issue, detailsTarget }: { issue: Issue; deta
           <Button size="sm" variant="outline" disabled={disabled || criteria.items.some((item) => !item.text.trim())} onClick={() => void save(criteria)}>{t(($) => $.requirements.save)}</Button>
           <Button size="sm" variant="ghost" disabled={disabled} onClick={() => { setDraft(undefined); setError(undefined); }}>{t(($) => $.requirements.discard)}</Button>
         </>}
-        <Button size="sm" disabled={disabled || !!draft || criteria.items.length === 0 || criteria.items.some((item) => !item.checked)} aria-busy={update.isPending} onClick={() => void save(criteria, true)}>{t(($) => $.requirements.confirm)}</Button>
+        {!managed && <Button size="sm" disabled={disabled || !!draft || criteria.items.length === 0 || criteria.items.some((item) => !item.checked)} aria-busy={update.isPending} onClick={() => void save(criteria, true)}>{t(($) => $.requirements.confirm)}</Button>}
       </div>}
     </section>
   );

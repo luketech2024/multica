@@ -494,6 +494,9 @@ cleared_child_events AS (
 cleared_task_supplements AS (
  DELETE FROM task_supplement WHERE issue_id IN (SELECT target.id FROM target)
 ),
+cleared_task_user_inputs AS (
+ DELETE FROM task_user_input WHERE issue_id IN (SELECT target.id FROM target)
+),
 cleared_task_supplement_capabilities AS (
  DELETE FROM task_supplement_capability WHERE issue_id IN (SELECT target.id FROM target)
 ),

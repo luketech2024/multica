@@ -344,5 +344,5 @@ func systemInstructionsFor(a db.Agent) string {
 	if a.SystemKey.String == service.MikaSystemKey {
 		return service.MikaSystemInstructions(a.Name)
 	}
-	return ""
+	return service.OneSpecSystemInstructions(a.SystemKey.String)
 }

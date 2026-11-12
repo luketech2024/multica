@@ -354,7 +354,7 @@ export function BoardCardContent(props: {
   workbench?: boolean;
 }) {
   return props.workbench
-    ? <WorkbenchTaskCardContent issue={props.issue} project={props.project} compact />
+    ? <WorkbenchTaskCardContent issue={props.issue} project={props.project} childProgress={props.childProgress} compact />
     : <DetailedBoardCardContent {...props} />;
 }
 

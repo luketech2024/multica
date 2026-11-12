@@ -2139,12 +2139,18 @@
     "discussion": "Task discussion"
   },
   "next_step": {
+    "open_execution": "Open {{identifier}}",
+    "planned_hint": "{{count}} execution tasks have been planned. Open a task to review progress or provide missing information.",
+    "start_execution": "Start execution",
+    "starting": "Starting…",
+    "start_hint": "Review the task requirements, then start the assigned agent. Add missing information in the task discussion.",
     "title": "Current stage and next step",
     "assignee": "Assigned to {{name}}",
     "read_failed": "Unable to read current conditions.",
     "blockers": "{{count}} conditions need attention",
     "offline": "The assigned agent is offline. Check its runtime before expecting execution.",
     "stages": {
+      "planned": "Execution tasks ready",
       "requirements": "Confirm requirements",
       "plan": "Execution plan pending",
       "change": "Requirements change",
@@ -2158,6 +2164,7 @@
       "task": "Task activity"
     },
     "actions": {
+      "planned": "View execution tasks",
       "requirements": "Review requirements",
       "plan": "View execution plan",
       "change": "Review changes",
@@ -2213,5 +2220,45 @@
     "changed": "The original message has changed. Review the updated text before sending.",
     "continue_reply": "Continue reply",
     "choose": "Choose discussion and reply"
+  },
+  "task_workspace": {
+    "attachment_destination": "These attachments belong to another task. Remove them and attach them again for this destination.",
+    "system_message": "Task update",
+    "choose_target": "Which part of the task is this message about?",
+    "control_unavailable": "Execution control is unavailable for this task or account.",
+    "wait_for_stop": "Wait until execution has stopped before resuming.",
+    "control_text_only": "Send pause or resume commands without attachments.",
+    "details": "Task details",
+    "navigation": "Navigation",
+    "attention": "Needs your attention",
+    "running": "{{count}} runs in progress",
+    "queued": "{{count}} runs waiting",
+    "history": "Earlier records ({{count}})",
+    "empty": "Add information or ask a question.",
+    "handle": "Review",
+    "collapse": "Collapse",
+    "send_to": "Send to",
+    "coordinator": "Overall task",
+    "unavailable": "This destination is no longer available. Choose another destination.",
+    "discuss": "Discuss",
+    "background": "Background",
+    "records": "Requirements and records",
+    "pause_task": "Pause task",
+    "blocked": "{{count}} execution tasks need attention",
+    "pause_scope": "Pause this task and its descendant executions"
+  },
+  "conversation": {
+    "more": "More sending options",
+    "answer": "Answer",
+    "answered": "Answered",
+    "answer_sent": "Answer submitted",
+    "question_closed": "Question closed",
+    "waiting": "Waiting for your answer",
+    "select_option": "Select an option. Answers must be text only.",
+    "answer_failed": "Could not submit your answer. Check whether the question is still active and retry.",
+    "load_failed": "Could not load agent questions.",
+    "edit_restarts": "Changing this text stops its linked execution and processes the updated message using the selected delivery settings.",
+    "correct": "Send correction",
+    "correction_hint": "Send a new message to correct this guidance."
   }
 }

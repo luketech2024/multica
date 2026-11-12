@@ -578,6 +578,10 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 		}
 	}
 
+	if _, err := InitializeOneSpecFlow(ctx, qtx, issue, "feature"); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return IssueCreateResult{}, fmt.Errorf("initialize OneSpec: %w", err)
+	}
+
 	if !opts.AssignedAgentRunFireAt.IsZero() && s.shouldEnqueueAgentTaskWithQueries(ctx, qtx, issue) {
 		// The issue must never become visible without its media-gated assigned
 		// task. Inserting both rows through qtx makes the unique-index winner

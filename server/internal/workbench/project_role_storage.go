@@ -32,6 +32,6 @@ func LoadProjectRoles(ctx context.Context, q *db.Queries, project db.Project) (P
 		return response, resource, errors.New("invalid saved project roles")
 	}
 	raw, _ := json.Marshal(response.Config)
-	_, err = ParseProjectRoles(raw)
+	response.Config, err = ParseProjectRoles(raw)
 	return response, resource, err
 }

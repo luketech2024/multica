@@ -8,9 +8,15 @@ import { useCommentDraftStore } from "@multica/core/issues/stores";
 import { renderWithI18n } from "../../test/i18n";
 
 const apiUploadFile = vi.hoisted(() => vi.fn());
+const listTasksByIssue = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 const uploadWithToast = vi.hoisted(() => vi.fn());
 const editorDefaultValues = vi.hoisted(() => ({
   values: [] as Array<string | undefined>,
+}));
+
+vi.mock("@multica/core/paths", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@multica/core/paths")>(),
+  useCurrentWorkspace: () => ({ id: "ws-1", slug: "acme" }),
 }));
 
 // The real handle mints an id when it inserts the placeholder and hands it to
@@ -20,7 +26,7 @@ let mockUploadIdSeq = 0;
 
 vi.mock("@multica/core/api", () => ({
   // Uploads flow through the coordinator, which calls api.uploadFile (MUL-5181).
-  api: { uploadFile: apiUploadFile },
+  api: { uploadFile: apiUploadFile, listTasksByIssue },
   dispatchReasonCode: () => undefined,
   errorCode: (error: unknown) =>
     typeof error === "object" && error !== null && "body" in error
@@ -202,6 +208,7 @@ function getSaveButton() {
 }
 
 beforeEach(() => {
+  listTasksByIssue.mockReset().mockResolvedValue([]);
   uploadWithToast.mockReset();
   apiUploadFile.mockReset();
   useCommentDraftStore.setState({ drafts: {} });
@@ -209,6 +216,15 @@ beforeEach(() => {
 });
 
 describe("comment edit — draft snapshot", () => {
+  it("explains cancellation when editing an active trigger", async () => {
+    listTasksByIssue.mockResolvedValue([{ id: "run", status: "running", trigger_comment_id: entry.id }]);
+    renderCard();
+    await startEditing();
+    fireEvent.change(screen.getByTestId("editor"), { target: { value: "Correct the original task" } });
+    expect(await screen.findByText("Changing this text stops its linked execution and processes the updated message using the selected delivery settings.")).toBeVisible();
+  });
+
+
   it("does not feed the persisted edit draft back as a new editor default", async () => {
     renderCard();
     await startEditing();

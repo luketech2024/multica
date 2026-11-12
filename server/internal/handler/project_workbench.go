@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -119,6 +120,10 @@ func (h *Handler) validateProjectRoleBindings(w http.ResponseWriter, r *http.Req
 			agent, err := h.Queries.GetAgentInWorkspace(r.Context(), db.GetAgentInWorkspaceParams{ID: id, WorkspaceID: workspaceID})
 			if err != nil || agent.ArchivedAt.Valid {
 				writeError(w, http.StatusBadRequest, "agent must be active in this workspace")
+				return false
+			}
+			if strings.HasPrefix(agent.SystemKey.String, "onespec:") && agent.SystemKey.String != "onespec:"+role {
+				writeError(w, 400, "platform agent must match its defined role")
 				return false
 			}
 			if entry.RuntimeID != nil && *entry.RuntimeID != uuidToString(agent.RuntimeID) {

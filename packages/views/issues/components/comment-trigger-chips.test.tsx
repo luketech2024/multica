@@ -56,6 +56,13 @@ function entry(agent: CommentTriggerPreviewAgent, state: AgentRunState, chosen?:
 }
 
 describe("CommentTriggerChips", () => {
+  it("keeps compact delivery status visible and moves recipient actions into more", async () => {
+    renderWithI18n(<CommentTriggerChips compact recipients={[entry(walt, running)]} onActionChange={vi.fn()} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Add to current run");
+    expect(screen.queryByRole("button", { name: "Walt trigger: Add to current run" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "More sending options" }));
+    expect(await screen.findByRole("button", { name: "Walt trigger: Add to current run" })).toBeVisible();
+  });
   it("renders nothing without recipients", () => {
     const { container } = renderWithI18n(<CommentTriggerChips recipients={[]} onActionChange={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
@@ -89,13 +96,13 @@ describe("CommentTriggerChips", () => {
   it("keeps explicit agent triggers visible alongside @all semantics", () => {
     renderWithI18n(<CommentTriggerChips recipients={[entry(bob, idle)]} hasAllMembersMention onActionChange={vi.fn()} />);
     expect(screen.getByText("Member broadcast · @all does not start agents")).toBeInTheDocument();
-    expect(screen.getByText("Will start when sent")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trigger: Will start when sent/ })).toBeInTheDocument();
   });
 
   it("offers an idle recipient only to start or skip — never to add to a run", async () => {
     const onActionChange = vi.fn();
     renderWithI18n(<CommentTriggerChips recipients={[entry(walt, idle)]} onActionChange={onActionChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Walt trigger: Will start when sent" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Walt trigger: Will start when sent/ }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).queryByText("Add to current run")).not.toBeInTheDocument();
     expect(within(menu).getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual([
@@ -121,12 +128,12 @@ describe("CommentTriggerChips", () => {
   it("folds a message into a queued run instead of starting another", () => {
     const queued: AgentRunState = { kind: "queued", task: turn("queued") };
     renderWithI18n(<CommentTriggerChips recipients={[entry(walt, queued)]} onActionChange={vi.fn()} />);
-    expect(screen.getByText("Include when it starts")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trigger: Include when it starts/ })).toBeInTheDocument();
   });
 
   it("dims a skipped recipient", () => {
     renderWithI18n(<CommentTriggerChips recipients={[entry(walt, idle, "skip")]} onActionChange={vi.fn()} />);
-    expect(screen.getByText("Won't start this time")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trigger: Won't start this time/ })).toBeInTheDocument();
   });
 
   it("stacks several recipients, counting only those that will receive the message", () => {

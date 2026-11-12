@@ -4,11 +4,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/issueposition"
 	"github.com/multica-ai/multica/server/internal/service"
@@ -63,6 +65,25 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "only a member or the assigned project scheduler can save the confirmed plan")
 		return
 	}
+
+	flowRow, flowErr := q.GetOneSpecFlow(r.Context(), db.GetOneSpecFlowParams{WorkspaceID: current.WorkspaceID, IssueID: current.ID})
+	if flowErr != nil && !errors.Is(flowErr, pgx.ErrNoRows) {
+		writeError(w, 500, "failed to check OneSpec confirmation")
+		return
+	}
+	if flowErr == nil {
+		flow, e := parseOneSpecFlow(flowRow)
+		if e != nil || !flow.Approved("plan") {
+			writeError(w, 409, "confirm the OneSpec plan before applying it")
+			return
+		}
+		artifact := flow.Latest("plan")
+		confirmed, _ := json.Marshal(artifact.Tasks)
+		if artifact.RequirementVersion != criteria.Version || string(confirmed) != string(payload) {
+			writeError(w, 409, "only the exact confirmed plan can be applied")
+			return
+		}
+	}
 	if criteria.Plan != nil && criteria.Plan.Key == input.Key {
 		if criteria.Plan.Digest != digest || criteria.Plan.Version != input.Version {
 			writeError(w, http.StatusConflict, "idempotency key already used for another plan")
@@ -77,7 +98,7 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		writeRevisionConflict(w, "issue", current.ID, input.ExpectedRevision, current.Revision)
 		return
 	}
-	if criteria.Version != input.Version || (current.Status != "todo" && current.Status != "backlog") || (criteria.Plan != nil && !criteria.NeedsResplit) {
+	if criteria.Version != input.Version || (current.Status != "todo" && current.Status != "backlog" && flowErr != nil) || (criteria.Plan != nil && !criteria.NeedsResplit) {
 		writeError(w, http.StatusConflict, "this requirement version is not ready for a new plan")
 		return
 	}

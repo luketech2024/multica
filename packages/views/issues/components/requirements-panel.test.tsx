@@ -53,7 +53,7 @@ describe("requirements panel", () => {
     mount({ ...initial, acceptance_criteria: { ...initial.acceptance_criteria!, team: { ...roles, project_id: "project" } } });
     fireEvent.click(screen.getByText("Task team · configuration 2"));
     expect(screen.getByText("Role disabled · user responsibility")).toBeInTheDocument();
-    expect(screen.getAllByText("Enabled")).toHaveLength(5);
+    expect(screen.getAllByText("Enabled")).toHaveLength(7);
   });
   it("waits for the persisted check and locks only after successful confirmation", async () => {
     updateIssue.mockImplementation(async (_id, data) => ({ ...initial, revision: (data.expected_revision ?? 3) + 1,

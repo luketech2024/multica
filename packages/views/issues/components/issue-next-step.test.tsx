@@ -7,11 +7,13 @@ import { IssueNextStep } from "./issue-next-step";
 
 const read = vi.fn();
 const release = vi.fn();
+const run = vi.fn();
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace" }));
 vi.mock("@multica/core/workspace/hooks", () => ({ useActorName: () => ({ getActorName: () => "Reviewer" }) }));
-vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({ releases: () => "/test/releases" }) }));
+vi.mock("@multica/core/paths", () => ({ useWorkspacePaths: () => ({ releases: () => "/test/releases", issueDetail: (id: string) => `/test/issues/${id}` }) }));
+vi.mock("@multica/core/agents", () => ({ useAgentPresenceDetail: () => "loading" }));
 vi.mock("../../navigation", () => ({ AppLink: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
-vi.mock("@multica/core/api", () => ({ api: { getDeliveryReview: () => read(), getReleaseReadiness: () => release() } }));
+vi.mock("@multica/core/api", () => ({ api: { getDeliveryReview: () => read(), getReleaseReadiness: () => release(), rerunIssue: (...args: unknown[]) => run(...args) } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
 function mount(accepted = false) {
@@ -47,4 +49,31 @@ it("does not offer a release link for stale readiness data", async () => {
   mount(true);
   await screen.findByRole("button", { name: "View release conditions" });
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
+});
+
+it("offers a direct entry to the only current planned child", () => {
+  const issue = { id: "parent", project_id: "project", status: "todo", revision: 3,
+    acceptance_criteria: { version: 1, gate: { spec: { passed_by: "person" } }, plan: { version: 1, issues: ["child"] } },
+  } as Issue;
+  renderWithI18n(<QueryClientProvider client={new QueryClient()}>
+    <IssueNextStep issue={issue} statusLabel="Todo" onNavigate={vi.fn()}
+      executionTasks={[{ id: "child", identifier: "TEST-12", title: "Deploy test service" } as Issue]} />
+  </QueryClientProvider>);
+  expect(screen.getByRole("link", { name: "Open TEST-12" })).toHaveAttribute("href", "/test/issues/child");
+  expect(screen.getByText(/1 execution tasks have been planned/)).toHaveTextContent("Deploy test service");
+});
+
+it("starts an unstarted assigned execution task and presents a retryable failure", async () => {
+  const issue = { id: "child", parent_issue_id: "parent", status: "todo", revision: 1,
+    assignee_type: "agent", assignee_id: "agent", workbench_handoff: { superseded: false },
+  } as Issue;
+  run.mockRejectedValueOnce(new Error("Runtime offline"));
+  const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+  renderWithI18n(<QueryClientProvider client={qc}>
+    <IssueNextStep issue={issue} statusLabel="Todo" onNavigate={vi.fn()} runsLoaded />
+  </QueryClientProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Start execution" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Runtime offline");
+  expect(run).toHaveBeenCalledWith("child", undefined);
+  expect(screen.getByRole("button", { name: "Start execution" })).toBeEnabled();
 });

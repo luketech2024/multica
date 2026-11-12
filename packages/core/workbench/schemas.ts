@@ -8,6 +8,8 @@ export const projectRoleOrder = [
   "test",
   "sec",
   "ops",
+  "docs",
+  "git",
 ] as const;
 export type ProjectRoleKey = (typeof projectRoleOrder)[number];
 const ProjectRoleSchema = z.object({
@@ -25,6 +27,8 @@ export const ProjectRolesSchema = z.object({
       test: ProjectRoleSchema,
       sec: ProjectRoleSchema,
       ops: ProjectRoleSchema,
+      docs: ProjectRoleSchema.default({enabled:false, agent_id:null, runtime_id:null}),
+      git: ProjectRoleSchema.default({enabled:false, agent_id:null, runtime_id:null}),
     }),
   }),
   revision: z.number().int().positive(),

@@ -28,8 +28,8 @@ beforeEach(() => {
 it("creates independent role instructions on one runtime and reuses them on retry", async () => {
   const progress = vi.fn();
   await run(config(), progress);
-  expect(stored).toHaveLength(6);
-  expect(new Set(stored.map(agent => agent.instructions)).size).toBe(6);
+  expect(stored).toHaveLength(projectRoleOrder.length);
+  expect(new Set(stored.map(agent => agent.instructions)).size).toBe(projectRoleOrder.length);
   for (const agent of stored) {
     expect(agent.runtime_id).toBe("runtime-default");
     expect(agent.instructions).toContain("<!-- wb-summary v1 -->");
@@ -38,7 +38,7 @@ it("creates independent role instructions on one runtime and reuses them on retr
   expect(stored[2]?.max_concurrent_tasks).toBe(2);
   expect(api.createAgent).toHaveBeenCalledWith(expect.any(Object), "target-workspace");
   await run();
-  expect(api.createAgent).toHaveBeenCalledTimes(6);
+  expect(api.createAgent).toHaveBeenCalledTimes(projectRoleOrder.length);
   expect(progress.mock.lastCall?.[0].roles.ops.agent_id).toBe("agent-5");
 });
 it("preserves manual bindings, disabled roles, and manually selected runtimes", async () => {
@@ -48,7 +48,7 @@ it("preserves manual bindings, disabled roles, and manually selected runtimes", 
   team.roles.ops.runtime_id = "another-runtime";
   const progress = vi.fn();
   await run(team, progress);
-  expect(stored).toHaveLength(4);
+  expect(stored).toHaveLength(projectRoleOrder.length - 2);
   const final = progress.mock.lastCall?.[0];
   expect(final.roles.product.agent_id).toBe("manual-agent");
   expect(final.roles.sec).toEqual(team.roles.sec);
@@ -62,8 +62,8 @@ it("keeps completed roles after failure and resumes without duplicates", async (
   await expect(run(config(), progress)).rejects.toThrow("unavailable");
   expect(progress.mock.lastCall?.[0].roles.sched.agent_id).toBe("agent-0");
   await run();
-  expect(stored).toHaveLength(6);
-  expect(stored.filter(agent => agent.name.startsWith("调度"))).toHaveLength(1);
+  expect(stored).toHaveLength(projectRoleOrder.length);
+  expect(stored.filter(agent => agent.name.startsWith("OneSpec"))).toHaveLength(1);
 });
 it("recovers a concurrent creation only when the runtime and instructions match", async () => {
   const create = vi.mocked(api.createAgent).getMockImplementation()!;
@@ -72,10 +72,10 @@ it("recovers a concurrent creation only when the runtime and instructions match"
     throw new ApiError("exists", 409, "Conflict");
   });
   await run();
-  expect(stored).toHaveLength(6);
+  expect(stored).toHaveLength(projectRoleOrder.length);
 });
 it("does not adopt an unrelated agent with the same name", async () => {
   vi.mocked(api.createAgent).mockRejectedValue(new ApiError("exists", 409, "Conflict"));
-  stored.push({name:"调度 · runtime-",runtime_id:"runtime-default",instructions:"unrelated",archived_at:null} as Agent);
+  stored.push({name:"OneSpec · runtime-",runtime_id:"runtime-default",instructions:"unrelated",archived_at:null} as Agent);
   await expect(run()).rejects.toThrow("exists");
 });

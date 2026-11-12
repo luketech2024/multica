@@ -9766,6 +9766,12 @@ func (d *Daemon) executeAndDrain(ctx context.Context, backend agent.Backend, pro
 	// drain, leaving the subprocess running.
 	agentCtx, agentCancel := context.WithCancel(ctx)
 	defer agentCancel()
+	var waitingForUser atomic.Int32
+	opts.OnUserInput = func(inputCtx context.Context, request protocol.UserInputRequest, deliver func(protocol.UserInputResponse) error) error {
+		waitingForUser.Add(1)
+		defer waitingForUser.Add(-1)
+		return d.requestUserInput(inputCtx, taskID, request, deliver)
+	}
 
 	session, err := backend.Execute(agentCtx, prompt, opts)
 	if err != nil {
@@ -9862,6 +9868,13 @@ func (d *Daemon) executeAndDrain(ctx context.Context, backend agent.Backend, pro
 			}
 			return count
 		}
+	}
+	readToolCount := watchdogToolCount
+	watchdogToolCount = func() int32 {
+		if waitingForUser.Load() > 0 {
+			lastActivityAt.Store(int64(awakeclock.Now()))
+		}
+		return readToolCount()
 	}
 	// A backend that can prove its outcome is already decided outranks every
 	// liveness policy below: a run whose terminal result has been read is not a

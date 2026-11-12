@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var ProjectRoleOrder = []string{"sched", "product", "dev", "test", "sec", "ops"}
+var ProjectRoleOrder = []string{"sched", "product", "dev", "test", "sec", "ops", "docs", "git"}
 
 type ProjectRole struct {
 	Enabled   bool    `json:"enabled"`
@@ -29,11 +29,16 @@ func DefaultProjectRoles() ProjectRoles {
 
 func ParseProjectRoles(raw []byte) (ProjectRoles, error) {
 	var config ProjectRoles
-	if err := json.Unmarshal(raw, &config); err != nil || config.V != 1 {
+	if err := json.Unmarshal(raw, &config); err != nil || config.V != 1 || config.Roles == nil {
 		return config, errors.New("project role configuration must use version 1")
 	}
+	for _, role := range []string{"docs", "git"} {
+		if _, exists := config.Roles[role]; !exists {
+			config.Roles[role] = ProjectRole{Enabled: false}
+		}
+	}
 	if len(config.Roles) != len(ProjectRoleOrder) {
-		return config, errors.New("configure all six project roles")
+		return config, errors.New("unknown project role")
 	}
 	for _, role := range ProjectRoleOrder {
 		entry, exists := config.Roles[role]

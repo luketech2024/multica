@@ -28,6 +28,9 @@ deleted_task_tokens AS (
 deleted_task_supplements AS (
     DELETE FROM task_supplement WHERE task_id IN (SELECT id FROM batch)
 ),
+deleted_task_user_inputs AS (
+    DELETE FROM task_user_input WHERE task_id IN (SELECT id FROM batch)
+),
 deleted_task_supplement_capabilities AS (
     DELETE FROM task_supplement_capability WHERE task_id IN (SELECT id FROM batch)
 ),
@@ -312,6 +315,9 @@ deleted_task_tokens AS (
 ),
 deleted_orphan_task_supplements AS (
     DELETE FROM task_supplement WHERE workspace_id = $1
+),
+deleted_orphan_task_user_inputs AS (
+    DELETE FROM task_user_input WHERE workspace_id = $1
 ),
 deleted_orphan_task_supplement_capabilities AS (
     DELETE FROM task_supplement_capability WHERE workspace_id = $1

@@ -108,7 +108,7 @@ export function ProjectRolesFields({
         const entry = config.roles[role];
         const selectedAgent = activeAgents.find((agent) => agent.id === entry.agent_id);
         const agentItems = activeAgents
-          .filter((agent) => !entry.runtime_id || agent.runtime_id === entry.runtime_id)
+          .filter((agent) => (!entry.runtime_id || agent.runtime_id === entry.runtime_id) && (!agent.system_key?.startsWith("onespec:") || agent.system_key === `onespec:${role}`))
           .map((agent) => ({ value: agent.id, label: agent.name }));
         const compatibleRuntimes = runtimeItems.filter((runtime) =>
           !selectedAgent || runtime.value === selectedAgent.runtime_id,

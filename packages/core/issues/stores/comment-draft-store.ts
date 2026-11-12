@@ -41,6 +41,7 @@ export type CommentDraftKey =
 
 interface CommentDraft {
   content: string;
+  destinationIssueId?: string;
   /** Uploads (placeholders + completed) for this composer session. */
   attachments: DraftUpload[];
   annotations?: ReplyAnnotation[];
@@ -56,6 +57,7 @@ interface CommentDraftStore {
   /** Every upload for this draft (placeholders included) — for status chips. */
   getUploads: (key: CommentDraftKey) => DraftUpload[];
   setDraft: (key: CommentDraftKey, content: string) => void;
+  setDestination: (key: CommentDraftKey, issueId: string) => void;
   /**
    * Append a markdown fragment to the draft body (upload write-back,
    * MUL-5181): an upload that finished after its composer unmounted has no
@@ -139,7 +141,7 @@ function writeDraft(
   if (existing && existing.content === content && existing.replyTarget === replyTarget && (existing.annotations ?? EMPTY_REPLY_ANNOTATIONS) === annotations && existing.attachments === uploads) {
     return drafts;
   }
-  return { ...drafts, [key]: { content, attachments: uploads, annotations, replyTarget, updatedAt: Date.now() } };
+  return { ...drafts, [key]: { content, destinationIssueId: existing?.destinationIssueId, attachments: uploads, annotations, replyTarget, updatedAt: Date.now() } };
 }
 
 function uploadsOf(drafts: Record<string, CommentDraft>, key: string): DraftUpload[] {
@@ -168,6 +170,11 @@ function pruneStaleDrafts(drafts: Record<string, CommentDraft>): Record<string, 
 export const useCommentDraftStore = create<CommentDraftStore>()(
   persist(
     (set, get) => ({
+      setDestination: (key, issueId) => set((state) => {
+        const existing = state.drafts[key];
+        if (existing?.destinationIssueId === issueId) return state;
+        return { drafts: { ...state.drafts, [key]: { content: "", attachments: [], ...existing, destinationIssueId: issueId, updatedAt: Date.now() } } };
+      }),
       drafts: {},
       getDraft: (key) => get().drafts[key]?.content,
       getAttachments: (key) => deriveUploaded(uploadsOf(get().drafts, key)),

@@ -2139,12 +2139,18 @@
     "discussion": "Discussion de la tâche"
   },
   "next_step": {
+    "open_execution": "Ouvrir {{identifier}}",
+    "planned_hint": "{{count}} tâches d’exécution ont été planifiées. Ouvrez une tâche pour suivre sa progression ou fournir les informations manquantes.",
+    "start_execution": "Démarrer l’exécution",
+    "starting": "Démarrage…",
+    "start_hint": "Vérifiez les exigences, puis démarrez l’agent responsable. Ajoutez les informations manquantes dans la discussion de la tâche.",
     "title": "Étape actuelle et suite",
     "assignee": "Responsable {{name}}",
     "read_failed": "Impossible de lire les conditions actuelles.",
     "blockers": "{{count}} conditions demandent une action",
     "offline": "L’agent responsable est hors ligne. Vérifiez son environnement d’exécution.",
     "stages": {
+      "planned": "Tâches d’exécution créées",
       "requirements": "Exigences à confirmer",
       "plan": "Plan à préparer",
       "change": "Modification des exigences",
@@ -2158,6 +2164,7 @@
       "task": "Activité de la tâche"
     },
     "actions": {
+      "planned": "Voir les tâches d’exécution",
       "requirements": "Vérifier les exigences",
       "plan": "Voir le plan",
       "change": "Examiner les changements",
@@ -2213,5 +2220,45 @@
     "changed": "Le message d’origine a été modifié. Vérifiez son contenu avant l’envoi.",
     "continue_reply": "Continuer la réponse",
     "choose": "Choisir une discussion et répondre"
+  },
+  "task_workspace": {
+    "attachment_destination": "Ces pièces jointes appartiennent à une autre tâche. Ajoutez-les à nouveau pour cette destination.",
+    "system_message": "Mise à jour",
+    "choose_target": "Quelle partie de la tâche concerne ce message ?",
+    "control_unavailable": "Contrôle indisponible pour cette tâche ou ce compte.",
+    "wait_for_stop": "Attendez un arrêt complet avant de reprendre.",
+    "control_text_only": "Envoyez les commandes sans pièce jointe.",
+    "details": "Détails",
+    "navigation": "Navigation",
+    "attention": "Votre intervention est requise",
+    "running": "{{count}} exécutions en cours",
+    "queued": "{{count}} exécutions en attente",
+    "history": "Historique ({{count}})",
+    "empty": "Ajoutez des informations ou posez une question.",
+    "handle": "Examiner",
+    "collapse": "Réduire",
+    "send_to": "Envoyer à",
+    "coordinator": "Tâche globale",
+    "unavailable": "Cette destination est indisponible. Choisissez une autre destination.",
+    "discuss": "Discuter",
+    "background": "Contexte",
+    "records": "Exigences et historique",
+    "pause_task": "Suspendre la tâche",
+    "blocked": "{{count}} tâches nécessitent votre intervention",
+    "pause_scope": "Suspendre cette tâche et ses sous-tâches"
+  },
+  "conversation": {
+    "more": "Options d’envoi",
+    "answer": "Répondre",
+    "answered": "Réponse reçue",
+    "answer_sent": "Réponse envoyée",
+    "question_closed": "Question terminée",
+    "waiting": "En attente de votre réponse",
+    "select_option": "Sélectionnez une option. Les réponses doivent être du texte.",
+    "answer_failed": "Échec de l’envoi. Vérifiez que la question est toujours active et réessayez.",
+    "load_failed": "Impossible de charger les questions de l’agent.",
+    "edit_restarts": "Modifier ce texte arrête l’exécution associée et traite le message selon le mode d’envoi choisi.",
+    "correct": "Envoyer une correction",
+    "correction_hint": "Envoyez un nouveau message pour corriger cette instruction."
   }
 }

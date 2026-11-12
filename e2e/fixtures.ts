@@ -536,6 +536,19 @@ export class TestApiClient {
     return response.json();
   }
 
+  async configureOneSpec(projectId:string,input:Record<string,unknown>) {
+    if(!this.createdProjectIds.includes(projectId)) throw new Error("OneSpec requires a test-owned project");
+    const response=await this.authedFetch(`/api/projects/${projectId}/onespec`,{method:"PUT",body:JSON.stringify(input)});
+    if(!response.ok) throw new Error(`OneSpec configuration failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
+  async oneSpec(issueId:string,action?:string,input?:Record<string,unknown>) {
+    if(!this.createdIssueIds.includes(issueId)) throw new Error("OneSpec requires a test-owned issue");
+    const endpoint=`/api/issues/${issueId}/onespec${action ? `/${action}` : ""}`;
+    const response=await this.authedFetch(endpoint,action ? {method:"POST",body:JSON.stringify(input)} : undefined);
+    if(!response.ok) throw new Error(`OneSpec action failed: ${response.status} ${await response.text()}`);
+    return response.json();
+  }
   async getIssue(id: string) {
     const response=await this.authedFetch(`/api/issues/${id}`);
     if(!response.ok) throw new Error(`get issue failed: ${response.status}`);

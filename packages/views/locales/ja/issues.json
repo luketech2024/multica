@@ -2070,12 +2070,18 @@
     "discussion": "タスクのディスカッション"
   },
   "next_step": {
+    "open_execution": "{{identifier}} を開く",
+    "planned_hint": "{{count}} 件の実行タスクを作成しました。タスクを開いて進捗を確認し、必要な情報を補足してください。",
+    "start_execution": "実行を開始",
+    "starting": "開始中…",
+    "start_hint": "タスクの要件を確認して、担当エージェントの実行を開始します。不足情報はタスクのディスカッションに追加できます。",
     "title": "現在の段階と次の操作",
     "assignee": "担当者 {{name}}",
     "read_failed": "現在の条件を読み込めません。",
     "blockers": "対応が必要な条件 {{count}} 件",
     "offline": "担当エージェントはオフラインです。実行環境を確認してください。",
     "stages": {
+      "planned": "実行タスクを作成済み",
       "requirements": "要件確認待ち",
       "plan": "実行計画待ち",
       "change": "要件変更中",
@@ -2089,6 +2095,7 @@
       "task": "タスクの履歴"
     },
     "actions": {
+      "planned": "実行タスクを表示",
       "requirements": "要件を確認",
       "plan": "実行計画を表示",
       "change": "変更を確認",
@@ -2144,5 +2151,45 @@
     "changed": "元のメッセージが更新されました。送信前に内容を確認してください。",
     "continue_reply": "返信を続ける",
     "choose": "ディスカッションを選んで返信"
+  },
+  "task_workspace": {
+    "attachment_destination": "添付ファイルは別のタスクに属しています。削除して、この宛先に追加し直してください。",
+    "system_message": "タスクの更新",
+    "choose_target": "このメッセージはどの作業についてですか？",
+    "control_unavailable": "このタスクまたはアカウントでは実行を制御できません。",
+    "wait_for_stop": "実行が停止するまでお待ちください。",
+    "control_text_only": "一時停止や再開の指示には添付ファイルを付けないでください。",
+    "details": "詳細",
+    "navigation": "ナビゲーション",
+    "attention": "対応が必要です",
+    "running": "{{count}} 件を実行中",
+    "queued": "{{count}} 件が実行待ち",
+    "history": "以前の記録（{{count}}）",
+    "empty": "情報を補足するか、質問してください。",
+    "handle": "確認して対応",
+    "collapse": "折りたたむ",
+    "send_to": "送信先",
+    "coordinator": "タスク全体",
+    "unavailable": "送信先が無効です。有効なタスクまたは会話を選択してください。",
+    "discuss": "情報を補足",
+    "background": "背景",
+    "records": "要件と記録",
+    "pause_task": "タスクを一時停止",
+    "blocked": "{{count}} 件の実行に対応が必要です",
+    "pause_scope": "このタスクとサブタスクの実行を一時停止"
+  },
+  "conversation": {
+    "more": "送信オプション",
+    "answer": "質問に回答",
+    "answered": "回答済み",
+    "answer_sent": "回答を送信しました",
+    "question_closed": "質問は終了しました",
+    "waiting": "回答を待っています",
+    "select_option": "選択肢を選んでください。回答はテキストのみです。",
+    "answer_failed": "回答を送信できませんでした。質問が有効か確認して再試行してください。",
+    "load_failed": "エージェントの質問を読み込めませんでした。",
+    "edit_restarts": "本文を変更すると関連する実行が停止し、選択した送信方法で再処理されます。",
+    "correct": "訂正を送信",
+    "correction_hint": "新しいメッセージでこの指示を訂正します。"
   }
 }

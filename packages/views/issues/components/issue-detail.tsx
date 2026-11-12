@@ -1,4 +1,5 @@
 "use client";
+import { TaskWorkspace } from "./task-workspace";
 
 import {
   issueBehavesAs,
@@ -6,7 +7,8 @@ import {
   issueStatusCategory,
 } from "@multica/core/issues";
 import { IssueFlowCard } from "../../workflows/issue-flow-card";
-import { RequirementsPanel } from "./requirements-panel";
+import { oneSpecFlowOptions } from "@multica/core/workbench/configuration";
+import { OneSpecFlowPanel, OneSpecRequirementsPanel as RequirementsPanel } from "./onespec-flow-panel";
 import { WorkbenchPipeline } from "./workbench-pipeline";
 import { DeliveryEvidence } from "./delivery-evidence";
 import { CommentSendReceipt } from "./comment-send-receipt";
@@ -1203,7 +1205,7 @@ interface IssueDetailProps {
    * a single column with the core properties as pills under the title, no
    * properties sidebar, and `trailingActions` where the sidebar toggle sits.
    */
-  variant?: "page" | "peek";
+  variant?: "page" | "peek" | "details";
   /** Peek only: host controls at the end of the header (open full page, close). */
   trailingActions?: ReactNode;
   /**
@@ -1344,7 +1346,20 @@ export function IssueDetailSkeleton({
 
 // IssueDetail
 
-export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = true, layoutId = "multica_issue_detail_layout", highlightCommentId, highlightRequestToken, leadingAction, variant = "page", trailingActions, readsInbox = true }: IssueDetailProps) {
+export function IssueDetail(props: IssueDetailProps) {
+  const wsId = useWorkspaceId();
+  const query = useQuery(issueDetailOptions(wsId, props.issueId));
+  const issue = query.data;
+  if (issue?.project_id && !issue.parent_issue_id && props.variant !== "details") {
+    return <TaskWorkspace key={issue.id} issue={issue} leadingAction={props.leadingAction} trailingActions={props.trailingActions}
+      highlightCommentId={props.highlightCommentId} highlightRequestToken={props.highlightRequestToken}
+      readsInbox={props.readsInbox} peek={props.variant === "peek"}
+      renderDetails={(issueId) => <IssueDetailContent {...props} issueId={issueId} variant="details" readsInbox={false} />} />;
+  }
+  return <IssueDetailContent {...props} />;
+}
+
+function IssueDetailContent({ issueId, onDelete, onDone, defaultSidebarOpen = true, layoutId = "multica_issue_detail_layout", highlightCommentId, highlightRequestToken, leadingAction, variant = "page", trailingActions, readsInbox = true }: IssueDetailProps) {
   const isPeek = variant === "peek";
   const { t } = useT("issues");
   const { t: tCommon } = useT("common");
@@ -1357,6 +1372,11 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   // Issue navigation — read from TQ list cache
   const wsId = useWorkspaceId();
+  const oneSpec = useQuery({
+    ...oneSpecFlowOptions(wsId, id),
+    enabled: !!id,
+  });
+  const oneSpecManaged = !!oneSpec.data?.flow;
   const { data: members = [] } = useQuery(memberListOptions(wsId));
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
   // Workspace owners and admins moderate any comment authored by anyone
@@ -1673,7 +1693,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
     editComment, deleteComment, toggleResolveComment, toggleReaction: handleToggleReaction,
   } = useIssueTimeline(id, user?.id);
 
-  const { data: commentTasks } = useQuery(issueTasksOptions(id));
+  const { data: commentTasks, isSuccess: commentTasksLoaded } = useQuery(issueTasksOptions(id));
   const enteringRunIds = useNewRunIds(id, commentTasks);
   const previousCommentRuns = useRef(new Map<string, CommentRun[]>());
   const { runs: commentRuns, timeline: displayTimeline, standaloneRuns } = useMemo(() => {
@@ -2952,17 +2972,17 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
   const sidebarContent = (
     <IssueSidebarStack>
-      <WorkbenchPipeline issue={issue} />
+      {!oneSpecManaged && <WorkbenchPipeline issue={issue} />}
 
       {issue.workbench_handoff !== undefined
         ? <WorkbenchHandoffPanel key={issue.id} issue={issue} />
-        : <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-4"><h2 className="text-label font-medium">{t(($) => $.requirements.title)}</h2><div ref={setRequirementsTarget} /></section>}
-      <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-3">
+        : variant !== "details" && <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-4"><h2 className="text-label font-medium">{t(($) => $.requirements.title)}</h2><div ref={setRequirementsTarget} /></section>}
+      {variant !== "details" && <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-3">
         <h2 className="text-label font-medium">{t(($) => $.workspace_switcher.title)}</h2>
         <div className="max-h-64 space-y-1 overflow-y-auto">
           {allIssues.filter((entry) => !entry.parent_issue_id).map((entry) => <AppLink key={entry.id} href={paths.issueDetail(entry.id)} aria-current={entry.id === issue.id ? "page" : undefined} className={cn("block rounded-lg px-2 py-2 text-caption hover:bg-surface-hover", entry.id === issue.id && "bg-brand/10 text-brand-text")}><span className="block truncate">{entry.title}</span><span className="text-micro text-muted-foreground">{entry.identifier}</span></AppLink>)}
         </div>
-      </section>
+      </section>}
       {issue.project_id && <details className="rounded-xl border border-surface-border bg-surface p-3">
         <summary className="cursor-pointer text-label font-medium">{t(($) => $.workbench_ui.preview_settings)}</summary>
         <div className="mt-3"><TaskPreview key={`preview-${issue.id}`} issue={issue} /></div>
@@ -3356,183 +3376,8 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
     target?.focus({ preventScroll: true });
   };
 
-  const detailContent = (
-    <CurrentIssueRenderContextProvider value={currentIssueRenderContext}>
-    <div className="relative flex h-full min-w-0 flex-1 flex-col">
-        {/* In-page find bar — floats over the top-right of the content column
-            (below the breadcrumb header), outside the scroll container so it
-            stays put while the timeline scrolls and its own text isn't walked.
-            z-30: must beat every sticky affordance pinned at the timeline's
-            top-0 (comment headers z-10, resolve collapse bars z-20) — at equal
-            z the later-in-DOM sticky bar paints over the find bar and orphans
-            its close button (MUL-4414). On desktop it also steps inside the
-            thread rail's right-edge strip, so an open find bar can't cover
-            the topmost ticks. */}
-        {find.open && (
-          <FindBar
-            find={find}
-            className={cn("absolute top-14 z-30", isMobile ? "right-4" : "right-10")}
-          />
-        )}
-        <BreadcrumbHeader
-          leading={leadingAction}
-          segments={breadcrumbSegments}
-          leaf={
-            <AppLink
-              href={paths.issueDetail(issue.id)}
-              className="flex min-w-0 transition-opacity hover:opacity-80"
-            >
-              <span className="truncate font-medium text-foreground">
-                {isPeek ? issue.identifier : `${issue.identifier} ${issue.title}`}
-              </span>
-            </AppLink>
-          }
-          actions={
-            <>
-            {/* Live "agent is working" chip, leftmost in the right cluster so
-                it never overlaps the title (which truncates to make room).
-                It self-hides when no agent is active. */}
-            {issue.acceptance_criteria?.team && <AppLink href={paths.issuePipeline(issue.id)} className="shrink-0 rounded-lg border border-surface-border bg-surface px-3 py-2 text-caption text-brand-text">{t(($) => $.pipeline_page.open)}</AppLink>}
-            <IssueAgentHeaderChip issueId={id} onJumpToRun={jumpToRun} />
-            {!issue.parent_issue_id && <ExternalTicketEditor issue={issue} />}
-            <IssueWakeupHeaderChip issueId={id} onOpen={openWakeups} />
-            {onDone && !issueBehavesAsAny(issue, ["done", "closed"]) && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-muted-foreground"
-                      onClick={() => { handleUpdateField({ status: "done" }); onDone?.(); }}
-                    >
-                      <CircleCheck />
-                    </Button>
-                  }
-                />
-                <TooltipContent side="bottom">{t(($) => $.detail.mark_done_tooltip)}</TooltipContent>
-              </Tooltip>
-            )}
-            {onDone && issueBehavesAs(issue, "done") && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-muted-foreground"
-                      onClick={() => { onDone(); }}
-                    >
-                      <Archive />
-                    </Button>
-                  }
-                />
-                <TooltipContent side="bottom">{t(($) => $.detail.archive_tooltip)}</TooltipContent>
-              </Tooltip>
-            )}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className={cn("text-muted-foreground", actions.isPinned && "text-foreground")}
-                    onClick={actions.togglePin}
-                  >
-                    {actions.isPinned ? <PinOff /> : <Pin />}
-                  </Button>
-                }
-              />
-              <TooltipContent side="bottom">{actions.isPinned ? t(($) => $.detail.unpin_tooltip) : t(($) => $.detail.pin_tooltip)}</TooltipContent>
-            </Tooltip>
-            <IssueActionsDropdown
-              issue={issue}
-              align="end"
-              // When a parent passes `onDelete`, we detect deletion via effect
-              // above and skip navigation. Otherwise the modal takes us back
-              // to the list we came from, falling back to all issues.
-              onDeletedFallbackPath={onDelete ? undefined : paths.issues()}
-              archivedInboxItemId={archivedInboxItemId}
-              trigger={
-                <IconButton
-                  label={tCommon(($) => $.more_actions)}
-                  tooltipSide="bottom"
-                  className="text-muted-foreground"
-                >
-                  <MoreHorizontal />
-                </IconButton>
-              }
-            />
-            {isPeek ? (
-              trailingActions
-            ) : overlaySidebar ? (
-              <Button
-                variant={sidebarOpen ? "secondary" : "ghost"}
-                aria-expanded={sidebarOpen}
-                onClick={handleToggleSidebar}
-              >
-                <PanelRight />
-                {t(($) => $.detail.section_properties)}
-              </Button>
-            ) : (
-              <IconButton
-                label={t(($) => $.detail.sidebar_tooltip)}
-                shortcut={<ActionShortcutKeycaps action="toggleRightSidebar" />}
-                tooltipSide="bottom"
-                variant={sidebarOpen ? "secondary" : "ghost"}
-                className={sidebarOpen ? "" : "text-muted-foreground"}
-                onClick={handleToggleSidebar}
-              >
-                <PanelRight />
-              </IconButton>
-            )}
-            </>
-          }
-        />
-
-        {/* scrollbar-gutter both-edges: with classic (space-taking) scrollbars —
-            macOS with a mouse or "always show", Windows, Linux — the global
-            `scrollbar-width: thin` carves ~11px off the right side only, so the
-            centered column reads 32px left vs 43px right (MUL-4404). Mirroring
-            the gutter restores symmetry; overlay-scrollbar platforms reserve
-            nothing and render unchanged. */}
-        <IssueNextStep issue={issue} statusLabel={resolveStatusLabel(issue.status)} latestRun={latestRun} onShowRun={jumpToRun} onNavigate={navigateWorkflow}
-          blockedAction={replyContext && !replyUnavailable
-            ? <Button onClick={() => { locateOrigin({ kind: "comment", commentId: replyContext.parentId }); focusComposer(); }}>{t(($) => $.discussion_picker.continue_reply)}</Button>
-            : !timelineLoading && !timelineError && !timeline.some(isReplyDiscussion)
-              ? <Button onClick={() => document.getElementById(`workflow-${id}-activity`)?.scrollIntoView({ block: "start" })}>{t(($) => $.next_step.actions.task)}</Button>
-              : discussionPicker(t(($) => $.discussion_picker.choose), true)} />
-        <div
-          ref={attachScrollContainer}
-          data-tab-scroll-root={isPeek ? undefined : scrollContainerKey}
-          className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
-        >
-        {/* Gutters: 32px is a comfortable reading margin on a desktop column
-            but eats 16% of a 393px phone, so below `md` they drop to 12px.
-            `max-md:pb-chat-launcher` reserves the launcher's corner at the end
-            of the scroll: below `md` the composer is not pinned (see
-            `useStickyComposer`), so it lands here — right where the launcher
-            floats — once the reader scrolls to the bottom. */}
-        <div
-          data-issue-content-column
-          className={cn(
-            "mx-auto flex min-h-full w-full flex-col",
-            // The peek is already a narrow column, so it takes a tighter gutter
-            // and never reaches the chat launcher's corner (see IssuePeekHost).
-            isPeek ? "px-6 py-5" : "max-w-[760px] min-[1920px]:max-w-[880px] px-6 py-6 max-md:pb-chat-launcher",
-          )}
-        >
-
-          <IssueDuplicateBanner
-            issue={issue}
-            onUnmark={() =>
-              handleUpdateField(
-                { status: "todo" },
-                { onSuccess: () => toast.success(t(($) => $.duplicates.unmark_toast)) },
-              )
-            }
-          />
-          <div id={descriptionSectionId} className="rounded-xl border border-surface-border bg-surface p-5 shadow-[var(--surface-shadow)]">
+  const descriptionContent = (
+    <div id={descriptionSectionId} className="rounded-xl border border-surface-border bg-surface p-5 shadow-[var(--surface-shadow)]">
           {issue.acceptance_criteria && <div className="mb-3 flex items-center gap-2 text-caption text-muted-foreground">
             <ActorAvatar actorType={issue.creator_type} actorId={issue.creator_id} size="sm" />
             <span>{getActorName(issue.creator_type, issue.creator_id)}</span>
@@ -3780,6 +3625,308 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
           </div>
 
           </div>
+  );
+
+  const subscriptionControls = (
+    <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="sr-only">{t(($) => $.detail.activity_section)}</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* A delegated subscription is one the user never opted into
+                    by hand — their agent created this issue for them. Saying
+                    so is what keeps it from reading as the product quietly
+                    adding them to things (MUL-5483). */}
+                {isSubscribed && subscriptionReason === "delegated" && (
+                  <Tooltip>
+                    {/* Quiet surface, not plain body text: this is metadata
+                        explaining a state, and must not read as a second
+                        action sitting next to Unsubscribe. Uses the shared
+                        caption role rather than an ad-hoc size (MUL-5451). */}
+                    <TooltipTrigger className="cursor-default rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground">
+                      {t(($) => $.detail.delegated_subscription_badge)}
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-64">
+                      {t(($) => $.detail.delegated_subscription_hint)}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Nothing until the subscribers query resolves: the default
+                    empty list reads as "not subscribed" for everyone, so
+                    rendering it flashes Subscribe at someone who is already
+                    subscribed, and a click landing in that window sends a
+                    subscribe instead of the unsubscribe they meant. An
+                    unresolved state is better shown as no control than as the
+                    wrong one (MUL-5714). */}
+                {subscriptionKnown &&
+                  (!isSubscribed || (childCountKnown && childIssues.length === 0) ? (
+                    /* One button, no menu, when there is nothing for the
+                       subtree option to cover. This is the root-only path
+                       (opt_out_scope='issue'), NOT the subtree one: even at
+                       zero children the two are different server writes,
+                       because a subtree tombstone also keeps FUTURE children
+                       from re-subscribing the user
+                       (server/pkg/db/queries/subscriber.sql). Declining one
+                       issue must not silently opt someone out of a tree that
+                       does not exist yet. While the child count is unknown we
+                       keep the menu below — it never picks a scope for the
+                       user. */
+                    <button
+                      type="button"
+                      onClick={handleToggleSubscribe}
+                      disabled={togglePending || !user?.id}
+                      className={SUBSCRIPTION_ACTION_CLASS}
+                    >
+                      {isSubscribed
+                        ? t(($) => $.detail.unsubscribe)
+                        : t(($) => $.detail.subscribe)}
+                    </button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        disabled={togglePending || subtreePending || !user?.id}
+                        className={SUBSCRIPTION_ACTION_CLASS}
+                      >
+                        {t(($) => $.detail.unsubscribe)}
+                      </DropdownMenuTrigger>
+                      {/* onClick, not onSelect: Base UI's Menu.Item exposes no
+                          onSelect (that is the Radix spelling), and because its
+                          props extend the full div attribute set, an onSelect
+                          typechecks and silently lands on the DOM node as the
+                          native text-selection event — the handler never runs
+                          (MUL-5710). */}
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={handleToggleSubscribe}
+                          disabled={togglePending}
+                        >
+                          {t(($) => $.detail.unsubscribe_this)}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={handleUnsubscribeSubtree}
+                          disabled={subtreePending}
+                        >
+                          {t(($) => $.detail.unsubscribe_subtree)}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ))}
+                <Popover>
+                  <PopoverTrigger className="cursor-pointer hover:opacity-80 transition-opacity">
+                    {subscribers.length > 0 ? (
+                      <AvatarGroup>
+                        {subscribers.slice(0, 4).map((sub) => (
+                          <ActorAvatar
+                            key={`${sub.user_type}-${sub.user_id}`}
+                            actorType={sub.user_type}
+                            actorId={sub.user_id}
+                            size="md"
+                            enableHoverCard
+                          />
+                        ))}
+                        {subscribers.length > 4 && (
+                          <AvatarGroupCount>+{subscribers.length - 4}</AvatarGroupCount>
+                        )}
+                      </AvatarGroup>
+                    ) : (
+                      <span className="flex items-center justify-center h-6 w-6 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                      </span>
+                    )}
+                  </PopoverTrigger>
+                  <SubscriberPopoverContent
+                    members={members}
+                    agents={agents}
+                    subscribers={subscribers}
+                    toggleSubscriber={toggleSubscriber}
+                    togglesDisabled={
+                      !subscriptionKnown || togglePending || !user?.id
+                    }
+                    t={t}
+                  />
+                </Popover>
+              </div>
+            </div>
+  );
+
+  const detailContent = (
+    <CurrentIssueRenderContextProvider value={currentIssueRenderContext}>
+    <div className="relative flex h-full min-w-0 flex-1 flex-col">
+        {/* In-page find bar — floats over the top-right of the content column
+            (below the breadcrumb header), outside the scroll container so it
+            stays put while the timeline scrolls and its own text isn't walked.
+            z-30: must beat every sticky affordance pinned at the timeline's
+            top-0 (comment headers z-10, resolve collapse bars z-20) — at equal
+            z the later-in-DOM sticky bar paints over the find bar and orphans
+            its close button (MUL-4414). On desktop it also steps inside the
+            thread rail's right-edge strip, so an open find bar can't cover
+            the topmost ticks. */}
+        {find.open && (
+          <FindBar
+            find={find}
+            className={cn("absolute top-14 z-30", isMobile ? "right-4" : "right-10")}
+          />
+        )}
+        <BreadcrumbHeader
+          leading={leadingAction}
+          segments={breadcrumbSegments}
+          leaf={
+            <AppLink
+              href={paths.issueDetail(issue.id)}
+              className="flex min-w-0 transition-opacity hover:opacity-80"
+            >
+              <span className="truncate font-medium text-foreground">
+                {isPeek ? issue.identifier : `${issue.identifier} ${issue.title}`}
+              </span>
+            </AppLink>
+          }
+          actions={
+            <>
+            {/* Live "agent is working" chip, leftmost in the right cluster so
+                it never overlaps the title (which truncates to make room).
+                It self-hides when no agent is active. */}
+            {issue.acceptance_criteria?.team && <AppLink href={paths.issuePipeline(issue.id)} className="shrink-0 rounded-lg border border-surface-border bg-surface px-3 py-2 text-caption text-brand-text">{t(($) => $.pipeline_page.open)}</AppLink>}
+            <IssueAgentHeaderChip issueId={id} onJumpToRun={jumpToRun} />
+            {!issue.parent_issue_id && <ExternalTicketEditor issue={issue} />}
+            <IssueWakeupHeaderChip issueId={id} onOpen={openWakeups} />
+            {onDone && !issueBehavesAsAny(issue, ["done", "closed"]) && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground"
+                      onClick={() => { handleUpdateField({ status: "done" }); onDone?.(); }}
+                    >
+                      <CircleCheck />
+                    </Button>
+                  }
+                />
+                <TooltipContent side="bottom">{t(($) => $.detail.mark_done_tooltip)}</TooltipContent>
+              </Tooltip>
+            )}
+            {onDone && issueBehavesAs(issue, "done") && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground"
+                      onClick={() => { onDone(); }}
+                    >
+                      <Archive />
+                    </Button>
+                  }
+                />
+                <TooltipContent side="bottom">{t(($) => $.detail.archive_tooltip)}</TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className={cn("text-muted-foreground", actions.isPinned && "text-foreground")}
+                    onClick={actions.togglePin}
+                  >
+                    {actions.isPinned ? <PinOff /> : <Pin />}
+                  </Button>
+                }
+              />
+              <TooltipContent side="bottom">{actions.isPinned ? t(($) => $.detail.unpin_tooltip) : t(($) => $.detail.pin_tooltip)}</TooltipContent>
+            </Tooltip>
+            <IssueActionsDropdown
+              issue={issue}
+              align="end"
+              // When a parent passes `onDelete`, we detect deletion via effect
+              // above and skip navigation. Otherwise the modal takes us back
+              // to the list we came from, falling back to all issues.
+              onDeletedFallbackPath={onDelete ? undefined : paths.issues()}
+              archivedInboxItemId={archivedInboxItemId}
+              trigger={
+                <IconButton
+                  label={tCommon(($) => $.more_actions)}
+                  tooltipSide="bottom"
+                  className="text-muted-foreground"
+                >
+                  <MoreHorizontal />
+                </IconButton>
+              }
+            />
+            {isPeek ? (
+              trailingActions
+            ) : overlaySidebar ? (
+              <Button
+                variant={sidebarOpen ? "secondary" : "ghost"}
+                aria-expanded={sidebarOpen}
+                onClick={handleToggleSidebar}
+              >
+                <PanelRight />
+                {t(($) => $.detail.section_properties)}
+              </Button>
+            ) : (
+              <IconButton
+                label={t(($) => $.detail.sidebar_tooltip)}
+                shortcut={<ActionShortcutKeycaps action="toggleRightSidebar" />}
+                tooltipSide="bottom"
+                variant={sidebarOpen ? "secondary" : "ghost"}
+                className={sidebarOpen ? "" : "text-muted-foreground"}
+                onClick={handleToggleSidebar}
+              >
+                <PanelRight />
+              </IconButton>
+            )}
+            </>
+          }
+        />
+
+        {/* scrollbar-gutter both-edges: with classic (space-taking) scrollbars —
+            macOS with a mouse or "always show", Windows, Linux — the global
+            `scrollbar-width: thin` carves ~11px off the right side only, so the
+            centered column reads 32px left vs 43px right (MUL-4404). Mirroring
+            the gutter restores symmetry; overlay-scrollbar platforms reserve
+            nothing and render unchanged. */}
+        {!oneSpecManaged && <IssueNextStep key={issue.id} issue={issue} statusLabel={resolveStatusLabel(issue.status)} latestRun={latestRun} onShowRun={jumpToRun} onNavigate={navigateWorkflow} executionTasks={childIssues} runsLoaded={commentTasksLoaded}
+          blockedAction={replyContext && !replyUnavailable
+            ? <Button onClick={() => { locateOrigin({ kind: "comment", commentId: replyContext.parentId }); focusComposer(); }}>{t(($) => $.discussion_picker.continue_reply)}</Button>
+            : !timelineLoading && !timelineError && !timeline.some(isReplyDiscussion)
+              ? <Button onClick={() => document.getElementById(`workflow-${id}-activity`)?.scrollIntoView({ block: "start" })}>{t(($) => $.next_step.actions.task)}</Button>
+              : discussionPicker(t(($) => $.discussion_picker.choose), true)} />}
+        <div
+          ref={attachScrollContainer}
+          data-tab-scroll-root={isPeek ? undefined : scrollContainerKey}
+          className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+        >
+        {/* Gutters: 32px is a comfortable reading margin on a desktop column
+            but eats 16% of a 393px phone, so below `md` they drop to 12px.
+            `max-md:pb-chat-launcher` reserves the launcher's corner at the end
+            of the scroll: below `md` the composer is not pinned (see
+            `useStickyComposer`), so it lands here — right where the launcher
+            floats — once the reader scrolls to the bottom. */}
+        <div
+          data-issue-content-column
+          className={cn(
+            "mx-auto flex min-h-full w-full flex-col",
+            // The peek is already a narrow column, so it takes a tighter gutter
+            // and never reaches the chat launcher's corner (see IssuePeekHost).
+            isPeek ? "px-6 py-5" : "max-w-[760px] min-[1920px]:max-w-[880px] px-6 py-6 max-md:pb-chat-launcher",
+          )}
+        >
+
+          <div className="mb-4"><OneSpecFlowPanel key={`onespec-${issue.id}`} issue={issue} /></div>
+          <IssueDuplicateBanner
+            issue={issue}
+            onUnmark={() =>
+              handleUpdateField(
+                { status: "todo" },
+                { onSuccess: () => toast.success(t(($) => $.duplicates.unmark_toast)) },
+              )
+            }
+          />
+          {descriptionContent}
 
           <div id={`workflow-${issue.id}-children`} tabIndex={-1} className="scroll-mt-4 outline-none" />
           {/* Sub-issues — Linear-style */}
@@ -3906,7 +4053,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
 
           <div className="my-6 border-t" />
 
-          <div id={`workflow-${issue.id}-review`} tabIndex={-1} className="scroll-mt-4 outline-none"><DeliveryReview key={`review-${issue.id}`} issue={issue} /></div>
+          <div id={`workflow-${issue.id}-review`} tabIndex={-1} className="scroll-mt-4 outline-none">{!oneSpecManaged && <DeliveryReview key={`review-${issue.id}`} issue={issue} />}</div>
 
           <div className="my-6 space-y-4">
             <div id={`workflow-${issue.id}-requirements`} tabIndex={-1} className="scroll-mt-4 outline-none">{!issue.workbench_handoff && <RequirementsPanel key={issue.id} issue={issue} />}</div>
@@ -3915,125 +4062,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
           </div>
           {/* Activity / Comments */}
           <div id={`workflow-${issue.id}-activity`} tabIndex={-1} className="scroll-mt-4 outline-none">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h2 className="sr-only">{t(($) => $.detail.activity_section)}</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* A delegated subscription is one the user never opted into
-                    by hand — their agent created this issue for them. Saying
-                    so is what keeps it from reading as the product quietly
-                    adding them to things (MUL-5483). */}
-                {isSubscribed && subscriptionReason === "delegated" && (
-                  <Tooltip>
-                    {/* Quiet surface, not plain body text: this is metadata
-                        explaining a state, and must not read as a second
-                        action sitting next to Unsubscribe. Uses the shared
-                        caption role rather than an ad-hoc size (MUL-5451). */}
-                    <TooltipTrigger className="cursor-default rounded-full bg-muted px-2 py-0.5 text-caption text-muted-foreground">
-                      {t(($) => $.detail.delegated_subscription_badge)}
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-64">
-                      {t(($) => $.detail.delegated_subscription_hint)}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                {/* Nothing until the subscribers query resolves: the default
-                    empty list reads as "not subscribed" for everyone, so
-                    rendering it flashes Subscribe at someone who is already
-                    subscribed, and a click landing in that window sends a
-                    subscribe instead of the unsubscribe they meant. An
-                    unresolved state is better shown as no control than as the
-                    wrong one (MUL-5714). */}
-                {subscriptionKnown &&
-                  (!isSubscribed || (childCountKnown && childIssues.length === 0) ? (
-                    /* One button, no menu, when there is nothing for the
-                       subtree option to cover. This is the root-only path
-                       (opt_out_scope='issue'), NOT the subtree one: even at
-                       zero children the two are different server writes,
-                       because a subtree tombstone also keeps FUTURE children
-                       from re-subscribing the user
-                       (server/pkg/db/queries/subscriber.sql). Declining one
-                       issue must not silently opt someone out of a tree that
-                       does not exist yet. While the child count is unknown we
-                       keep the menu below — it never picks a scope for the
-                       user. */
-                    <button
-                      type="button"
-                      onClick={handleToggleSubscribe}
-                      disabled={togglePending || !user?.id}
-                      className={SUBSCRIPTION_ACTION_CLASS}
-                    >
-                      {isSubscribed
-                        ? t(($) => $.detail.unsubscribe)
-                        : t(($) => $.detail.subscribe)}
-                    </button>
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        disabled={togglePending || subtreePending || !user?.id}
-                        className={SUBSCRIPTION_ACTION_CLASS}
-                      >
-                        {t(($) => $.detail.unsubscribe)}
-                      </DropdownMenuTrigger>
-                      {/* onClick, not onSelect: Base UI's Menu.Item exposes no
-                          onSelect (that is the Radix spelling), and because its
-                          props extend the full div attribute set, an onSelect
-                          typechecks and silently lands on the DOM node as the
-                          native text-selection event — the handler never runs
-                          (MUL-5710). */}
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={handleToggleSubscribe}
-                          disabled={togglePending}
-                        >
-                          {t(($) => $.detail.unsubscribe_this)}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={handleUnsubscribeSubtree}
-                          disabled={subtreePending}
-                        >
-                          {t(($) => $.detail.unsubscribe_subtree)}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ))}
-                <Popover>
-                  <PopoverTrigger className="cursor-pointer hover:opacity-80 transition-opacity">
-                    {subscribers.length > 0 ? (
-                      <AvatarGroup>
-                        {subscribers.slice(0, 4).map((sub) => (
-                          <ActorAvatar
-                            key={`${sub.user_type}-${sub.user_id}`}
-                            actorType={sub.user_type}
-                            actorId={sub.user_id}
-                            size="md"
-                            enableHoverCard
-                          />
-                        ))}
-                        {subscribers.length > 4 && (
-                          <AvatarGroupCount>+{subscribers.length - 4}</AvatarGroupCount>
-                        )}
-                      </AvatarGroup>
-                    ) : (
-                      <span className="flex items-center justify-center h-6 w-6 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground">
-                        <Users className="h-3 w-3" />
-                      </span>
-                    )}
-                  </PopoverTrigger>
-                  <SubscriberPopoverContent
-                    members={members}
-                    agents={agents}
-                    subscribers={subscribers}
-                    toggleSubscriber={toggleSubscriber}
-                    togglesDisabled={
-                      !subscriptionKnown || togglePending || !user?.id
-                    }
-                    t={t}
-                  />
-                </Popover>
-              </div>
-            </div>
+            {subscriptionControls}
 
             <LocalDirectoryHint
               projectId={issue.project_id}
@@ -4191,6 +4220,25 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       />
     </PreviewSequenceProvider>
   );
+
+  if (variant === "details") {
+    return withPreview(<div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+      <h2 className="mb-4 text-title-sm">{issue.identifier} · {issue.title}</h2>
+      <details className="mb-4"><summary className="cursor-pointer text-label">{t(($) => $.task_workspace.background)}</summary>
+        {descriptionContent}
+      </details>
+      <details className="mb-4"><summary className="cursor-pointer text-label">{t(($) => $.task_workspace.records)}</summary>
+        <OneSpecFlowPanel issue={issue} /><RequirementsPanel issue={issue} /><DeliveryEvidence issue={issue} /><DeliveryReview issue={issue} />
+      </details>
+      <ExecutionControl issue={issue} />
+      <details className="my-4"><summary className="cursor-pointer text-label">{tCommon(($) => $.more_actions)}</summary>
+        <div className="my-3">{subscriptionControls}</div>
+        <IssueActionsDropdown issue={issue} align="start" onDeletedFallbackPath={onDelete ? undefined : paths.issues()}
+          trigger={<Button variant="outline">{tCommon(($) => $.more_actions)}</Button>} />
+      </details>
+      {sidebarContent}
+    </div>);
+  }
 
   // The peek has no room for the properties sidebar: its core properties are
   // the pills under the title, and the rest is one click away on the page.

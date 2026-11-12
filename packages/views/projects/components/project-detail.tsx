@@ -1,4 +1,5 @@
 "use client";
+import { OneSpecConfigurationSection } from "./onespec-configuration-section";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useRegisterCommandBarContext } from "../../search/register-context";
@@ -524,6 +525,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {/* Resources */}
       <ProjectResourcesSection projectId={projectId} />
       <RepositoryProfilesSection key={`profiles-${projectId}`} projectId={projectId} />
+      <OneSpecConfigurationSection key={`onespec-${projectId}`} projectId={projectId} />
       <ProjectRolesSection key={`roles-${projectId}`} projectId={projectId} />
       <ProjectBusinessTemplateSection key={`template-${projectId}`} projectId={projectId} />
     </div>
