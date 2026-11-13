@@ -140,6 +140,7 @@ const emptyIssueDraft = () => ({
     startDate: null as string | null,
     assigneeType: undefined as "agent" | "squad" | "member" | undefined,
     assigneeId: undefined as string | undefined,
+    assigneeOrigin: undefined as "project" | "manual" | "remembered" | undefined,
     labelIds: [] as string[],
     propertyValues: {} as Record<string, string | number | boolean | string[]>,
   },
@@ -711,6 +712,7 @@ describe("CreateIssueModal", () => {
       const next = emptyIssueDraft();
       next.manual.assigneeType = mockDraftStore.lastAssigneeType;
       next.manual.assigneeId = mockDraftStore.lastAssigneeId;
+      next.manual.assigneeOrigin = "remembered";
       mockDraftStore.draft = next;
       mockDraftStore.batchContinuationBaseline = undefined;
     };
@@ -830,6 +832,51 @@ describe("CreateIssueModal", () => {
       assignee_id: undefined,
       assignee_type: undefined,
       acceptance_criteria: expect.objectContaining({ items: [] }),
+    })));
+  });
+
+  it.each([undefined, "remembered"] as const)("uses the project agent over a remembered member (origin %s)", async (origin) => {
+    mockDraftStore.draft.manual.assigneeType = "member";
+    mockDraftStore.draft.manual.assigneeId = "current-user";
+    mockDraftStore.draft.manual.assigneeOrigin = origin;
+    mockProjectRoles.mockResolvedValue({ revision: 2, config: { roles: {
+      product: { enabled: true, agent_id: "product-agent" },
+    } } });
+    renderModal(<CreateIssueModal onClose={vi.fn()} data={{ project_id: "proj-1" }} />);
+    await waitFor(() => expect(mockSetManual).toHaveBeenCalledWith(expect.objectContaining({
+      assigneeId: "product-agent", assigneeOrigin: "project",
+    })));
+    fireEvent.change(screen.getByPlaceholderText("Issue title"), { target: { value: "Clarify deployment" } });
+    await userEvent.click(screen.getByRole("button", { name: "Create Issue" }));
+    await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith(expect.objectContaining({
+      use_project_assignee: true, assignee_id: undefined, assignee_type: undefined,
+    })));
+  });
+
+  it("keeps a remembered member when creating outside a project", async () => {
+    mockDraftStore.draft.manual.assigneeType = "member";
+    mockDraftStore.draft.manual.assigneeId = "current-user";
+    mockDraftStore.draft.manual.assigneeOrigin = "remembered";
+    renderModal(<CreateIssueModal onClose={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText("Issue title"), { target: { value: "Personal task" } });
+    await userEvent.click(screen.getByRole("button", { name: "Create Issue" }));
+    await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith(expect.objectContaining({
+      assignee_type: "member", assignee_id: "current-user",
+    })));
+  });
+
+  it("preserves an explicitly selected member in a recovered project draft", async () => {
+    mockDraftStore.draft.manual.assigneeType = "member";
+    mockDraftStore.draft.manual.assigneeId = "current-user";
+    mockDraftStore.draft.manual.assigneeOrigin = "manual";
+    mockDraftStore.draft.manual.title = "Continue my task";
+    mockProjectRoles.mockResolvedValue({ revision: 2, config: { roles: {
+      product: { enabled: true, agent_id: "product-agent" },
+    } } });
+    renderModal(<CreateIssueModal onClose={vi.fn()} data={{ project_id: "proj-1" }} />);
+    await userEvent.click(screen.getByRole("button", { name: "Create Issue" }));
+    await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith(expect.objectContaining({
+      use_project_assignee: false, assignee_type: "member", assignee_id: "current-user",
     })));
   });
 
@@ -1019,6 +1066,7 @@ describe("CreateIssueModal", () => {
       status: "in_progress",
       assigneeType: "member",
       assigneeId: "alice",
+      assigneeOrigin: "remembered",
       startDate: null,
       labelIds: [],
       propertyValues: {},

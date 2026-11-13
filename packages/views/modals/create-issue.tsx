@@ -303,10 +303,12 @@ export function ManualCreatePanel({
     }
     return draft.manual.assigneeId;
   });
-  const [assigneeOrigin, setAssigneeOrigin] = useState<"project" | "manual">(() =>
+  const [assigneeOrigin, setAssigneeOrigin] = useState<"project" | "manual" | "remembered">(() =>
     data && ("assignee_id" in data || "assignee_type" in data)
       ? "manual"
-      : draft.manual.assigneeOrigin ?? (draft.manual.assigneeId ? "manual" : "project"),
+      : draft.manual.assigneeOrigin ?? (draft.manual.assigneeId
+        ? useIssueDraftStore.getState().hasDraft() ? "manual" : "remembered"
+        : "project"),
   );
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [startDate, setStartDate] = useState<string | null>(draft.manual.startDate);
@@ -366,13 +368,15 @@ export function ManualCreatePanel({
     enabled: !!projectId && !parentIssueId && !anchorCommentId,
   });
   useEffect(() => {
-    if (assigneeOrigin !== "project" || parentIssueId || anchorCommentId) return;
+    if (assigneeOrigin === "manual" || parentIssueId || anchorCommentId) return;
+    if (!projectId && assigneeOrigin === "remembered") return;
     if (projectId && !taskTeam.isSuccess) return;
     const roleName = parseRequirementsInput(draft.manual.requirementsText ?? "").criteria.items.length ? "sched" : "product";
     const role = projectId ? taskTeam.data?.config.roles[roleName] : undefined;
     const nextId = projectId ? role?.agent_id ?? currentUserId : undefined;
     const nextType = nextId ? role?.agent_id ? "agent" : "member" : undefined;
-    if (nextId === assigneeId && nextType === assigneeType) return;
+    if (nextId === assigneeId && nextType === assigneeType && assigneeOrigin === "project") return;
+    setAssigneeOrigin("project");
     setAssigneeId(nextId);
     setAssigneeType(nextType);
     setManual({ assigneeId: nextId, assigneeType: nextType, assigneeOrigin: "project" });
@@ -514,6 +518,8 @@ export function ManualCreatePanel({
     setUnavailablePropertyRemoved(false);
     setProjectId(undefined);
     setChildIssues([]);
+    const nextAssigneeOrigin = assigneeOrigin === "manual" ? "manual" : "remembered";
+    setAssigneeOrigin(nextAssigneeOrigin);
     // Keep status and assignee in this batch. Parent and stage stay in local
     // state, while other manual and shared fields reset for the next issue.
     setManual({
@@ -526,6 +532,7 @@ export function ManualCreatePanel({
       status,
       assigneeType,
       assigneeId,
+      assigneeOrigin: nextAssigneeOrigin,
       startDate: null,
       labelIds: [],
       propertyValues: {},
@@ -624,15 +631,15 @@ export function ManualCreatePanel({
         });
       } else {
         issue = await createIssueMutation.mutateAsync({
-          ...(projectId && !parentIssueId ? { use_project_assignee: assigneeOrigin === "project" } : {}),
+          ...(projectId && !parentIssueId ? { use_project_assignee: assigneeOrigin !== "manual" } : {}),
           title: title.trim(),
           acceptance_criteria: acceptanceCriteria,
           external_ticket_no: parentIssueId ? undefined : draft.manual.externalTicketNo || undefined,
           description,
           status,
           priority,
-          assignee_type: projectId && !parentIssueId && assigneeOrigin === "project" ? undefined : assigneeType,
-          assignee_id: projectId && !parentIssueId && assigneeOrigin === "project" ? undefined : assigneeId,
+          assignee_type: projectId && !parentIssueId && assigneeOrigin !== "manual" ? undefined : assigneeType,
+          assignee_id: projectId && !parentIssueId && assigneeOrigin !== "manual" ? undefined : assigneeId,
           start_date: startDate || undefined,
           due_date: dueDate || undefined,
           attachment_ids: activeAttachmentIds.length > 0 ? activeAttachmentIds : undefined,

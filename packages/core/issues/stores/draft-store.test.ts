@@ -74,6 +74,7 @@ describe("issue draft store — last assignee", () => {
     expect(draft.manual.title).toBe("");
     expect(draft.manual.assigneeType).toBe("member");
     expect(draft.manual.assigneeId).toBe("alice");
+    expect(draft.manual.assigneeOrigin).toBe("remembered");
   });
 
   it("clearDraft resets status for a fresh create", () => {

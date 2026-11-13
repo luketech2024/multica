@@ -45,7 +45,7 @@ export interface IssueCreateShared {
 }
 
 export interface IssueCreateManual {
-	assigneeOrigin?: "project" | "manual";
+  assigneeOrigin?: "project" | "manual" | "remembered";
   externalTicketNo?: string;
   requirementsText?: string;
   requirementsBoundsText?: string;
@@ -319,6 +319,7 @@ export const useIssueDraftStore = create<IssueDraftStore>()(
               ...emptyManual(),
               assigneeType: s.lastAssigneeType,
               assigneeId: s.lastAssigneeId,
+              assigneeOrigin: "remembered",
             },
             agent: emptyAgent(),
             activeMode: s.draft.activeMode,
@@ -337,6 +338,7 @@ export const useIssueDraftStore = create<IssueDraftStore>()(
                 ...emptyManual(),
                 assigneeType: s.lastAssigneeType,
                 assigneeId: s.lastAssigneeId,
+                assigneeOrigin: "remembered",
               },
               agent: emptyAgent(),
               activeMode: "agent",
