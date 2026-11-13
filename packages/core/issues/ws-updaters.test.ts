@@ -1096,6 +1096,17 @@ describe("onIssueDeleted", () => {
 // own dedicated cache (server-filtered to `scheduled=true`); every WS-driven
 // path that can shift Gantt membership has to invalidate the prefix or the
 // timeline goes stale.
+describe("parent delivery review cache", () => {
+  it("refreshes acceptance when a child changes while the parent revision stays the same", () => {
+    const qc = new QueryClient();
+    const reviewKey = [...issueKeys.all(WS_ID), "delivery-review", PARENT_ISSUE_ID, 18];
+    qc.setQueryData(reviewKey, { revision: 18, blockers: [], checks: [] });
+    qc.setQueryData(issueKeys.detail(WS_ID, ISSUE_ID), { ...baseIssue, parent_issue_id: PARENT_ISSUE_ID, revision: 12 });
+    onIssueUpdated(qc, WS_ID, { id: ISSUE_ID, revision: 13, status: "in_progress" });
+    expectInvalidated(qc, reviewKey);
+  });
+});
+
 describe("project gantt cache invalidation", () => {
   const PROJECT_ID = "project-1";
   let qc: QueryClient;

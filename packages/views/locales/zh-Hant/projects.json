@@ -706,6 +706,16 @@
     "manual_fingerprint": "手動輸入指紋"
   },
   "onespec": {
+    "auto_team": "選擇 OneSpec 後，自動綁定此工作區的內建通用智慧體。",
+    "builtin_team": "OneSpec 內建團隊",
+    "setup_ready": "已就緒",
+    "setup_pending_runtime": "待設定執行環境",
+    "setup_needs_setup": "待初始化",
+    "setup_disabled": "已停用",
+    "setup_access_denied": "缺少使用權限",
+    "setup_archived": "智慧體已封存",
+    "setup_runtime_offline": "執行環境離線",
+    "setup_binding_invalid": "請檢查智慧體綁定",
     "title": "OneSpec 工作流程",
     "enabled": "新任務啟用 OneSpec",
     "runtime": "執行環境",

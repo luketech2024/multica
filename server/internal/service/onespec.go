@@ -37,11 +37,11 @@ func ResolveOneSpecFlow(ctx context.Context, q *db.Queries, issue db.Issue, kind
 	if err != nil {
 		return workbench.OneSpecFlow{}, err
 	}
-	team, _, err := workbench.LoadProjectRoles(ctx, q, project)
+	setup, err := ResolveOneSpecTeam(ctx, q, issue.WorkspaceID, issue.CreatorID, &project, false)
 	if err != nil {
 		return workbench.OneSpecFlow{}, err
 	}
-	flow := workbench.OneSpecFlow{V: 1, Kind: kind, Phase: "requirements", Status: "preparing", RuleVersion: workbench.OneSpecVersion, Team: team, Artifacts: []workbench.OneSpecArtifact{}, Decisions: []workbench.OneSpecDecision{}, GitOperations: []workbench.OneSpecGitOperation{}}
+	flow := workbench.OneSpecFlow{V: 1, Kind: kind, Phase: "requirements", Status: "preparing", RuleVersion: workbench.OneSpecVersion, Team: setup.Team, Artifacts: []workbench.OneSpecArtifact{}, Decisions: []workbench.OneSpecDecision{}, GitOperations: []workbench.OneSpecGitOperation{}}
 	if runtime.Valid {
 		flow.RuntimeID = util.UUIDToString(runtime)
 	}

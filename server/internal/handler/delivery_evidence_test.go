@@ -26,9 +26,6 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 	properties, _ := json.Marshal(map[string]any{"workbench_handoff": handoff})
 	child := dbfx.Issue(t, "Verify export", testutil.Cols{"project_id": project, "parent_issue_id": parent, "status": "done", "properties": properties})
 	roles := workbench.DefaultProjectRoles()
-	for _, role := range []string{"dev", "sec", "ops"} {
-		roles.Roles[role] = workbench.ProjectRole{Enabled: false}
-	}
 	criteria := workbench.Requirements{V: 1, Version: 1, Items: []workbench.Item{{ID: "A-01", Text: "Export all rows", Checked: &workbench.Check{At: "confirmed", By: testUserID}, Covers: []string{child}}}, Bounds: []string{},
 		Gate: workbench.Gates{Spec: &workbench.GateCheck{PassedAt: "confirmed", PassedBy: testUserID}},
 		Plan: &workbench.ExecutionPlan{Version: 1, Issues: []string{child}},
@@ -46,7 +43,7 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 	}
 	evidence := workbench.DeliveryEvidence{IssueID: child, IssueRevision: childIssue.Revision, Summary: "Export tests passed", Passed: true,
 		Commit: strings.Repeat("a", 40), Reports: []workbench.DeliveryReport{{Name: "report", URL: "https://example.test/test-results"}},
-		RecordedBy: "forged", Role: "dev", Version: 99,
+		RecordedBy: "forged", Role: "dev", Version: 99, TaskHash: "forged",
 	}
 	call := func(revision int64, code int) IssueResponse {
 		t.Helper()
@@ -64,11 +61,11 @@ func TestDeliveryEvidencePersistsAttributionAndRejectsStaleRevisions(t *testing.
 		t.Fatal(err)
 	}
 	recorded := parsed.Delivery[child]
-	if recorded.RecordedBy != testUserID || recorded.Role != "test" || recorded.Version != 1 || recorded.RecordedAt == "" || recorded.RepoID != repo {
+	if recorded.RecordedBy != testUserID || recorded.Role != "test" || recorded.Version != 1 || recorded.RecordedAt == "" || recorded.RepoID != repo || len(recorded.TaskHash) != 64 {
 		t.Fatalf("evidence attribution was not server-owned: %+v", recorded)
 	}
 	call(current.Revision, http.StatusConflict)
-	dbfx.Exec(t, `UPDATE issue SET revision=revision+1 WHERE id=$1`, child)
+	dbfx.Exec(t, `UPDATE issue SET title=title || ' updated',revision=revision+1 WHERE id=$1`, child)
 	call(saved.Revision, http.StatusConflict)
 	var refreshed IssueResponse
 	testutil.Call(t, testHandler.GetIssue, testutil.WithURLParams(newRequest("GET", "/api/issues/"+parent, nil), "id", parent)).Want(http.StatusOK).JSON(&refreshed)

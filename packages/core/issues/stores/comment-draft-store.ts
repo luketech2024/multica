@@ -41,6 +41,7 @@ export type CommentDraftKey =
 
 interface CommentDraft {
   content: string;
+  requirementReference?: string;
   destinationIssueId?: string;
   /** Uploads (placeholders + completed) for this composer session. */
   attachments: DraftUpload[];
@@ -65,6 +66,7 @@ interface CommentDraftStore {
    * the draft body stays the single source of truth for what gets bound.
    */
   appendToDraftContent: (key: CommentDraftKey, markdown: string) => void;
+  referenceRequirement: (key: CommentDraftKey, quote: string) => void;
   /** Replace the upload list with completed attachments (legacy/compat path). */
   setAttachments: (key: CommentDraftKey, attachments: Attachment[]) => void;
   /** Record a placeholder the moment a file is picked (coordinator-owned). */
@@ -141,7 +143,7 @@ function writeDraft(
   if (existing && existing.content === content && existing.replyTarget === replyTarget && (existing.annotations ?? EMPTY_REPLY_ANNOTATIONS) === annotations && existing.attachments === uploads) {
     return drafts;
   }
-  return { ...drafts, [key]: { content, destinationIssueId: existing?.destinationIssueId, attachments: uploads, annotations, replyTarget, updatedAt: Date.now() } };
+  return { ...drafts, [key]: { content, requirementReference: content.trim() ? existing?.requirementReference : undefined, destinationIssueId: existing?.destinationIssueId, attachments: uploads, annotations, replyTarget, updatedAt: Date.now() } };
 }
 
 function uploadsOf(drafts: Record<string, CommentDraft>, key: string): DraftUpload[] {
@@ -173,9 +175,15 @@ export const useCommentDraftStore = create<CommentDraftStore>()(
       setDestination: (key, issueId) => set((state) => {
         const existing = state.drafts[key];
         if (existing?.destinationIssueId === issueId) return state;
-        return { drafts: { ...state.drafts, [key]: { content: "", attachments: [], ...existing, destinationIssueId: issueId, updatedAt: Date.now() } } };
+        return { drafts: { ...state.drafts, [key]: { ...(existing ?? { content: "", attachments: [] }), destinationIssueId: issueId, updatedAt: Date.now() } } };
       }),
       drafts: {},
+      referenceRequirement: (key, quote) => set((state) => {
+        const existing = state.drafts[key]?.content ?? "";
+        const content = existing.trim() ? `${existing.trimEnd()}\n\n> ${quote}` : `> ${quote}\n\n`;
+        const drafts = writeDraft(state.drafts, key, content, uploadsOf(state.drafts, key));
+        return { drafts: { ...drafts, [key]: { ...drafts[key]!, requirementReference: quote } } };
+      }),
       getDraft: (key) => get().drafts[key]?.content,
       getAttachments: (key) => deriveUploaded(uploadsOf(get().drafts, key)),
       getUploads: (key) => uploadsOf(get().drafts, key),

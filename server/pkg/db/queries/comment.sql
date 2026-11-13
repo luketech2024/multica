@@ -509,6 +509,9 @@ WHERE c.id = (SELECT id FROM root_of WHERE parent_id IS NULL LIMIT 1);
 -- the daemon GC TTL both read updated_at, so this consistency is load-bearing.
 WITH touched_issue AS (
     UPDATE issue SET
+        acceptance_criteria = CASE WHEN parent_issue_id IS NULL AND project_id IS NOT NULL
+          AND sqlc.arg(author_type)::text = 'member' AND sqlc.arg(content)::text !~* '^\s*/note(\s|$)'
+          THEN workbench_discussion_changed(acceptance_criteria) ELSE acceptance_criteria END,
         updated_at = now(),
         revision = revision + 1,
         last_activity_at = GREATEST(COALESCE(last_activity_at, updated_at), now())

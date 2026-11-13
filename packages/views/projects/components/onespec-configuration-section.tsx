@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useCurrentMember } from "@multica/core/permissions";
-import { runtimeListOptions } from "@multica/core/runtimes";
+import { isRuntimeUsableForUser, runtimeDisplayLabel, runtimeListOptions } from "@multica/core/runtimes";
 import { projectResourcesOptions } from "@multica/core/projects";
 import {
   oneSpecConfigurationOptions,
@@ -34,7 +34,7 @@ export function OneSpecConfigurationSection({
     enabled: !!projectId,
   });
   const save = useSaveOneSpecConfiguration(wsId, projectId);
-  const team = useProvisionOneSpecTeam(wsId, projectId ?? "");
+  const team = useProvisionOneSpecTeam(wsId, projectId);
   const [draft, setDraft] = useState<OneSpecConfiguration>();
   const current = draft ?? saved.data;
   const busy = save.isPending || team.isPending;
@@ -45,13 +45,27 @@ export function OneSpecConfigurationSection({
         ? t(($) => $.onespec.inherit)
         : t(($) => $.onespec.no_runtime),
     },
-    ...(runtimes.data ?? []).map((runtime) => ({
+    ...(runtimes.data ?? []).filter((runtime) =>
+      isRuntimeUsableForUser(runtime, member.userId) || runtime.id === (projectId ? current?.runtime_id : current?.default_runtime_id),
+    ).map((runtime) => ({
       value: runtime.id,
-      label: `${runtime.name} · ${runtime.status}`,
+      label: `${runtimeDisplayLabel(runtime)} · ${runtime.status}`,
     })),
   ];
   const update = (patch: Partial<OneSpecConfiguration>) => {
     if (current) setDraft({ ...current, ...patch });
+  };
+  const setupStatus = (status: string) => {
+    switch (status) {
+      case "ready": return t(($) => $.onespec.setup_ready);
+      case "pending_runtime": return t(($) => $.onespec.setup_pending_runtime);
+      case "needs_setup": return t(($) => $.onespec.setup_needs_setup);
+      case "disabled": return t(($) => $.onespec.setup_disabled);
+      case "access_denied": return t(($) => $.onespec.setup_access_denied);
+      case "archived": return t(($) => $.onespec.setup_archived);
+      case "runtime_offline": return t(($) => $.onespec.setup_runtime_offline);
+      default: return t(($) => $.onespec.setup_binding_invalid);
+    }
   };
   return (
     <section
@@ -140,10 +154,10 @@ export function OneSpecConfigurationSection({
             >
               {t(($) => $.onespec.save)}
             </Button>
-            {projectId && (
+            {(!projectId || current.enabled) && (
               <Button
                 variant="outline"
-                disabled={!!draft || !current.effective_runtime_id || busy}
+                disabled={!!draft || busy}
                 aria-busy={team.isPending}
                 onClick={() => team.mutate()}
               >
@@ -152,6 +166,19 @@ export function OneSpecConfigurationSection({
             )}
           </div>
         </fieldset>
+      )}
+      {saved.data?.setup && (!projectId || saved.data.enabled) && (
+        <div className="space-y-2">
+          <h4 className="text-label font-medium">{t(($) => $.onespec.builtin_team)}</h4>
+          <ul className="space-y-1">
+            {saved.data.setup.roles.map((role) => (
+              <li key={role.key} className="flex flex-wrap justify-between gap-2 text-caption">
+                <span>{role.name}</span>
+                <span className="text-muted-foreground">{setupStatus(role.status)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {(save.error || team.error) && (
         <p role="alert" className="text-caption text-destructive">

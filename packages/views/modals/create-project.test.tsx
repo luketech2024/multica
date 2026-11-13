@@ -47,6 +47,14 @@ vi.mock("@multica/core/hooks", () => ({
   useWorkspaceId: () => "workspace-1",
 }));
 
+vi.mock("@multica/core/auth", () => {
+  const state = { user: { id: "user-1" } };
+  return { useAuthStore: Object.assign(
+    (selector: (value: typeof state) => unknown) => selector(state),
+    { getState: () => state },
+  ) };
+});
+
 vi.mock("@multica/core/paths", () => ({
   useWorkspaceSlug: () => "workspace",
   useCurrentWorkspace: () => ({
@@ -216,6 +224,22 @@ vi.mock("sonner", () => ({
 import { CreateProjectModal } from "./create-project";
 
 describe("CreateProjectModal", () => {
+  it.each([false, true])("creates a project with OneSpec enabled only after explicit selection (%s)", async (enabled) => {
+    createProjectMock.mockClear();
+    const user = userEvent.setup();
+    renderWithI18n(<CreateProjectModal onClose={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText(/project title/i), "Optional OneSpec");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    const toggle = screen.getByRole("switch", { name: "Enable OneSpec for new tasks" });
+    expect(toggle).not.toBeChecked();
+    if (enabled) await user.click(toggle);
+    await user.click(screen.getByRole("button", { name: /^create project$/i }));
+    expect(createProjectMock).toHaveBeenCalledWith(expect.objectContaining({
+      onespec_enabled: enabled,
+      onespec_runtime_id: enabled ? null : undefined,
+    }));
+  });
   it("keeps repository profiles through a failed create and sends each with its source", async () => {
     createProjectMock.mockClear();
     createProjectMock.mockRejectedValueOnce(new Error("Save failed"));

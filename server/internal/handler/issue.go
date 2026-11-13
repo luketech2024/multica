@@ -3834,6 +3834,25 @@ func (h *Handler) updateIssueAtomically(ctx context.Context, workspaceID pgtype.
 		}
 	}
 	refreshUntouchedNullableIssueParams(&params, current, rawFields, workflowAssignee)
+	if params.Description.Valid && params.Description.String != current.Description.String && !current.ParentIssueID.Valid && current.ProjectID.Valid {
+		criteria, e := workbench.ParseRequirements(current.AcceptanceCriteria)
+		if e == nil && criteria.Gate.Spec == nil && criteria.Team != nil {
+			if len(params.AcceptanceCriteria) > 0 {
+				criteria, e = workbench.ParseRequirements(params.AcceptanceCriteria)
+			}
+			if e != nil {
+				return db.Issue{}, current, false, e
+			}
+			if criteria.Gate.Spec != nil {
+				return db.Issue{}, current, false, errIssueFieldConflict
+			}
+			if criteria.Phase == "" {
+				criteria.Phase = "draft"
+			}
+			criteria.DiscussionRevision++
+			params.AcceptanceCriteria, _ = json.Marshal(criteria)
+		}
+	}
 
 	issue, cancelledWakeups, err := updateIssueStoppingWakeups(ctx, qtx, params)
 	if err != nil {
@@ -4004,6 +4023,35 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		actorType, actorID := h.resolveActor(r, userID, workspaceID)
+		stored, _ := workbench.ParseRequirements(prevIssue.AcceptanceCriteria)
+		if stored.Phase != "" && actorType == "agent" {
+			if task, ok := h.taskFromRequestHeader(r); ok {
+				var read struct {
+					Revision *int64 `json:"discussion_revision"`
+				}
+				if task.IssueID != prevIssue.ID || task.Status != "running" || json.Unmarshal(task.IssueSnapshot, &read) != nil || read.Revision == nil || *read.Revision != stored.DiscussionRevision {
+					writeError(w, 409, "read the full current discussion before updating requirements: run multica issue comment list "+uuidToString(prevIssue.ID)+" --full --output json, read all returned messages, then refresh the issue and retry with its discussion_revision (omitted means 0)")
+					return
+				}
+			}
+		}
+		if stored.Phase != "" && actorType == "member" {
+			project, e := h.Queries.GetProjectInWorkspace(r.Context(), db.GetProjectInWorkspaceParams{ID: prevIssue.ProjectID, WorkspaceID: prevIssue.WorkspaceID})
+			if e != nil {
+				writeError(w, 409, "project is unavailable")
+				return
+			}
+			approver := uuidToString(prevIssue.CreatorID)
+			if row, e := h.Queries.GetOneSpecFlow(r.Context(), db.GetOneSpecFlowParams{WorkspaceID: prevIssue.WorkspaceID, IssueID: prevIssue.ID}); e == nil {
+				if flow, e := parseOneSpecFlow(row); e == nil {
+					approver = flow.ApproverID
+				}
+			}
+			if !oneSpecCanConfirm(workbench.OneSpecFlow{ApproverID: approver}, project, actorType, actorID) {
+				writeError(w, 403, "only the task creator or project lead can edit or confirm requirements")
+				return
+			}
+		}
 		criteria, criteriaErr := workbench.EditRequirements(prevIssue.AcceptanceCriteria, req.AcceptanceCriteria, req.ConfirmRequirements, actorID, actorType, time.Now())
 		if criteriaErr != nil {
 			writeError(w, http.StatusBadRequest, criteriaErr.Error())
@@ -4174,6 +4222,11 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	_, touchedID := rawFields["assignee_id"]
 	if req.ConfirmRequirements && prevIssue.Status != "paused" && !prevIssue.ParentIssueID.Valid {
 		confirmed, _ := workbench.ParseRequirements(params.AcceptanceCriteria)
+		if err := bindSelectedTaskScheduler(r.Context(), h.Queries, prevIssue, &confirmed); err != nil {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
+		params.AcceptanceCriteria, _ = json.Marshal(confirmed)
 		if confirmed.Team != nil {
 			role := confirmed.Team.Config.Roles["sched"]
 			if role.Enabled && role.AgentID != nil {
@@ -4190,6 +4243,13 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	// A handoff assignee passes the same gate as a hand-picked one.
 	// An agent's run may only move the issue from the step it works on.
 	callerType, _ := h.resolveActor(r, userID, workspaceID)
+	if callerType == "agent" && (touchedType || touchedID) && !prevIssue.ParentIssueID.Valid {
+		criteria, _ := workbench.ParseRequirements(prevIssue.AcceptanceCriteria)
+		if criteria.Phase != "" && criteria.Gate.Spec == nil && (params.AssigneeType != prevIssue.AssigneeType || params.AssigneeID != prevIssue.AssigneeID) {
+			writeError(w, 409, "keep the discussion agent assigned until the human confirms requirements")
+			return
+		}
+	}
 	callerRun := h.agentRunOnIssue(r, callerType, prevIssue)
 	handoff, err := h.applyIssueWorkflow(r.Context(), prevIssue, &params, req.Status != nil, touchedType || touchedID, req.EnterWorkflowStep, callerRun)
 	if err != nil {

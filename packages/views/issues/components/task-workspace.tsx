@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import type { AgentTask, Issue, TimelineEntry } from "@multica/core/types";
+import type { AgentTask, Issue } from "@multica/core/types";
 import { contentReferencesAttachment } from "@multica/core/types";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useAuthStore } from "@multica/core/auth";
@@ -10,7 +10,7 @@ import { useCurrentMember } from "@multica/core/permissions";
 import { useActorName } from "@multica/core/workspace/hooks";
 import { useCommentDraftStore } from "@multica/core/issues/stores";
 import { childIssuesOptions, issueDetailOptions, issueTasksOptions, issueTimelineOptions } from "@multica/core/issues/queries";
-import { useRetryIssueRun } from "@multica/core/issues/mutations";
+import { useCancelIssueRun, useRetryIssueRun } from "@multica/core/issues/mutations";
 import { currentExecutionIssues, taskWorkspaceProgress, conversationCommand, conversationDestination, canControlWorkspaceExecution, useControlIssueExecution, oneSpecFlowOptions, oneSpecConfigurationOptions } from "@multica/core/workbench/configuration";
 import { Button } from "@multica/ui/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@multica/ui/components/ui/sheet";
@@ -28,12 +28,14 @@ import { userInputOptions } from "@multica/core/issues/user-input";
 import type { TaskUserInput } from "@multica/core/issues/user-input-schema";
 import { UserInputMessages, UserInputComposer } from "./user-input-conversation";
 import { toast } from "sonner";
-import { buildCommentRunView, orderTimelineWithRuns, type CommentRun } from "./comment-runs";
-import { collectThreadReplies } from "./thread-utils";
+import { conversationRows, type ConversationMessage, type ConversationSource as Source } from "./workspace-conversation";
+
 import { OneSpecFlowPanel, OneSpecRequirementsPanel } from "./onespec-flow-panel";
 import { DeliveryReview } from "./delivery-review";
 import { DeliveryEvidence } from "./delivery-evidence";
 import { ExecutionControl } from "./execution-control";
+import { requirementsDiscussion, requirementsReviewReady, requirementsHandoff } from "@multica/core/workbench/configuration";
+import { RequirementsSummary } from "./requirements-summary";
 const ConversationFooterContext = createContext<ReactNode>(null);
 function ConversationFooter() { return useContext(ConversationFooterContext); }
 type ConversationTarget = {
@@ -41,48 +43,11 @@ type ConversationTarget = {
     reply?: DiscussionReplyTarget;
     explicit?: boolean;
 };
-type Source = {
-    issue: Issue;
-    timeline: readonly TimelineEntry[];
-    runs: readonly AgentTask[];
-};
-type ConversationRow = {
+type ConversationRow = ConversationMessage & {
     input?: TaskUserInput;
-    source: Issue;
-    id: string;
-    time: string;
-    entry?: TimelineEntry;
-    run?: CommentRun;
-    runs: CommentRun[];
-    replies: TimelineEntry[];
+    requirements?: boolean;
+    delivery?: boolean;
 };
-function conversationRows(sources: Source[]): ConversationRow[] {
-    return sources.flatMap(({ issue, timeline, runs }) => {
-        const view = buildCommentRunView(runs, timeline);
-        const byId = new Map(view.timeline.map((entry) => [entry.id, entry]));
-        const replies = new Map<string, TimelineEntry[]>();
-        for (const entry of view.timeline) {
-            if (entry.type === "comment" && entry.parent_id) {
-                const siblings = replies.get(entry.parent_id) ?? [];
-                siblings.push(entry);
-                replies.set(entry.parent_id, siblings);
-            }
-        }
-        const roots = view.timeline.filter((entry) => (entry.type === "comment" && !entry.parent_id) || (entry.type === "activity" && entry.action === "execution_control"));
-        return orderTimelineWithRuns(roots, view.standaloneRuns, byId).map((item): ConversationRow => {
-            const run = "task" in item ? item : undefined;
-            const entry = "task" in item ? byId.get(item.commentId ?? "") : item;
-            return {
-                source: issue,
-                id: entry?.id ?? run!.task.id,
-                time: entry?.created_at ?? run!.task.completed_at ?? run!.task.created_at,
-                entry, run,
-                runs: entry ? view.runs.get(entry.id) ?? [] : [],
-                replies: entry ? collectThreadReplies(entry.id, replies) : [],
-            };
-        });
-    }).sort((left, right) => left.time.localeCompare(right.time) || left.id.localeCompare(right.id));
-}
 export function TaskWorkspace({ issue, leadingAction, trailingActions, highlightCommentId, highlightRequestToken, readsInbox = true, peek = false, renderDetails }: {
     issue: Issue;
     leadingAction?: ReactNode;
@@ -136,6 +101,7 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
     onRetry: () => void;
 }) {
     const { t } = useT("issues");
+    const { t: projectText } = useT("projects");
     const wsId = useWorkspaceId();
     const sidebar = useSidebarSafe();
     const questionQueries = useQueries({ queries: sources.map((source) => userInputOptions(wsId, source.issue.id)) });
@@ -144,6 +110,7 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
     const pendingQuestions = questions.filter((question) => question.status === "pending");
     const question = pendingQuestions.find((item) => item.id === questionId) ?? (pendingQuestions.length === 1 ? pendingQuestions[0] : undefined);
     const questionPause = useControlIssueExecution(wsId, issue.id);
+    const cancelQuestionRun = useCancelIssueRun(issue.id);
     const member = useCurrentMember(wsId);
     const sidebarInitiallyOpen = useRef(sidebar?.open);
     const setSidebarOpen = sidebar?.setOpen;
@@ -158,14 +125,34 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
     const configuration = useQuery(oneSpecConfigurationOptions(wsId, issue.project_id!));
     const execution = sources.slice(1).map((source) => source.issue);
     const progress = taskWorkspaceProgress(issue, execution, sources.flatMap((source) => source.runs));
+    const discussing = requirementsDiscussion(issue) && (!flow.data?.flow || flow.data.flow.phase === "requirements");
+    const handoff = !!issue.acceptance_criteria?.gate.spec && requirementsHandoff(flow.data?.flow ?? null);
+    const flowAttention = !discussing && !handoff && ( (!!flow.data?.flow && ["awaiting_confirmation", "ready"].includes(flow.data.flow.status))
+        || (!flow.data?.flow && !!configuration.data?.enabled && !issue.acceptance_criteria?.plan));
+    const formal = !discussing && !flowAttention && !flow.data?.flow && ["requirements", "plan", "change", "review", "recovery", "accepted"].includes(progress.step);
+    const confirmedAt = issue.acceptance_criteria?.gate.spec?.passed_at;
+    const anchorRequirements = !!confirmedAt && !issue.acceptance_criteria?.change && (handoff || (formal && ["requirements", "plan"].includes(progress.step)));
+    const deliveryAt = Object.values(issue.acceptance_criteria?.delivery ?? {}).map((evidence) => evidence.recorded_at)
+        .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
+    const anchorDelivery = formal && ["review", "accepted"].includes(progress.step) && !!deliveryAt;
     const rows = useMemo(() => {
-        const entries = conversationRows(sources);
+        const entries: ConversationRow[] = conversationRows(sources);
         for (const input of questions) {
             const source = sources.find((item) => item.issue.id === input.issue_id);
             if (source) entries.push({ input, source: source.issue, id: input.id, time: input.created_at, runs: [], replies: [] });
         }
-        return entries.sort((left, right) => left.time.localeCompare(right.time) || left.id.localeCompare(right.id));
-    }, [sources, questions]);
+        if (anchorRequirements && confirmedAt) {
+            // Run timestamps are serialized to seconds. Confirmation precedes
+            // the execution it enqueues within that same second.
+            const time = new Date(Math.floor(Date.parse(confirmedAt) / 1000) * 1000).toISOString();
+            entries.push({ requirements: true, source: issue, id: `requirements:${issue.acceptance_criteria!.version}`, time, runs: [], replies: [] });
+        }
+        if (anchorDelivery && deliveryAt) {
+            entries.push({ delivery: true, source: issue, id: `delivery:${issue.acceptance_criteria!.version}`, time: deliveryAt, runs: [], replies: [] });
+        }
+        return entries.sort((left, right) => Date.parse(left.time) - Date.parse(right.time)
+            || Number(!!right.requirements) - Number(!!left.requirements) || left.id.localeCompare(right.id));
+    }, [sources, questions, anchorRequirements, confirmedAt, anchorDelivery, deliveryAt, issue]);
     const [target, setTarget] = useState<ConversationTarget>(() => {
         const drafts = useCommentDraftStore.getState().drafts;
         const existing = Object.entries(drafts).filter(([key, draft]) => sources.some((source) => key === `new:${source.issue.id}` || (key.startsWith(`reply:${source.issue.id}:`) && !key.startsWith(`reply:${source.issue.id}:input:`)))
@@ -189,7 +176,7 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
     const composerRef = useRef<HTMLDivElement>(null);
     const cutoff = sources.slice(1).flatMap((source) => source.runs.map((run) => run.created_at)).sort()[0]
         ?? execution.map((child) => child.created_at).sort()[0];
-    const recentRows = cutoff ? rows.filter((row) => row.time >= cutoff).slice(-20) : rows.slice(-20);
+    const recentRows = cutoff ? rows.filter((row) => row.requirements || Date.parse(row.time) >= Date.parse(cutoff)).slice(-20) : rows.slice(-20);
     const rowsShown = history ? rows : recentRows;
     const landedHighlight = useRef("");
     useEffect(() => {
@@ -215,14 +202,25 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
                 composerRef.current?.querySelector<HTMLElement>("[contenteditable=true]")?.focus();
         });
     };
-    const flowAttention = (!!flow.data?.flow && ["awaiting_confirmation", "ready"].includes(flow.data.flow.status))
-        || (!flow.data?.flow && !!configuration.data?.enabled && !issue.acceptance_criteria?.plan);
-    const formal = !flowAttention && !flow.data?.flow && ["requirements", "plan", "change", "review", "recovery", "accepted"].includes(progress.step);
+    const handoffStageLabels: Record<string, string> = {
+        requirements: projectText(($) => $.onespec.requirements), design: projectText(($) => $.onespec.design),
+        plan: projectText(($) => $.onespec.plan), branch: projectText(($) => $.onespec.branch),
+        release_preparation: projectText(($) => $.onespec.release_preparation),
+    };
+    const latestDiscussionRun = sources[0]?.runs.toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    const emptyDiscussion = discussing && !issue.acceptance_criteria?.items.length && !issue.description?.trim() && !latestDiscussionRun && execution.length === 0;
+    useEffect(() => {
+        if (emptyDiscussion && rows.length === 0) composerRef.current?.querySelector<HTMLButtonElement>("[data-testid=comment-composer-shell]")?.click();
+    }, [emptyDiscussion, rows.length]);
     const actionable = progress.attention.filter((child) => !child.assignee_id || sources.find((source) => source.issue.id === child.id)?.runs.toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0]?.status === "failed");
     const needsAction = !issue.workbench_pause && (formal || flowAttention || actionable.length > 0 || progress.startable.length > 0);
-    const status = issue.workbench_pause ? t(($) => $.execution_control[issue.workbench_pause!.phase])
+    const status = discussing ? (progress.active.length || progress.queued.length ? t(($) => $.discussion.replying)
+        : latestDiscussionRun?.status === "cancelled" ? t(($) => $.discussion.paused)
+        : requirementsReviewReady(issue.acceptance_criteria, flow.data?.flow) ? t(($) => $.discussion.ready)
+        : rows.length ? t(($) => $.discussion.waiting) : t(($) => $.discussion.title)) : issue.workbench_pause ? t(($) => $.execution_control[issue.workbench_pause!.phase])
         : progress.paused.length ? progress.paused.map((child) => `${child.identifier} · ${t(($) => $.execution_control[child.workbench_pause!.phase])}`).join(" · ")
             : pendingQuestions.length ? t(($) => $.conversation.waiting)
+            : handoff ? handoffStageLabels[flow.data!.flow!.phase] ?? t(($) => $.task_workspace.attention)
             : formal ? t(($) => $.next_step.stages[progress.step])
                 : progress.attention.length ? t(($) => $.task_workspace.blocked, { count: progress.attention.length })
                     : needsAction ? t(($) => $.task_workspace.attention)
@@ -230,14 +228,23 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
                             : progress.queued.length ? t(($) => $.task_workspace.queued, { count: progress.queued.length })
                                 : t(($) => $.next_step.stages[progress.step]);
     const openDetails = (id: string) => { setDetailsId(id); setDetailsOpen(true); };
+    const requirementsSummary = (<RequirementsSummary issue={issue} onDiscuss={() => {
+            setTarget({ issueId: issue.id, explicit: true });
+            requestAnimationFrame(() => {
+              composerRef.current?.querySelector<HTMLButtonElement>("[data-testid=comment-composer-shell]")?.click();
+              composerRef.current?.querySelector<HTMLElement>("[contenteditable=true]")?.focus();
+            });
+          }}/>);
     const actionMessage = (<div className="pb-4">
           {questionQueries.some((query) => query.isError) && <p role="alert">{t(($) => $.conversation.load_failed)} <Button size="sm" variant="ghost" onClick={() => questionQueries.forEach((query) => void query.refetch())}>{t(($) => $.release_readiness.retry)}</Button></p>}
           {(!dataReady || flow.isError || configuration.isError) && <p role="alert">{t(($) => $.next_step.read_failed)} <Button variant="ghost" onClick={() => { onRetry(); void flow.refetch(); void configuration.refetch(); }}>{t(($) => $.release_readiness.retry)}</Button></p>}
           {(issue.workbench_pause || progress.paused.length > 0) && <p role="status" className="py-3 text-caption text-muted-foreground">{status}</p>}
           {issue.workbench_pause?.phase === "unknown" && <ExecutionControl issue={issue}/>}
-          {needsAction && <section data-testid="workspace-action" aria-label={t(($) => $.task_workspace.system_message)} className="rounded-xl bg-muted/40 p-4">
+          {!anchorRequirements && (discussing || handoff) && requirementsSummary}
+          {discussing && latestDiscussionRun?.status === "failed" && <ExecutionAction issue={issue} latest={latestDiscussionRun} startable={false} onDiscuss={() => setTarget({ issueId: issue.id })} onDetails={() => openDetails(issue.id)}/>}
+          {needsAction && ((!anchorRequirements && !anchorDelivery) || actionable.length > 0 || progress.startable.length > 0) && <section data-testid="workspace-action" aria-label={t(($) => $.task_workspace.system_message)} className="rounded-xl bg-muted/40 p-4">
             <fieldset disabled={!dataReady} className="space-y-4">
-              {flowAttention ? <OneSpecFlowPanel issue={issue}/> : formal && (["review", "recovery", "accepted"].includes(progress.step)
+              {flowAttention ? <OneSpecFlowPanel issue={issue} compact/> : formal && !anchorRequirements && !anchorDelivery && (["review", "recovery", "accepted"].includes(progress.step)
                 ? <><DeliveryEvidence issue={issue}/><DeliveryReview issue={issue}/></>
                 : <OneSpecRequirementsPanel issue={issue}/>)}
               {[...actionable, ...progress.startable].map((child) => <ExecutionAction key={child.id} issue={child} startable={progress.startable.includes(child)} latest={sources.find((source) => source.issue.id === child.id)?.runs.toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0]} onDiscuss={() => setTarget({ issueId: child.id, explicit: true })} onDetails={() => openDetails(child.id)}/>)}
@@ -269,17 +276,15 @@ function WorkspaceContent({ issue, sources, leadingAction, trailingActions, high
     <div className="mx-auto flex min-h-0 w-full max-w-[880px] flex-1 flex-col px-6 max-md:px-3">
     <div className="py-4 text-center">
           {!history && rows.length > rowsShown.length && <Button variant="ghost" size="sm" onClick={() => setHistory(true)}>{t(($) => $.task_workspace.history, { count: rows.length - rowsShown.length })}</Button>}
-          {!rows.length && <p className="text-caption text-muted-foreground">{t(($) => $.task_workspace.empty)}</p>}
+          {!rows.length && <p className="text-caption text-muted-foreground">{t(($) => emptyDiscussion ? $.discussion.invitation : $.task_workspace.empty)}</p>}
         </div>
-      <ConversationFooterContext.Provider value={actionMessage}>      <Virtuoso components={{ Footer: ConversationFooter }} ref={virtuoso} data={rowsShown} followOutput="smooth" increaseViewportBy={500} computeItemKey={(_, row) => `${row.source.id}:${row.id}`} itemContent={(_, row) => row.input ? <UserInputMessages requests={[row.input]} selectedId={question?.id} onSelect={setQuestionId}/> : <WorkspaceMessage row={row} onReply={chooseReply} highlightCommentId={highlightCommentId} onDetails={() => openDetails(row.source.id)}/>}/></ConversationFooterContext.Provider>
-
-    </div>
+      <ConversationFooterContext.Provider value={actionMessage}>      <Virtuoso components={{ Footer: ConversationFooter }} ref={virtuoso} data={rowsShown} followOutput="smooth" increaseViewportBy={500} computeItemKey={(_, row) => `${row.source.id}:${row.id}`} itemContent={(_, row) => row.delivery ? <section data-testid="workspace-delivery" className="my-4 space-y-4 rounded-xl bg-muted/40 p-4"><fieldset disabled={!dataReady} className="space-y-4"><DeliveryEvidence issue={issue}/><DeliveryReview issue={issue}/></fieldset></section> : row.requirements ? <section data-testid="workspace-confirmed-requirements" className="my-4 rounded-xl bg-muted/40 p-4"><fieldset disabled={!dataReady}>{handoff ? requirementsSummary : <OneSpecRequirementsPanel issue={issue}/>}</fieldset></section> : row.input ? <UserInputMessages requests={[row.input]} selectedId={question?.id} onSelect={setQuestionId} onCorrect={(request, text) => { setTarget({ issueId: request.issue_id, explicit: true }); useCommentDraftStore.getState().appendToDraftContent(`new:${request.issue_id}`, text); }}/> : <WorkspaceMessage row={row} onReply={chooseReply} highlightCommentId={highlightCommentId} onDetails={() => openDetails(row.source.id)}/>}/></ConversationFooterContext.Provider>    </div>
     <div ref={composerRef} className="mx-auto w-full max-w-[880px] shrink-0 px-6 pb-4 pt-2 max-md:px-3">
-      {question ? <UserInputComposer key={question.id} wsId={wsId} request={question} pauseControl={canControlWorkspaceExecution(issue, member.role) ? { pending: questionPause.isPending, onPause: async () => {
-        try { await questionPause.mutateAsync({ action: "pause" }); return true; }
+      {question ? <UserInputComposer key={question.id} wsId={wsId} request={question} pauseControl={canControlWorkspaceExecution(issue, member.role) ? { pending: questionPause.isPending || cancelQuestionRun.isPending, onPause: async () => {
+        try { if (discussing) { for (const run of sources[0]?.runs ?? []) { if (["running", "queued", "dispatched", "waiting_local_directory"].includes(run.status)) await cancelQuestionRun.mutateAsync(run.id); } } else await questionPause.mutateAsync({ action: "pause" }); return true; }
         catch { toast.error(t(($) => $.execution_control.failed)); return false; }
       } } : undefined} />
-        : <WorkspaceComposer key={`${target.issueId}:${target.reply?.parentId ?? "task"}`} parent={issue} sources={sources} target={target} dataReady={dataReady} onClearReply={() => setTarget({ issueId: target.issueId })}/>}
+        : <WorkspaceComposer key={`${target.issueId}:${target.reply?.parentId ?? "task"}`} parent={issue} discussing={discussing} sources={sources} target={target} dataReady={dataReady} onClearReply={() => setTarget({ issueId: target.issueId })}/>}
     </div>
   </div>;
 }
@@ -320,14 +325,15 @@ function WorkspaceMessage({ row, onReply, highlightCommentId, onDetails }: {
                 draftThreadId: reply.draftThreadId ?? row.entry?.id,
                 steerByDefault: reply.steerByDefault ?? ((task) => row.runs.some((run) => run.task.id === task.id) || row.run?.task.id === task.id),
             }) }}>
-    <div className="pb-5" data-source-issue={row.source.id}>
+    <div className="pb-5" data-source-issue={row.source.id} data-conversation-row={row.id}>
       <Button variant="ghost" size="sm" className="mb-1 max-w-full truncate text-caption text-muted-foreground" onClick={onDetails}>{row.source.identifier} · {row.source.title}</Button>
       {row.run ? <AgentRunComment run={row.run} standalone commentProps={props} highlightedId={highlightCommentId}/> : props && <CommentCard {...props}/>}
     </div>
   </CurrentIssueRenderContextProvider>;
 }
-function WorkspaceComposer({ parent, sources, target, onClearReply, dataReady }: {
+function WorkspaceComposer({ parent, sources, target, onClearReply, dataReady, discussing }: {
     parent: Issue;
+    discussing: boolean;
     sources: Source[];
     target: ConversationTarget;
     onClearReply: () => void;
@@ -360,12 +366,13 @@ function WorkspaceComposer({ parent, sources, target, onClearReply, dataReady }:
     const resumeIssue = parent.workbench_pause ? parent : paused.length === 1 ? paused[0]!.issue : source?.issue;
     const pauseControl = useControlIssueExecution(wsId, parent.id);
     const resumeControl = useControlIssueExecution(wsId, resumeIssue?.id ?? parent.id);
+    const cancelReply = useCancelIssueRun(parent.id);
     const command = conversationCommand(draft);
     const localCommand = command === "pause" || (command === "resume" && !!resumeIssue?.workbench_pause);
     const canControl = canControlWorkspaceExecution(parent, member.role);
     const active = sources.some((item) => item.runs.some((run) => ["running", "queued", "dispatched", "waiting_local_directory"].includes(run.status)));
     const stopping = parent.workbench_pause?.phase === "stopping";
-    const busy = pauseControl.isPending || resumeControl.isPending;
+    const busy = pauseControl.isPending || resumeControl.isPending || cancelReply.isPending;
     const reconcile = pauseControl.mutateAsync;
     useEffect(() => {
         if (!stopping || !canControl || busy || !parent.revision)
@@ -384,6 +391,12 @@ function WorkspaceComposer({ parent, sources, target, onClearReply, dataReady }:
     const control = async (action: "pause" | "resume") => {
         if (!canControl)
             throw new Error(t(($) => $.task_workspace.control_unavailable));
+        if (discussing && action === "pause") {
+            for (const run of sources[0]?.runs ?? []) {
+                if (["running", "queued", "dispatched", "waiting_local_directory"].includes(run.status)) await cancelReply.mutateAsync(run.id);
+            }
+            return;
+        }
         const controlIssue = action === "pause" ? parent : resumeIssue;
         if (!controlIssue)
             throw new Error(t(($) => $.task_workspace.choose_target));

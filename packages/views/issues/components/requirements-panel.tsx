@@ -1,5 +1,6 @@
 "use client";
 
+import { requirementsReady } from "@multica/core/workbench/configuration";
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,8 @@ export function RequirementsPanel({ issue, detailsTarget, oneSpecManaged = false
 
   const category = issueStatusCategory(issue);
   const locked = !!issue.acceptance_criteria?.gate.spec;
+  if (!draft && !criteria.items.length && !criteria.bounds.length && !locked && !criteria.change
+    && ["todo", "backlog", "unstarted"].includes(category ?? "")) return null;
   const editingChange = issue.status === "paused" && criteria.change?.phase === "editing";
   const readOnly = locked || (!editingChange && !["todo", "backlog", "unstarted"].includes(category ?? ""));
   const disabled = readOnly || update.isPending;
@@ -68,7 +71,7 @@ export function RequirementsPanel({ issue, detailsTarget, oneSpecManaged = false
               type="checkbox"
               aria-label={t(($) => $.requirements.check, { id: item.id })}
               checked={!!item.checked}
-              disabled={disabled || !item.id || !!draft}
+              disabled={disabled || !item.id || !!draft || !requirementsReady(criteria)}
               onChange={(event) => {
                 const value = { ...criteria, items: criteria.items.map((entry, i) => i === index
                   ? { ...entry, checked: event.target.checked ? { at: "", by: "" } : null }
@@ -120,7 +123,7 @@ export function RequirementsPanel({ issue, detailsTarget, oneSpecManaged = false
           <Button size="sm" variant="outline" disabled={disabled || criteria.items.some((item) => !item.text.trim())} onClick={() => void save(criteria)}>{t(($) => $.requirements.save)}</Button>
           <Button size="sm" variant="ghost" disabled={disabled} onClick={() => { setDraft(undefined); setError(undefined); }}>{t(($) => $.requirements.discard)}</Button>
         </>}
-        {!managed && <Button size="sm" disabled={disabled || !!draft || criteria.items.length === 0 || criteria.items.some((item) => !item.checked)} aria-busy={update.isPending} onClick={() => void save(criteria, true)}>{t(($) => $.requirements.confirm)}</Button>}
+        {!managed && requirementsReady(criteria) && <Button size="sm" disabled={disabled || !!draft || criteria.items.length === 0 || criteria.items.some((item) => !item.checked)} aria-busy={update.isPending} onClick={() => void save(criteria, true)}>{t(($) => $.requirements.confirm)}</Button>}
       </div>}
     </section>
   );

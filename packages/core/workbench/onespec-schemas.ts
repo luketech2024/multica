@@ -2,6 +2,20 @@ import { z } from "zod";
 import { ProjectRolesSchema } from "./schemas";
 
 export const OneSpecConfigurationSchema = z.object({
+  runtime_source: z.enum(["workspace", "project"]).optional().catch(undefined),
+  setup: z.object({
+    status: z.string(),
+    roles: z.array(z.object({
+      key: z.string(),
+      name: z.string(),
+      enabled: z.boolean(),
+      agent_id: z.string().nullable(),
+      runtime_id: z.string().nullable(),
+      status: z.string(),
+      binding_source: z.string(),
+    })),
+    team: ProjectRolesSchema,
+  }).optional(),
   enabled: z.boolean().default(false),
   default_runtime_id: z.string().nullable().default(null),
   runtime_id: z.string().nullable().default(null),
@@ -21,7 +35,17 @@ const OneSpecTaskSchema = z.object({
   serial_group: z.string(),
   expected: z.array(z.string()),
 });
+const DocumentFileSchema = z.object({
+  ref: z.object({ repository_id: z.string(), path: z.string(), commit: z.string(), digest: z.string() }),
+  content: z.string(), verified: z.boolean().default(false), error: z.string().default(""),
+});
+export const RequirementsDocumentSchema = DocumentFileSchema.extend({
+  prototype_status: z.string().optional(),
+  prototype: DocumentFileSchema.nullish(),
+});
 export const OneSpecArtifactSchema = z.object({
+  document: RequirementsDocumentSchema.nullish(),
+  draft_revision: z.number().int().nonnegative().optional().catch(0),
   delivery_digest: z.string().optional(),
   release_revision: z.number().optional(),
   stage: z.string(),

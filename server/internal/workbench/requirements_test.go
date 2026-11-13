@@ -54,6 +54,8 @@ func TestRequirementsEditingClearsCheckAndServerOwnsAttribution(t *testing.T) {
 
 func TestRequirementsConfirmationLocksSnapshot(t *testing.T) {
 	raw, criteria := edit(t, nil, Requirements{V: 1, Items: []Item{{Text: "First"}}, Bounds: []string{"No billing"}}, false, "member")
+	criteria.Phase = "ready"
+	raw, criteria = edit(t, raw, criteria, false, "agent")
 	criteria.Items[0].Checked = &Check{}
 	raw, criteria = edit(t, raw, criteria, true, "member")
 	if criteria.Gate.Spec == nil || criteria.Gate.Spec.PassedBy != "member-1" {
@@ -122,5 +124,65 @@ func TestRequirementsRejectMalformedDataWithoutErasingIt(t *testing.T) {
 	}
 	if _, err := EditRequirements(nil, []byte(`{"v":1,"items":[{"text":"`+strings.Repeat("x", 121)+`"}]}`), false, "member-1", "member", time.Now()); err == nil {
 		t.Fatal("unbounded text accepted")
+	}
+}
+
+func TestRequirementsDiscussionVersions(t *testing.T) {
+	raw, criteria := edit(t, nil, Requirements{V: 1, Phase: "draft", Items: []Item{{Text: "Open the test homepage"}, {Text: "Provide a verified URL"}}}, false, "agent")
+	if criteria.Phase != "draft" || RequirementsReady(criteria) {
+		t.Fatal("draft was submitted implicitly")
+	}
+	criteria.Phase = "ready"
+	raw, criteria = edit(t, raw, criteria, false, "agent")
+	if !RequirementsReady(criteria) || criteria.DraftRevision != 1 {
+		t.Fatal(criteria)
+	}
+	for i := range criteria.Items {
+		criteria.Items[i].Checked = &Check{}
+	}
+	raw, criteria = edit(t, raw, criteria, false, "member")
+	criteria.DiscussionRevision++
+	raw, _ = json.Marshal(criteria)
+	if RequirementsReady(criteria) {
+		t.Fatal("new discussion retained confirmation")
+	}
+	if _, err := EditRequirements(raw, nil, true, "member-1", "member", time.Now()); err == nil {
+		t.Fatal("stale confirmation accepted")
+	}
+	input, _ := json.Marshal(criteria)
+	if _, err := EditRequirements(raw, input, false, "agent", "agent", time.Now()); err == nil {
+		t.Fatal("stale answer acknowledged newer messages")
+	}
+	criteria.CoveredDiscussionRevision = criteria.DiscussionRevision
+	raw, criteria = edit(t, raw, criteria, false, "agent")
+	if criteria.DraftRevision != 1 || criteria.Items[0].Checked == nil || !RequirementsReady(criteria) {
+		t.Fatal("answer-only update lost checks")
+	}
+	criteria.Items[0].Text = "Open the public homepage"
+	raw, criteria = edit(t, raw, criteria, false, "agent")
+	if criteria.DraftRevision != 2 || criteria.Items[0].Checked != nil || criteria.Items[1].Checked == nil {
+		t.Fatal("changed item did not reset independently")
+	}
+	criteria.Items[0].Checked = &Check{}
+	_, criteria = edit(t, raw, criteria, true, "member")
+	if criteria.Gate.Spec == nil {
+		t.Fatal("current checked draft did not confirm")
+	}
+}
+
+func TestRequirementsLegacyChecksRemainConfirmable(t *testing.T) {
+	old := []byte(`{"v":1,"items":[{"id":"A-01","text":"Existing requirement"}],"bounds":[]}`)
+	current, _ := ParseRequirements(old)
+	current.Items[0].Checked = &Check{}
+	_, checked := edit(t, old, current, true, "member")
+	if checked.Phase != "" || checked.Gate.Spec == nil {
+		t.Fatal("checkbox migrated legacy draft")
+	}
+	current.Team = &ProjectTeamSnapshot{ProjectID: "project"}
+	old, _ = json.Marshal(current)
+	current.Items[0].Text = "Updated requirement"
+	_, changed := edit(t, old, current, false, "member")
+	if changed.Phase != "draft" || RequirementsReady(changed) {
+		t.Fatal("content edit did not enter discussion")
 	}
 }

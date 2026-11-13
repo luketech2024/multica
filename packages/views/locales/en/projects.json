@@ -706,6 +706,16 @@
     "manual_fingerprint": "Enter fingerprint manually"
   },
   "onespec": {
+    "auto_team": "Enabling OneSpec automatically binds the built-in agents for this workspace.",
+    "builtin_team": "Built-in OneSpec team",
+    "setup_ready": "Ready",
+    "setup_pending_runtime": "Configure a runtime",
+    "setup_needs_setup": "Initialize team",
+    "setup_disabled": "Disabled",
+    "setup_access_denied": "Access required",
+    "setup_archived": "Agent archived",
+    "setup_runtime_offline": "Runtime offline",
+    "setup_binding_invalid": "Check agent binding",
     "title": "OneSpec workflow",
     "enabled": "Enable OneSpec for new tasks",
     "runtime": "Runtime",

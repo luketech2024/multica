@@ -509,7 +509,7 @@ func isCursorProviderNetworkError(lower string) bool {
 	// an arbitrary RetriableError or a substring quoted by another tool.
 	firstLine, _, _ := strings.Cut(lower, "\n")
 	switch strings.TrimSpace(firstLine) {
-	case "retriableerror: connection stalled", "retriableerror: connection stalled repeatedly":
+	case "retriableerror: connection stalled", "retriableerror: connection stalled repeatedly", "retriableerror: [unavailable] error":
 		return true
 	}
 	return false

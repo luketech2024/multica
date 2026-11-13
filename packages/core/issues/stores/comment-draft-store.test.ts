@@ -6,6 +6,21 @@ import type { Attachment } from "../../types";
 
 const flush = () => new Promise((resolve) => queueMicrotask(() => resolve(null)));
 
+it("marks referenced requirement drafts without treating ordinary drafts as changes", () => {
+  const store = useCommentDraftStore.getState();
+  const key = "new:requirement-change";
+  store.setDraft(key, "A general question");
+  expect(useCommentDraftStore.getState().drafts[key]?.requirementReference).toBeUndefined();
+  store.referenceRequirement(key, "A-01 Homepage");
+  expect(store.getDraft(key)).toContain("A general question");
+  store.setDraft(key, "Please add a contact link");
+  expect(useCommentDraftStore.getState().drafts[key]?.requirementReference).toBe("A-01 Homepage");
+  store.clearDraft(key);
+  store.setDraft(key, "Another ordinary message");
+  expect(useCommentDraftStore.getState().drafts[key]?.requirementReference).toBeUndefined();
+  store.clearDraft(key);
+});
+
 it("retains the conversation destination across text and attachment updates", () => {
   const store = useCommentDraftStore.getState();
   const key = "new:destination-test";

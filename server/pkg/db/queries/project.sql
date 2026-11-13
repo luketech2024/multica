@@ -61,4 +61,5 @@ SELECT project_id,
 FROM issue
 WHERE workspace_id = sqlc.arg('workspace_id')::uuid
   AND project_id = ANY(sqlc.arg('project_ids')::uuid[])
+  AND parent_issue_id IS NULL
 GROUP BY project_id;

@@ -6,6 +6,8 @@ import type {
 import { createDraftStore } from "../drafts/create-draft-store";
 
 interface ProjectDraft {
+  oneSpecEnabled?: boolean;
+  oneSpecRuntimeId?: string;
   repositoryProfiles?: Record<string, RepositoryProfileInput>;
   businessTemplate?: { id: string; revision: number };
   workbenchRoles?: ProjectRoles["config"];

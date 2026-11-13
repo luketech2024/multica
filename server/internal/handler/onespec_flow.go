@@ -153,9 +153,39 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	preparedTeam := false
+	// A pending first stage may acquire its initial binding after runtime setup.
+	if action == "run" && canConfirm && flow.Phase == "requirements" && flow.Status == "preparing" && len(flow.Artifacts) == 0 && flow.Team.Config.Roles["product"].AgentID == nil {
+		active, e := q.ListActiveTasksByIssue(r.Context(), issue.ID)
+		if e != nil {
+			writeError(w, 500, "failed to inspect pending execution")
+			return
+		}
+		if len(active) == 0 {
+			setup, e := service.ResolveOneSpecTeam(r.Context(), q, issue.WorkspaceID, member.UserID, &project, true)
+			if e != nil {
+				writeError(w, 500, "failed to prepare OneSpec team")
+				return
+			}
+			flow.Team = setup.Team
+			preparedTeam = true
+			runtime, e := service.OneSpecRuntime(r.Context(), q, issue.WorkspaceID, project.ID)
+			if e != nil {
+				writeError(w, 500, "failed to read runtime configuration")
+				return
+			}
+			flow.RuntimeID = ""
+			if runtime.Valid {
+				flow.RuntimeID = uuidToString(runtime)
+			}
+		}
+	}
 	role := flow.Team.Config.Roles[workbench.OneSpecStageRole(flow.Phase)]
 	coordinator := flow.Team.Config.Roles["sched"]
 	allowedAgent := actorType == "agent" && role.AgentID != nil && *role.AgentID == actorID
+	if flow.Phase == "requirements" && issue.AssigneeType.String == "agent" && uuidToString(issue.AssigneeID) == actorID && actorType == "agent" {
+		allowedAgent = true
+	}
 	isCoordinator := actorType == "agent" && coordinator.AgentID != nil && *coordinator.AgentID == actorID
 	criteria, err := workbench.ParseRequirements(issue.AcceptanceCriteria)
 	if err != nil {
@@ -169,6 +199,11 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if action == "run" {
+		pause, e := workbench.ParseExecutionPause(issue.Properties)
+		if e != nil || pause != nil {
+			writeError(w, 409, "task is paused; resume before starting execution")
+			return
+		}
 		if !canConfirm {
 			writeError(w, 403, "only the task creator or project lead can start execution")
 			return
@@ -186,14 +221,43 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 			writeError(w, 403, "stage agent is inaccessible")
 			return
 		}
-		if issue.AssigneeID != agentID || issue.AssigneeType.String != "agent" {
-			issue, e = q.UpdateIssue(r.Context(), db.UpdateIssueParams{ID: issue.ID, ExpectedRevision: pgtype.Int8{Int64: issue.Revision, Valid: true}, AssigneeType: strToText("agent"), AssigneeID: agentID, ProjectID: issue.ProjectID, ParentIssueID: issue.ParentIssueID, StartDate: issue.StartDate, DueDate: issue.DueDate, Stage: issue.Stage, DuplicateOfIssueID: issue.DuplicateOfIssueID})
+		stages := workbench.OneSpecStages(flow.Kind)
+		if len(stages) > 1 && flow.Phase == stages[1] && len(flow.Decisions) > 0 {
+			decision := flow.Decisions[len(flow.Decisions)-1]
+			confirmedAt, parseErr := time.Parse(time.RFC3339Nano, decision.CreatedAt)
+			if decision.Stage == "requirements" && decision.Approved && parseErr == nil {
+				active, readErr := q.ListActiveTasksByIssue(r.Context(), issue.ID)
+				if readErr != nil {
+					writeError(w, 500, "failed to read current execution")
+					return
+				}
+				for _, task := range active {
+					if task.AgentID == agentID && !task.CreatedAt.Time.Before(confirmedAt) {
+						writeJSON(w, 200, oneSpecResponse{Flow: &flow, Revision: row.Revision, CanConfirm: canConfirm})
+						return
+					}
+				}
+			}
+		}
+		if preparedTeam {
+			criteria.Team = &workbench.ProjectTeamSnapshot{ProjectID: uuidToString(issue.ProjectID), ProjectRoleConfiguration: flow.Team}
+			issue.AcceptanceCriteria, _ = json.Marshal(criteria)
+		}
+		if preparedTeam || issue.AssigneeID != agentID || issue.AssigneeType.String != "agent" {
+			issue, e = q.UpdateIssue(r.Context(), db.UpdateIssueParams{ID: issue.ID, AcceptanceCriteria: issue.AcceptanceCriteria, ExpectedRevision: pgtype.Int8{Int64: issue.Revision, Valid: true}, AssigneeType: strToText("agent"), AssigneeID: agentID, ProjectID: issue.ProjectID, ParentIssueID: issue.ParentIssueID, StartDate: issue.StartDate, DueDate: issue.DueDate, Stage: issue.Stage, DuplicateOfIssueID: issue.DuplicateOfIssueID})
 			if e != nil {
 				writeError(w, 409, "failed to assign stage agent")
 				return
 			}
 		}
 		writer := &service.TaskService{Queries: q, Bus: events.New(), FeatureFlags: h.TaskService.FeatureFlags, Composio: h.TaskService.Composio}
+		if preparedTeam {
+			raw, _ := json.Marshal(flow)
+			if _, e = q.UpdateOneSpecFlow(r.Context(), db.UpdateOneSpecFlowParams{State: raw, WorkspaceID: issue.WorkspaceID, IssueID: issue.ID, ExpectedRevision: row.Revision}); e != nil {
+				writeError(w, 409, "workflow changed; reload")
+				return
+			}
+		}
 		task, e := writer.EnqueueTaskForIssueByActor(r.Context(), issue, member.UserID)
 		if e != nil {
 			writeError(w, 409, "could not start stage execution: "+e.Error())
@@ -255,6 +319,41 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		}
 		flow.Kind = input.Kind
 	case "artifact":
+		input.Artifact.SourceTaskID = ""
+		if input.Artifact.Stage == "requirements" && criteria.Phase != "" && !workbench.RequirementsReady(criteria) {
+			writeError(w, 409, "submit the current structured requirements before requesting confirmation")
+			return
+		}
+		if input.Artifact.Document != nil {
+			task, valid := h.taskFromRequestHeader(r)
+			if !valid || actorType != "agent" || task.IssueID != issue.ID || uuidToString(task.AgentID) != actorID || task.Status != "running" {
+				writeError(w, 403, "requirement documents must be submitted by the active task agent")
+				return
+			}
+			input.Artifact.SourceTaskID = uuidToString(task.ID)
+			previous := flow.Latest("requirements")
+			if previous == nil || !workbench.SameRequirementDocuments(previous.Document, input.Artifact.Document) {
+				var previousDocument *workbench.RequirementsDocument
+				if previous != nil {
+					previousDocument = previous.Document
+				}
+				for i := range criteria.Items {
+					if workbench.RequirementItemDocumentChanged(previousDocument, input.Artifact.Document, criteria.Items[i].Section) {
+						criteria.Items[i].Checked = nil
+					}
+				}
+				criteria.DraftRevision++
+				criteria.ReadyRevision = criteria.DraftRevision
+				issue.AcceptanceCriteria, _ = json.Marshal(criteria)
+			}
+		}
+		if input.Artifact.Stage == "requirements" && criteria.Phase != "" {
+			if !workbench.RequirementsReady(criteria) {
+				writeError(w, 409, "submit the current structured requirements before requesting confirmation")
+				return
+			}
+			input.Artifact.DraftRevision = criteria.DraftRevision
+		}
 		if !canConfirm && !allowedAgent {
 			writeError(w, 403, "only the stage owner or confirmer can submit artifacts")
 			return
@@ -313,6 +412,13 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		}
 		err = flow.Submit(input.Artifact, actorID, time.Now())
 	case "decision":
+		if input.Stage == "requirements" && input.Approved {
+			var pending bool
+			if e := tx.QueryRow(r.Context(), "SELECT EXISTS (SELECT 1 FROM task_user_input WHERE issue_id=$1 AND workspace_id=$2 AND status='pending')", issue.ID, issue.WorkspaceID).Scan(&pending); e != nil || pending {
+				writeError(w, 409, "answer the outstanding questions before confirming requirements")
+				return
+			}
+		}
 		if !canConfirm {
 			writeError(w, 403, "only the task creator or project lead can confirm")
 			return
@@ -330,9 +436,10 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		err = flow.Decide(input.Stage, input.Version, input.Approved, input.Reason, actorID, time.Now())
-		if err == nil && input.Approved && input.Stage == "requirements" && criteria.Gate.Spec == nil && len(criteria.Items) > 0 {
-			for i := range criteria.Items {
-				criteria.Items[i].Checked = &workbench.Check{By: actorID, At: time.Now().UTC().Format(time.RFC3339Nano)}
+		if err == nil && input.Approved && input.Stage == "requirements" && criteria.Gate.Spec == nil {
+			if criteria.Phase != "" && (!workbench.RequirementsReady(criteria) || flow.Latest("requirements").DraftRevision != criteria.DraftRevision) {
+				writeError(w, 409, "requirements changed; review the current discussion and draft")
+				return
 			}
 			checked, _ := json.Marshal(criteria)
 			updated, e := workbench.EditRequirements(issue.AcceptanceCriteria, checked, true, actorID, actorType, time.Now())
@@ -367,6 +474,8 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 				criteria.NeedsResplit = false
 			}
 			if input.Stage == "requirements" {
+				criteria.Phase = "draft"
+				criteria.ReadyRevision = 0
 				criteria.Version++
 				criteria.Gate.Spec = nil
 				for i := range criteria.Items {
@@ -464,7 +573,7 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 409, "workflow changed; reload")
 		return
 	}
-	if action == "advance" || action == "reopen" || action == "decision" || action == "refresh-configuration" {
+	if action == "advance" || action == "reopen" || action == "decision" || action == "refresh-configuration" || (action == "artifact" && input.Artifact.Document != nil) {
 		nextRole := flow.Team.Config.Roles[workbench.OneSpecStageRole(flow.Phase)]
 		assigneeType, assigneeID := issue.AssigneeType, issue.AssigneeID
 		if nextRole.Enabled && nextRole.AgentID != nil {
@@ -484,7 +593,7 @@ func (h *Handler) UpdateOneSpecFlow(w http.ResponseWriter, r *http.Request) {
 		if flow.Phase == "acceptance" {
 			status = "in_review"
 		}
-		if action == "decision" {
+		if action == "decision" || action == "artifact" {
 			assigneeType, assigneeID = issue.AssigneeType, issue.AssigneeID
 		}
 		if flow.Status == "completed" {

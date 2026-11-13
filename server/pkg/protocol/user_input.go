@@ -8,6 +8,7 @@ import (
 type UserInputOption struct {
 	Label       string `json:"label"`
 	Description string `json:"description"`
+	Recommended bool   `json:"recommended,omitempty"`
 }
 
 type UserInputQuestion struct {
@@ -20,6 +21,7 @@ type UserInputQuestion struct {
 }
 
 type UserInputRequest struct {
+	Origin    string              `json:"origin,omitempty"`
 	Key       string              `json:"key"`
 	ThreadID  string              `json:"threadId"`
 	TurnID    string              `json:"turnId"`
@@ -34,7 +36,10 @@ type UserInputResponse struct {
 }
 
 func (r UserInputRequest) Validate() error {
-	if r.Key == "" || len(r.Key) > 512 || r.ThreadID == "" || r.TurnID == "" || len(r.Questions) == 0 || len(r.Questions) > 3 {
+	if r.Origin != "" && r.Origin != "platform" {
+		return fmt.Errorf("invalid question origin")
+	}
+	if r.Key == "" || len(r.Key) > 512 || (r.Origin != "platform" && (r.ThreadID == "" || r.TurnID == "")) || len(r.Questions) == 0 || len(r.Questions) > 3 {
 		return fmt.Errorf("invalid user input request")
 	}
 	seen := map[string]bool{}

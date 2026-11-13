@@ -706,6 +706,16 @@
     "manual_fingerprint": "지문 직접 입력"
   },
   "onespec": {
+    "auto_team": "OneSpec을 선택하면 이 워크스페이스의 기본 에이전트가 자동으로 연결됩니다.",
+    "builtin_team": "OneSpec 기본 팀",
+    "setup_ready": "준비 완료",
+    "setup_pending_runtime": "런타임 설정 필요",
+    "setup_needs_setup": "초기화 필요",
+    "setup_disabled": "비활성화됨",
+    "setup_access_denied": "사용 권한 필요",
+    "setup_archived": "보관된 에이전트",
+    "setup_runtime_offline": "런타임 오프라인",
+    "setup_binding_invalid": "에이전트 연결 확인",
     "title": "OneSpec 워크플로",
     "enabled": "새 작업에 OneSpec 사용",
     "runtime": "런타임",

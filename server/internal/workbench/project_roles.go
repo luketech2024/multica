@@ -9,9 +9,10 @@ import (
 var ProjectRoleOrder = []string{"sched", "product", "dev", "test", "sec", "ops", "docs", "git"}
 
 type ProjectRole struct {
-	Enabled   bool    `json:"enabled"`
-	AgentID   *string `json:"agent_id"`
-	RuntimeID *string `json:"runtime_id"`
+	Enabled       bool    `json:"enabled"`
+	AgentID       *string `json:"agent_id"`
+	RuntimeID     *string `json:"runtime_id"`
+	BindingSource string  `json:"binding_source,omitempty"`
 }
 
 type ProjectRoles struct {
@@ -44,6 +45,9 @@ func ParseProjectRoles(raw []byte) (ProjectRoles, error) {
 		entry, exists := config.Roles[role]
 		if !exists {
 			return config, fmt.Errorf("missing project role %s", role)
+		}
+		if entry.BindingSource != "" && entry.BindingSource != "explicit" && entry.BindingSource != "onespec_default" {
+			return config, fmt.Errorf("invalid binding source for role %s", role)
 		}
 		if (role == "sched" || role == "product") && !entry.Enabled {
 			return config, errors.New("scheduling and product roles must remain enabled")

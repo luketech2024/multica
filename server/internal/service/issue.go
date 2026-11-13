@@ -8,6 +8,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/attribution"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -240,6 +241,9 @@ type IssueCreateResult struct {
 // Caller-owned validation is limited to transport-shaped checks: title
 // required, RFC3339 date format, assignee pair sanity.
 func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts IssueCreateOpts) (IssueCreateResult, error) {
+	if p.ProjectID.Valid && !p.ParentIssueID.Valid && p.CreatorType == "member" && len(p.AcceptanceCriteria) == 0 && (p.Status == "todo" || p.Status == "backlog") {
+		p.AcceptanceCriteria = []byte(`{"v":1,"items":[],"bounds":[]}`)
+	}
 	if p.ParentIssueID.Valid && p.ExternalTicketNo != "" {
 		return IssueCreateResult{}, fmt.Errorf("%w: only parent tasks can carry an external ticket number", ErrIssueExternalTicket)
 	}
@@ -394,6 +398,13 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 					criteria.Template = &template
 				} else if !errors.Is(err, pgx.ErrNoRows) {
 					return IssueCreateResult{}, err
+				}
+			}
+			if !p.ParentIssueID.Valid && criteria.Gate.Spec == nil {
+				criteria.Phase = "clarifying"
+				if len(criteria.Items) > 0 {
+					criteria.Phase = "draft"
+					criteria.DraftRevision = 1
 				}
 			}
 			p.AcceptanceCriteria, err = json.Marshal(criteria)
@@ -582,7 +593,11 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 		return IssueCreateResult{}, fmt.Errorf("initialize OneSpec: %w", err)
 	}
 
-	if !opts.AssignedAgentRunFireAt.IsZero() && s.shouldEnqueueAgentTaskWithQueries(ctx, qtx, issue) {
+	discussFirst := !issue.ParentIssueID.Valid && issue.ProjectID.Valid && p.CreatorType == "member" && strings.TrimSpace(issue.Description.String) == "" && len(p.AcceptanceCriteria) > 0
+	if criteria, e := workbench.ParseRequirements(p.AcceptanceCriteria); e == nil && len(criteria.Items) > 0 {
+		discussFirst = false
+	}
+	if !discussFirst && !opts.AssignedAgentRunFireAt.IsZero() && s.shouldEnqueueAgentTaskWithQueries(ctx, qtx, issue) {
 		// The issue must never become visible without its media-gated assigned
 		// task. Inserting both rows through qtx makes the unique-index winner
 		// deterministic: any observer that can discover the committed issue also
@@ -630,7 +645,7 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 
 	s.publishIssueCreated(issue, attachments, labels, p.CreatorType, actorID, opts)
 	s.captureCreatedAnalytics(issue, p.CreatorType, actorID, opts)
-	if opts.AssignedAgentRunFireAt.IsZero() {
+	if !discussFirst && opts.AssignedAgentRunFireAt.IsZero() {
 		assignedTaskID = s.maybeEnqueueOnAssign(ctx, issue, p.CreatorType, actorID, opts.AssignedAgentRunFireAt)
 	}
 	// Creating an issue already assigned to an agent is the member delegating

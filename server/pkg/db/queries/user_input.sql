@@ -26,4 +26,7 @@ WHERE id = $1 AND task_id = $2 AND status IN ('pending', 'answered');
 
 -- name: SettleTaskUserInputs :exec
 UPDATE task_user_input SET status = 'cancelled', updated_at = now()
-WHERE task_id = ANY($1::uuid[]) AND status IN ('pending', 'answered');
+WHERE task_id = ANY($1::uuid[]) AND status IN ('pending', 'answered')
+AND NOT (COALESCE(request->>'origin', '') = 'platform' AND EXISTS (
+    SELECT 1 FROM agent_task_queue t WHERE t.id=task_user_input.task_id AND t.status='completed'
+));

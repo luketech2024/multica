@@ -3141,9 +3141,7 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 		}
 		if flowRow, err := h.Queries.GetOneSpecFlow(r.Context(), db.GetOneSpecFlowParams{WorkspaceID: issue.WorkspaceID, IssueID: flowIssueID}); err == nil {
 			resp.Agent.Instructions += "\nCurrent OneSpec workflow snapshot\n" + string(flowRow.State)
-			if issue.ParentIssueID.Valid {
-				resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
-			}
+			resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
 		} else if errors.Is(err, pgx.ErrNoRows) {
 			resp.Agent.Instructions += workbenchRuntimeInstructions(issue)
 		} else {

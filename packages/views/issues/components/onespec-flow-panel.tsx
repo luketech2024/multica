@@ -1,6 +1,7 @@
 "use client";
 import { AppLink } from "../../navigation";
 import { useWorkspacePaths } from "@multica/core/paths";
+import { RequirementsSummary } from "./requirements-summary";
 import { RequirementsPanel } from "./requirements-panel";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,11 +19,14 @@ import { Button } from "@multica/ui/components/ui/button";
 import { Textarea } from "@multica/ui/components/ui/textarea";
 import { ConfigurationSelect } from "../../projects/components/configuration-select";
 import { useT } from "../../i18n";
+import { ReadonlyContent } from "../../editor/readonly-content";
+import { HtmlBlockPreview } from "../../editor/html-block-preview";
 
-export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
+export function OneSpecFlowPanel({ issue, compact = false }: { issue: Issue; compact?: boolean }) {
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
   const { t } = useT("projects");
+  const { t: issueText } = useT("issues");
   const saved = useQuery(oneSpecFlowOptions(wsId, issue.id));
   const project = useQuery({
     ...oneSpecConfigurationOptions(wsId, issue.project_id ?? ""),
@@ -81,12 +85,13 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
       action: name,
       input: { expected_revision: saved.data?.revision ?? 0, ...input },
     });
+  if (flow?.phase === "requirements" && !issue.acceptance_criteria?.gate.spec) return <RequirementsSummary issue={issue}/>;
   return (
     <section
       className="space-y-3 rounded-lg border p-4"
       aria-label={t(($) => $.onespec.title)}
     >
-      <h3 className="text-label font-medium">{t(($) => $.onespec.title)}</h3>
+      {!compact && <h3 className="text-label font-medium">{t(($) => $.onespec.title)}</h3>}
       {saved.isError && (
         <p role="alert">
           {t(($) => $.onespec.error)}{" "}
@@ -113,7 +118,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
       )}
       {flow && (
         <>
-          <div
+          {!compact && <div
             className="flex flex-wrap gap-2 text-caption"
             aria-label={labels[flow.phase]}
           >
@@ -130,14 +135,19 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
                 {labels[stage] ?? stage}
               </span>
             ))}
-          </div>
+          </div>}
           <p className="text-label">
             {labels[flow.phase] ?? flow.phase} ·{" "}
             {labels[flow.status] ?? flow.status}
           </p>
-          <p className="text-caption text-muted-foreground">
+          {!compact && <p className="text-caption text-muted-foreground">
             {t(($) => $.onespec.rule_version)} {flow.rule_version}
-          </p>
+          </p>}
+          {flow.artifacts.filter((artifact) => artifact.document).map((artifact) => <details key={`${artifact.stage}-${artifact.version}`} className="space-y-3">
+            <summary className="cursor-pointer text-label">{issueText(($) => $.discussion.read_document)} · {artifact.version}</summary>
+            <ReadonlyContent content={artifact.document!.content}/>
+            {artifact.document!.prototype && <HtmlBlockPreview html={artifact.document!.prototype.content} title={issueText(($) => $.discussion.prototype)}/>}
+          </details>)}
           {flow.kind === "release" &&
             flow.phase === "release_preparation" &&
             !flow.release_id &&
@@ -211,7 +221,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
               <p className="whitespace-pre-wrap break-words text-body">
                 {current.summary}
               </p>
-              <ul className="space-y-2">
+              {!compact && <ul className="space-y-2">
                 {current.refs.map((ref, index) => (
                   <li
                     key={index}
@@ -227,7 +237,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
                     </p>
                   </li>
                 ))}
-              </ul>
+              </ul>}
               {current.tasks.length > 0 && (
                 <ol className="list-decimal space-y-1 pl-5">
                   {current.tasks.map((task) => (
@@ -327,7 +337,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
                 {t(($) => $.onespec.run)}
               </Button>
             )}
-          {saved.data?.can_confirm && flow.artifacts.length > 0 && (
+          {!compact && saved.data?.can_confirm && flow.artifacts.length > 0 && (
             <div className="space-y-2">
               <ConfigurationSelect
                 label={t(($) => $.onespec.reopen_stage)}
@@ -348,7 +358,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
               </Button>
             </div>
           )}
-          {flow.decisions.length > 0 && (
+          {!compact && flow.decisions.length > 0 && (
             <details>
               <summary className="cursor-pointer text-caption">
                 {t(($) => $.onespec.history)}
@@ -367,7 +377,7 @@ export function OneSpecFlowPanel({ issue }: { issue: Issue }) {
               </ul>
             </details>
           )}
-          {flow.git_operations.length > 0 && (
+          {!compact && flow.git_operations.length > 0 && (
             <details>
               <summary className="cursor-pointer text-caption">
                 {t(($) => $.onespec.git_operations)}

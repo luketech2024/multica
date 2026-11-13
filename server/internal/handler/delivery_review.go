@@ -30,7 +30,7 @@ func readDeliveryReview(ctx context.Context, q *db.Queries, issue db.Issue, crit
 		if json.Unmarshal(workbench.HandoffJSON(child.Properties), &handoff) != nil {
 			continue
 		}
-		tasks = append(tasks, workbench.DeliveryTask{ID: uuidToString(child.ID), Revision: child.Revision, Status: child.Status, Handoff: handoff})
+		tasks = append(tasks, workbench.DeliveryTask{ID: uuidToString(child.ID), Title: child.Title, Description: child.Description.String, Revision: child.Revision, Status: child.Status, Handoff: handoff})
 	}
 	active, err := q.WorkbenchPlanHasActiveRuns(ctx, db.WorkbenchPlanHasActiveRunsParams{ParentID: issue.ID, WorkspaceID: issue.WorkspaceID})
 	if err != nil {

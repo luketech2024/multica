@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { IssueSchema } from "./schemas";
+import { requirementsReady } from "../workbench/next-step";
+import { AcceptanceCriteriaSchema, IssueSchema } from "./schemas";
 import { parseWithFallback } from "./schema";
 import { projectRoleOrder } from "../workbench/schemas";
 
@@ -135,4 +136,15 @@ describe("requirements response compatibility", () => {
   it("leaves the feature unavailable on a server without the field", () => {
     expect(schema.parse({}).acceptance_criteria).toBeUndefined();
   });
+});
+
+const input = { v: 1, items: [{ id: "A-01", text: "Open homepage", origin: "product", covers: [], checked: null, note: null }] };
+it("preserves legacy requirements and fails closed on unknown discussion phases", () => {
+  expect(requirementsReady(AcceptanceCriteriaSchema.parse(input))).toBe(true);
+  expect(requirementsReady(AcceptanceCriteriaSchema.parse({ ...input, phase: "future-phase" }))).toBe(false);
+});
+it("rejects malformed discussion revisions", () => {
+  for (const field of ["draft_revision", "ready_revision", "discussion_revision", "covered_discussion_revision"]) {
+    expect(AcceptanceCriteriaSchema.safeParse({ ...input, [field]: "invalid" }).success).toBe(false);
+  }
 });

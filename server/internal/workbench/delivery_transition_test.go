@@ -43,7 +43,6 @@ func TestDeliveryTransitionRequiresFreshCompleteRoleConclusions(t *testing.T) {
 	evidence.Passed = false
 	criteria.Delivery["test"] = evidence
 	assert(false, "", "")
-	criteria.Team.Config.Roles["sec"] = ProjectRole{}
 	criteria.Plan.Issues = []string{"test"}
 	criteria.Items[0].Covers = []string{"test"}
 	assert(false, "", "")

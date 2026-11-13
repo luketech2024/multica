@@ -1022,6 +1022,9 @@ export function useRealtimeSync(
         // every list-of-tasks query stale" so cache stays fresh even
         // when the relevant component isn't currently mounted.
         qc.invalidateQueries({ queryKey: ["issues", "tasks"] });
+        // Active runs block acceptance even when the parent issue revision
+        // stays unchanged after the agent submits its delivery report.
+        qc.invalidateQueries({ queryKey: [...issueKeys.all(wsId), "delivery-review"] });
         // Per-issue token usage card (issue-detail right rail). Same
         // shape as the tasks invalidation above — any task lifecycle
         // event shifts the aggregated usage numbers.

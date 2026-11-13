@@ -10,6 +10,7 @@ const evidenceURL = z.string().max(2048).refine((value) => {
 });
 
 export const DeliveryEvidenceSchema = z.object({
+  task_hash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   description_hash: z.string().regex(/^[a-f0-9]{64}$/),
   issue_id: z.string().uuid(),
   issue_revision: z.number().int().positive(),

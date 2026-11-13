@@ -51,5 +51,20 @@ DELETE FROM onespec_project_config WHERE onespec_project_config.workspace_id= @w
 
 -- name: DeleteOneSpecWorkspace :exec
 WITH flows AS (DELETE FROM onespec_flow WHERE onespec_flow.workspace_id=$1),
-projects AS (DELETE FROM onespec_project_config WHERE onespec_project_config.workspace_id=$1)
+projects AS (DELETE FROM onespec_project_config WHERE onespec_project_config.workspace_id=$1),
+roles AS (DELETE FROM onespec_workspace_role WHERE workspace_id=$1)
 DELETE FROM onespec_workspace_config WHERE onespec_workspace_config.workspace_id=$1;
+
+-- name: LockOneSpecTeam :exec
+SELECT pg_advisory_xact_lock(hashtextextended('onespec-team:' || sqlc.arg(workspace_id)::uuid::text, 0));
+
+-- name: EnsureOneSpecWorkspaceRole :exec
+INSERT INTO onespec_workspace_role (workspace_id, role_key, configured_by)
+VALUES ($1, $2, $3) ON CONFLICT (workspace_id, role_key) DO NOTHING;
+
+-- name: ListOneSpecWorkspaceRoles :many
+SELECT * FROM onespec_workspace_role WHERE workspace_id=$1 ORDER BY role_key;
+
+-- name: FindOneSpecAgent :one
+SELECT * FROM agent WHERE workspace_id=$1 AND runtime_id=$2 AND system_key=$3
+ORDER BY archived_at NULLS FIRST, created_at, id LIMIT 1;

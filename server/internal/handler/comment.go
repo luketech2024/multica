@@ -20,6 +20,7 @@ import (
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	"github.com/multica-ai/multica/server/internal/service"
 	"github.com/multica-ai/multica/server/internal/util"
+	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/dbid"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -641,6 +642,17 @@ func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request) {
 	}
 	if result.CommentsTruncated {
 		w.Header().Set(HeaderCommentsTruncated, "true")
+	}
+	if !result.CommentsTruncated && !summary && !fold && !sinceTime.Valid && !rootsOnly && threadStr == "" && recentStr == "" && tailStr == "" && beforeTimeStr == "" {
+		if task, ok := h.taskFromRequestHeader(r); ok && task.IssueID == issue.ID && task.Status == "running" {
+			criteria, e := workbench.ParseRequirements(issue.AcceptanceCriteria)
+			if e == nil && criteria.Phase != "" && criteria.Gate.Spec == nil {
+				if e := h.Queries.RecordRequirementsDiscussionRead(r.Context(), db.RecordRequirementsDiscussionReadParams{TaskID: task.ID, IssueID: issue.ID, AgentID: task.AgentID, DiscussionRevision: criteria.DiscussionRevision}); e != nil {
+					writeError(w, 500, "failed to record discussion read")
+					return
+				}
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)

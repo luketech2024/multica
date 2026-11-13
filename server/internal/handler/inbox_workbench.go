@@ -14,6 +14,13 @@ func applyInboxWorkbench(item *InboxItemResponse, issue db.Issue) {
 	criteria, err := workbench.ParseRequirements(issue.AcceptanceCriteria)
 	item.Workbench = (err == nil && criteria.Team != nil) || workbench.HandoffJSON(issue.Properties) != nil
 	item.WorkbenchAction = ""
+	if item.Workbench && criteria.Phase != "" && workbench.RequirementsNeedConfirmation(criteria, issue.Status, issue.ParentIssueID.Valid) {
+		var details map[string]string
+		if json.Unmarshal(item.Details, &details) == nil && details["source"] == "workbench_requirements" {
+			item.WorkbenchAction = "requirements"
+		}
+		return
+	}
 	if !item.Workbench || issue.AssigneeType.String != "member" || uuidToString(issue.AssigneeID) != item.RecipientID {
 		return
 	}

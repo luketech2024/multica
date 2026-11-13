@@ -3,6 +3,7 @@ package workbench
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -24,6 +25,7 @@ type DeliveryChanges struct {
 
 // DeliveryEvidence records attributed reports, not an inferred result from task status.
 type DeliveryEvidence struct {
+	TaskHash        string           `json:"task_hash,omitempty"`
 	DescriptionHash string           `json:"description_hash"`
 	IssueID         string           `json:"issue_id"`
 	IssueRevision   int64            `json:"issue_revision"`
@@ -46,6 +48,16 @@ var sourceCommit = regexp.MustCompile(`^[a-fA-F0-9]{40}([a-fA-F0-9]{24})?$`)
 func DeliveryDescriptionHash(description string) string {
 	digest := sha256.Sum256([]byte(description))
 	return hex.EncodeToString(digest[:])
+}
+
+// Comments advance the issue revision without changing the delivery scope.
+func DeliveryTaskHash(task DeliveryTask) string {
+	content, _ := json.Marshal(struct {
+		Title       string
+		Description string
+		Handoff     Handoff
+	}{task.Title, task.Description, task.Handoff})
+	return DeliveryDescriptionHash(string(content))
 }
 
 func validEvidenceURL(value string) bool {

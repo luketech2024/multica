@@ -10,18 +10,19 @@ import { CommentInput } from "./comment-input";
 import { conversationCommand } from "@multica/core/workbench/configuration";
 import { useT } from "../../i18n";
 
-export function UserInputMessages({ requests, selectedId, onSelect }: {
-  requests: TaskUserInput[]; selectedId?: string; onSelect: (id: string) => void;
+export function UserInputMessages({ requests, selectedId, onSelect, onCorrect }: {
+  requests: TaskUserInput[]; selectedId?: string; onSelect: (id: string) => void; onCorrect?: (request: TaskUserInput, text: string) => void;
 }) {
   const { t } = useT("issues");
   const user = useAuthStore((state) => state.user);
   return <>{requests.map((request) => <div key={request.id} className="my-4 space-y-2" data-testid="user-input-message">
     {request.request.questions.map((question) => <div key={question.id}>
       <p className="whitespace-pre-wrap text-body-sm">{question.question}</p>
-      {request.response?.answers[question.id] && <p data-message-side={request.answered_by === user?.id ? "right" : "left"} className={`mt-2 w-fit max-w-[85%] whitespace-pre-wrap rounded-lg bg-muted px-3 py-2 text-body-sm ${request.answered_by === user?.id ? "ml-auto" : "mr-auto"}`}>{request.response.answers[question.id]!.answers.join("\n")}</p>}
+      {request.response?.answers[question.id] && !request.response.discussion_comment_id && <p data-message-side={request.answered_by === user?.id ? "right" : "left"} className={`mt-2 w-fit max-w-[85%] whitespace-pre-wrap rounded-lg bg-muted px-3 py-2 text-body-sm ${request.answered_by === user?.id ? "ml-auto" : "mr-auto"}`}>{request.response.answers[question.id]!.answers.join("\n")}</p>}
     </div>)}
     {request.status === "pending" ? selectedId === request.id ? <p className="text-caption text-muted-foreground">{t(($) => $.conversation.waiting)}</p> : <Button size="sm" variant="ghost" onClick={() => onSelect(request.id)}>{t(($) => $.conversation.answer)}</Button>
       : <p className="text-caption text-muted-foreground">{t(($) => request.status === "resolved" ? $.conversation.answered : request.status === "answered" ? $.conversation.answer_sent : $.conversation.question_closed)}</p>}
+    {request.response && onCorrect && <Button size="xs" variant="ghost" onClick={() => onCorrect(request, t(($) => $.discussion.correct_answer) + "\n" + request.request.questions.map((question) => question.question + "\n" + (request.response?.answers[question.id]?.answers.join("\n") ?? "")).join("\n\n"))}>{t(($) => $.discussion.modify)}</Button>}
   </div>)}</>;
 }
 
@@ -39,9 +40,12 @@ export function UserInputComposer({ wsId, request, pauseControl }: {
   });
   const question = questions[index]!;
   const threadId = `${prefix}:draft:${question.id}`;
+  const selectedAnswer = drafts[answerKey(question.id)]?.content;
+  const nextQuestion = questions.findIndex((item, itemIndex) => itemIndex !== index && !drafts[answerKey(item.id)]?.content);
   const mutation = useAnswerUserInput(wsId, request.issue_id, request.id);
   const [error, setError] = useState<string>();
   const submit = async (content: string, attachments?: string[]) => {
+    if (mutation.isPending || mutation.isSuccess || pauseControl?.pending) return false;
     setError(undefined);
     if (conversationCommand(content) === "pause" && pauseControl && !attachments?.length) return pauseControl.onPause();
     if (attachments?.length || (question.options.length > 0 && !question.isOther && !question.options.some((option) => option.label === content))) {
@@ -66,9 +70,10 @@ export function UserInputComposer({ wsId, request, pauseControl }: {
   };
   return <div className="space-y-2" data-testid="user-input-composer">
     <p className="text-caption">{t(($) => $.conversation.answer)} · {question.header || question.question} · {index + 1}/{questions.length}</p>
-    {questions.length > 1 && <div className="flex flex-wrap gap-1">{questions.map((item, i) => <Button key={item.id} size="xs" variant={index === i ? "secondary" : "ghost"} disabled={mutation.isPending} onClick={() => setIndex(i)}>{item.header || String(i + 1)}</Button>)}</div>}
-    <div className="flex flex-wrap gap-2">{question.options.map((option) => <Button key={option.label} size="sm" variant="outline" disabled={mutation.isPending} title={option.description} onClick={() => useCommentDraftStore.getState().setDraft(`reply:${request.issue_id}:${threadId}`, option.label)}>{option.label}</Button>)}</div>
+    {questions.length > 1 && <div className="flex flex-wrap gap-1">{questions.map((item, i) => <Button key={item.id} size="xs" variant={index === i ? "secondary" : "ghost"} disabled={mutation.isPending || mutation.isSuccess || pauseControl?.pending} onClick={() => setIndex(i)}>{item.header || String(i + 1)}</Button>)}</div>}
+    <p className="text-body-sm" aria-live="polite">{question.question}</p>
+    <div className="flex flex-wrap gap-2">{question.options.map((option) => <Button key={option.label} size="sm" variant={selectedAnswer === option.label ? "secondary" : "outline"} aria-pressed={selectedAnswer === option.label} className={`h-auto max-w-full flex-col items-start whitespace-normal py-2 text-left ${selectedAnswer === option.label ? "ring-2 ring-ring" : ""}`} disabled={mutation.isPending || mutation.isSuccess || pauseControl?.pending} onClick={() => void submit(option.label)}><span>{option.label}{option.recommended && ` · ${t(($) => $.discussion.recommended)}`}</span>{option.description && <span className="text-caption text-muted-foreground">{option.description}</span>}</Button>)}</div>
     {error && <p role="alert" className="text-caption text-destructive">{error}</p>}
-    <CommentInput key={threadId} issueId={request.issue_id} parentId={request.id} draftThreadId={threadId} compact docked localCommand textOnly inputLabel={t(($) => $.conversation.answer)} submitLabel={t(($) => $.conversation.answer)} sendDisabled={mutation.isPending || pauseControl?.pending} pauseControl={pauseControl} onSubmit={submit} />
+    <CommentInput key={threadId} issueId={request.issue_id} parentId={request.id} draftThreadId={threadId} compact docked localCommand textOnly inputLabel={t(($) => $.conversation.answer)} submitLabel={t(($) => nextQuestion >= 0 ? $.discussion.next_question : $.discussion.submit_answers)} sendDisabled={mutation.isPending || mutation.isSuccess || pauseControl?.pending} pauseControl={pauseControl} onSubmit={submit} />
   </div>;
 }

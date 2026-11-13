@@ -56,6 +56,8 @@ func TestClassifyCursorConnectTimeoutScope(t *testing.T) {
 func TestClassifyCursorConnectionStalled(t *testing.T) {
 	t.Parallel()
 	for _, stderr := range []string{
+		"RetriableError: [unavailable] Error",
+		"RetriableError: [unavailable] Error\n    at transport (/cursor/index.js:500:403)",
 		"RetriableError: Connection stalled",
 		"RetriableError: Connection stalled repeatedly",
 		"RetriableError: Connection stalled\n    at transport (/cursor/index.js:1:1)",
@@ -83,6 +85,11 @@ func TestClassifyCursorConnectionStalled(t *testing.T) {
 func TestCursorConnectionStalledScope(t *testing.T) {
 	t.Parallel()
 	for _, input := range []string{
+		"MCP server error: RetriableError: [unavailable] Error",
+		"RetriableError: [unavailable] Error_OTHER",
+		"RetriableError: [unavailable] Error\nAPI Error: 403 Forbidden",
+		"some tool exited with error: exit status 1; cursor stderr: RetriableError: [unavailable] Error",
+		"cursor-agent exited with error: exit status 1; cursor stderr: local tool failed: RetriableError: [unavailable] Error",
 		"Connection stalled",
 		"RetriableError: Something else",
 		"RetriableError: Connection stalled_OTHER",

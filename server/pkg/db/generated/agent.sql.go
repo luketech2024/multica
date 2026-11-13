@@ -8151,6 +8151,29 @@ func (q *Queries) ReclaimStaleDispatchedTasksForRuntimes(ctx context.Context, ar
 	return items, nil
 }
 
+const recordRequirementsDiscussionRead = `-- name: RecordRequirementsDiscussionRead :exec
+UPDATE agent_task_queue
+SET issue_snapshot = COALESCE(issue_snapshot, '{}'::jsonb) || jsonb_build_object('discussion_revision', $1::bigint)
+WHERE id = $2 AND issue_id = $3 AND agent_id = $4 AND status = 'running'
+`
+
+type RecordRequirementsDiscussionReadParams struct {
+	DiscussionRevision int64       `json:"discussion_revision"`
+	TaskID             pgtype.UUID `json:"task_id"`
+	IssueID            pgtype.UUID `json:"issue_id"`
+	AgentID            pgtype.UUID `json:"agent_id"`
+}
+
+func (q *Queries) RecordRequirementsDiscussionRead(ctx context.Context, arg RecordRequirementsDiscussionReadParams) error {
+	_, err := q.db.Exec(ctx, recordRequirementsDiscussionRead,
+		arg.DiscussionRevision,
+		arg.TaskID,
+		arg.IssueID,
+		arg.AgentID,
+	)
+	return err
+}
+
 const recoverOrphanedTasksForRuntime = `-- name: RecoverOrphanedTasksForRuntime :many
 UPDATE agent_task_queue
 SET status = 'failed',

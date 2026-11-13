@@ -29,17 +29,15 @@ func DeliveryTransition(criteria Requirements, tasks []DeliveryTask, active bool
 			return "", ""
 		}
 	}
-	if !criteria.Team.Config.Roles["test"].Enabled || !criteria.Team.Config.Roles["sec"].Enabled {
-		return "", ""
-	}
-	passed := map[string]bool{"test": true, "sec": true}
+	passed := map[string]bool{}
 	for _, id := range criteria.Plan.Issues {
 		evidence := criteria.Delivery[id]
 		if evidence.Role == "test" || evidence.Role == "sec" {
-			passed[evidence.Role] = passed[evidence.Role] && evidence.Passed
+			previous, exists := passed[evidence.Role]
+			passed[evidence.Role] = (!exists || previous) && evidence.Passed
 		}
 	}
-	if passed["test"] != passed["sec"] {
+	if len(passed) == 2 && passed["test"] != passed["sec"] {
 		return "blocked", "test_security_conflict"
 	}
 	return "", ""

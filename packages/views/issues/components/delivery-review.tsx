@@ -58,7 +58,9 @@ function ReviewCard({ issue }: { issue: Issue }) {
         });
       }
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : t(($) => $.delivery_review.failed);
+      const message = cause instanceof Error && cause.message === "delivery is not ready for acceptance"
+        ? t(($) => $.delivery_review.not_ready)
+        : cause instanceof Error ? cause.message : t(($) => $.delivery_review.failed);
       setError(message);
       if (action === "undo") toast.error(message);
     }
@@ -83,8 +85,8 @@ function ReviewCard({ issue }: { issue: Issue }) {
         <Button size="sm" variant="outline" onClick={() => void review.refetch()}>{t(($) => $.execution_plan.retry)}</Button>
       </div>}
       {review.data && <>
-        <ul className="space-y-1 text-caption text-destructive">
-          {review.data.blockers.map((blocker, index) => <li key={`${blocker.code}-${blocker.issue_id}-${index}`}>
+        <ul className="space-y-1 text-caption text-muted-foreground">
+          {review.data.blockers.map((blocker, index) => <li className={blocker.code === "evidence_failed" ? "text-destructive" : undefined} key={`${blocker.code}-${blocker.issue_id}-${index}`}>
             {t(($) => $.delivery_review.blockers[blocker.code])}
             {blocker.role && ` · ${projectT(($) => $.roles[blocker.role!])}`}
             {blocker.title && <span className="ml-1 break-words text-muted-foreground">{blocker.title}</span>}
@@ -100,18 +102,21 @@ function ReviewCard({ issue }: { issue: Issue }) {
           <span>{check.text}{check.check && <span className="block text-muted-foreground">{check.check}</span>}</span>
         </label>)}
         {assigned && issue.status === "in_review" ? <>
-          {reason !== undefined && <label className="block space-y-1 text-caption">
-            {t(($) => $.delivery_review.reason)}
-            <Textarea value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} />
-          </label>}
+          {reason !== undefined && <>
+            <label className="block space-y-1 text-caption">
+              {t(($) => $.delivery_review.reason)}
+              <Textarea value={reason} maxLength={2000} onChange={(event) => setReason(event.target.value)} />
+            </label>
+            <p className="text-caption text-muted-foreground">{t(($) => $.delivery_review.changes_hint)}</p>
+          </>}
           <div className="flex flex-wrap justify-end gap-2">
             {reason === undefined ? (
               <Button variant="outline" disabled={mutation.isPending} onClick={() => setReason("")}>{t(($) => $.delivery_review.request_changes)}</Button>
             ) : <>
               <Button variant="outline" disabled={mutation.isPending} onClick={() => setReason(undefined)}>{t(($) => $.delivery.cancel)}</Button>
-              <Button variant="outline" disabled={!reason.trim() || mutation.isPending} onClick={() => void act("reject")}>{t(($) => $.delivery_review.submit_changes)}</Button>
+              <Button disabled={!reason.trim() || mutation.isPending} onClick={() => void act("reject")}>{t(($) => $.delivery_review.submit_changes)}</Button>
             </>}
-            <Button disabled={!ready || mutation.isPending} aria-busy={mutation.isPending} onClick={() => void act("accept")}>{t(($) => $.delivery_review.accept)}</Button>
+            {reason === undefined && <Button disabled={!ready || mutation.isPending} aria-busy={mutation.isPending} onClick={() => void act("accept")}>{t(($) => $.delivery_review.accept)}</Button>}
           </div>
         </> : <div className="space-y-2 text-caption text-muted-foreground">
           <p>{t(($) => $.delivery_review.waiting)}</p>
@@ -123,6 +128,6 @@ function ReviewCard({ issue }: { issue: Issue }) {
         </div>}
       </>}
     </>}
-    {error && <p role="alert" className="text-caption text-destructive">{error}</p>}
+    {error && <p role="alert" className="text-caption text-muted-foreground">{error}</p>}
   </section>;
 }

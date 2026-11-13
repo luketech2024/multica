@@ -32,6 +32,8 @@ export interface Project {
 }
 
 export interface CreateProjectRequest {
+  onespec_enabled?: boolean;
+  onespec_runtime_id?: string | null;
   business_template?: { id: string; revision: number };
   workbench_roles?: ProjectRoles["config"];
   title: string;

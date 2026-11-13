@@ -862,6 +862,11 @@ WHERE id = @task_id
   AND started_at IS NULL
   AND dispatched_at = @dispatched_at;
 
+-- name: RecordRequirementsDiscussionRead :exec
+UPDATE agent_task_queue
+SET issue_snapshot = COALESCE(issue_snapshot, '{}'::jsonb) || jsonb_build_object('discussion_revision', @discussion_revision::bigint)
+WHERE id = @task_id AND issue_id = @issue_id AND agent_id = @agent_id AND status = 'running';
+
 -- name: RequeueAgentTaskAfterClaimFailure :one
 -- Claim finalization (task token + optional comment receipt) failed before any
 -- response bytes were written. Return only that exact claim generation to the

@@ -68,13 +68,78 @@ func (q *Queries) DeleteOneSpecProject(ctx context.Context, arg DeleteOneSpecPro
 
 const deleteOneSpecWorkspace = `-- name: DeleteOneSpecWorkspace :exec
 WITH flows AS (DELETE FROM onespec_flow WHERE onespec_flow.workspace_id=$1),
-projects AS (DELETE FROM onespec_project_config WHERE onespec_project_config.workspace_id=$1)
+projects AS (DELETE FROM onespec_project_config WHERE onespec_project_config.workspace_id=$1),
+roles AS (DELETE FROM onespec_workspace_role WHERE workspace_id=$1)
 DELETE FROM onespec_workspace_config WHERE onespec_workspace_config.workspace_id=$1
 `
 
 func (q *Queries) DeleteOneSpecWorkspace(ctx context.Context, workspaceID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteOneSpecWorkspace, workspaceID)
 	return err
+}
+
+const ensureOneSpecWorkspaceRole = `-- name: EnsureOneSpecWorkspaceRole :exec
+INSERT INTO onespec_workspace_role (workspace_id, role_key, configured_by)
+VALUES ($1, $2, $3) ON CONFLICT (workspace_id, role_key) DO NOTHING
+`
+
+type EnsureOneSpecWorkspaceRoleParams struct {
+	WorkspaceID  pgtype.UUID `json:"workspace_id"`
+	RoleKey      string      `json:"role_key"`
+	ConfiguredBy pgtype.UUID `json:"configured_by"`
+}
+
+func (q *Queries) EnsureOneSpecWorkspaceRole(ctx context.Context, arg EnsureOneSpecWorkspaceRoleParams) error {
+	_, err := q.db.Exec(ctx, ensureOneSpecWorkspaceRole, arg.WorkspaceID, arg.RoleKey, arg.ConfiguredBy)
+	return err
+}
+
+const findOneSpecAgent = `-- name: FindOneSpecAgent :one
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, custom_env, custom_args, mcp_config, model, thinking_level, composio_toolkit_allowlist, permission_mode, kind, system_key, disabled_runtime_skills, service_tier, conversation_starters FROM agent WHERE workspace_id=$1 AND runtime_id=$2 AND system_key=$3
+ORDER BY archived_at NULLS FIRST, created_at, id LIMIT 1
+`
+
+type FindOneSpecAgentParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	RuntimeID   pgtype.UUID `json:"runtime_id"`
+	SystemKey   pgtype.Text `json:"system_key"`
+}
+
+func (q *Queries) FindOneSpecAgent(ctx context.Context, arg FindOneSpecAgentParams) (Agent, error) {
+	row := q.db.QueryRow(ctx, findOneSpecAgent, arg.WorkspaceID, arg.RuntimeID, arg.SystemKey)
+	var i Agent
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.AvatarUrl,
+		&i.RuntimeMode,
+		&i.RuntimeConfig,
+		&i.Visibility,
+		&i.Status,
+		&i.MaxConcurrentTasks,
+		&i.OwnerID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Description,
+		&i.RuntimeID,
+		&i.Instructions,
+		&i.ArchivedAt,
+		&i.ArchivedBy,
+		&i.CustomEnv,
+		&i.CustomArgs,
+		&i.McpConfig,
+		&i.Model,
+		&i.ThinkingLevel,
+		&i.ComposioToolkitAllowlist,
+		&i.PermissionMode,
+		&i.Kind,
+		&i.SystemKey,
+		&i.DisabledRuntimeSkills,
+		&i.ServiceTier,
+		&i.ConversationStarters,
+	)
+	return i, err
 }
 
 const getOneSpecAgent = `-- name: GetOneSpecAgent :one
@@ -181,6 +246,38 @@ func (q *Queries) GetOneSpecWorkspace(ctx context.Context, workspaceID pgtype.UU
 	return i, err
 }
 
+const listOneSpecWorkspaceRoles = `-- name: ListOneSpecWorkspaceRoles :many
+SELECT workspace_id, role_key, enabled, configured_by, revision, created_at, updated_at FROM onespec_workspace_role WHERE workspace_id=$1 ORDER BY role_key
+`
+
+func (q *Queries) ListOneSpecWorkspaceRoles(ctx context.Context, workspaceID pgtype.UUID) ([]OnespecWorkspaceRole, error) {
+	rows, err := q.db.Query(ctx, listOneSpecWorkspaceRoles, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OnespecWorkspaceRole{}
+	for rows.Next() {
+		var i OnespecWorkspaceRole
+		if err := rows.Scan(
+			&i.WorkspaceID,
+			&i.RoleKey,
+			&i.Enabled,
+			&i.ConfiguredBy,
+			&i.Revision,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockOneSpecFlow = `-- name: LockOneSpecFlow :one
 SELECT workspace_id, issue_id, state, revision, updated_at FROM onespec_flow WHERE workspace_id = $1 AND issue_id = $2 FOR UPDATE
 `
@@ -201,6 +298,15 @@ func (q *Queries) LockOneSpecFlow(ctx context.Context, arg LockOneSpecFlowParams
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const lockOneSpecTeam = `-- name: LockOneSpecTeam :exec
+SELECT pg_advisory_xact_lock(hashtextextended('onespec-team:' || $1::uuid::text, 0))
+`
+
+func (q *Queries) LockOneSpecTeam(ctx context.Context, workspaceID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, lockOneSpecTeam, workspaceID)
+	return err
 }
 
 const saveOneSpecProject = `-- name: SaveOneSpecProject :one

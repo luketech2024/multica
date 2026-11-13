@@ -28,9 +28,6 @@ func TestWorkbenchReviewReconcilesOnceAndPreservesSuspendedTasks(t *testing.T) {
 		t.Fatal(err)
 	}
 	roles := workbench.DefaultProjectRoles()
-	for _, role := range []string{"dev", "sec", "ops"} {
-		roles.Roles[role] = workbench.ProjectRole{}
-	}
 	criteria := workbench.Requirements{V: 1, Version: 1, NextItemNo: 2,
 		Items: []workbench.Item{{ID: "A-01", Text: "Export", Checked: &workbench.Check{By: owner, At: "now"}, Covers: []string{child}}},
 		Gate:  workbench.Gates{Spec: &workbench.GateCheck{PassedAt: "now", PassedBy: owner}},

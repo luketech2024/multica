@@ -91,6 +91,10 @@ func (h *Handler) ControlIssueExecution(w http.ResponseWriter, r *http.Request) 
 			err = service.SettleTerminalTaskState(r.Context(), q, stoppedRuns...)
 		}
 		status = "paused"
+		if err == nil {
+			_, err = tx.Exec(r.Context(), `UPDATE task_user_input SET status='cancelled',updated_at=now()
+				WHERE workspace_id=$1 AND status='pending' AND (issue_id=$2 OR issue_id IN (SELECT id FROM issue WHERE parent_issue_id=$2 AND workspace_id=$1))`, current.WorkspaceID, current.ID)
+		}
 	case "reconcile", "resume":
 		if pause == nil {
 			writeError(w, http.StatusConflict, "no execution pause is active")

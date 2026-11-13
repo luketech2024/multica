@@ -7,7 +7,7 @@ allowed-tools: Bash(multica *)
 
 # OneSpec complete
 
-Platform rules version 1.0.0. This skill is assigned to the dev role.
+Platform rules version 1.1.0. This skill is assigned to the dev role.
 
 In archive stage, prepare an archive proposal listing affected specifications, accepted changes and verification. Wait for archive confirmation. In archiving stage, apply the confirmed Delta Specs to main specifications, archive the proposal and update the overview index. Submit actual committed archival evidence before final acceptance.
 
@@ -15,7 +15,7 @@ Read `multica issue onespec get <issue-id>` first. Use task-local code and docum
 
 For stage evidence, commit the document and compute its SHA256 digest. Send `multica issue onespec artifact <issue-id> --file <json-file>` with `expected_revision` and `artifact` containing `stage`, `summary`, `refs` with repository ID, relative path, full commit and digest. A plan additionally contains `tasks` using the execution-plan task schema. Use real values and inspect subcommand help. Never invent a successful command or evidence.
 
-When the response is awaiting_confirmation, stop execution and direct the user to the OneSpec panel. Confirmations are human-only and tied to the displayed version. A rejected or superseded version needs corrected evidence. Refresh revisions before retrying. Continue only the currently assigned stage.
+When the response is awaiting_confirmation, stop execution and let the user review and confirm in the current conversation. Confirmations are human-only and tied to the displayed version. A rejected or superseded version needs corrected evidence. Refresh revisions before retrying. Continue only the currently assigned stage.
 
 Read the applicable local reference when preparing output.
 

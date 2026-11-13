@@ -22,11 +22,13 @@ export function ProjectRolesFields({
   onChange,
   disabled = false,
   onBusyChange,
+  allowInitialize = true,
 }: {
   config: ProjectRoles["config"];
   onChange: (config: ProjectRoles["config"]) => void;
   disabled?: boolean;
   onBusyChange?: (busy: boolean) => void;
+  allowInitialize?: boolean;
 }) {
   const { t } = useT("projects");
   const wsId = useWorkspaceId();
@@ -77,13 +79,13 @@ export function ProjectRolesFields({
   ) => {
     onChange({
       ...config,
-      roles: { ...config.roles, [role]: { ...config.roles[role], ...patch } },
+      roles: { ...config.roles, [role]: { ...config.roles[role], ...patch, binding_source: "explicit" } },
     });
   };
 
   return (
     <div className="space-y-2">
-      {hasMissingAgents && (
+      {allowInitialize && hasMissingAgents && (
         <div className="space-y-2 rounded-xl border bg-surface p-3">
           <ConfigurationSelect
             label={t(($) => $.roles.default_runtime)}

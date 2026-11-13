@@ -21,6 +21,7 @@ test.describe("Task interaction P0", () => {
     let parent = await api.createIssue("Deploy the service", { project_id: project.id,
       acceptance_criteria: { v: 1, version: 1, items: [{ id: "", text: "Service is reachable", origin: "user", covers: [], checked: null, note: null }], bounds: [], gate: { spec: null, accept: null } },
     });
+    parent = await api.prepareRequirementsReview(parent.id);
     parent = await api.updateIssue(parent.id, { expected_revision: parent.revision,
       acceptance_criteria: { ...parent.acceptance_criteria, items: parent.acceptance_criteria.items.map((item: Record<string, unknown>) => ({ ...item, checked: { at: "", by: "" } })) },
       confirm_requirements: true,
@@ -29,15 +30,16 @@ test.describe("Task interaction P0", () => {
       tasks: [{ key: "install", title: "Install the service", description: "Install and verify service", role: "ops", repo_id: "", covers: parent.acceptance_criteria.items.map((item: { id: string }) => item.id), depends_on: [], serial_group: "", expected: ["Service is reachable"] }],
     });
     const childId = parent.acceptance_criteria.plan.issues[0];
+    const slug = await loginAsDefault(page);
     await page.route(`**/api/issues/${parent.id}/children`, async (route) => {
       const response = await route.fetch();
+      expect(response.ok(), await response.text()).toBe(true);
       const body = await response.json();
       body.issues = body.issues.map((child: Record<string, unknown>) => ({ ...child, assignee_type: "agent", assignee_id: "00000000-0000-4000-8000-000000000001" }));
       await route.fulfill({ response, json: body });
     });
     // Intercept dispatch so this UI test never invokes an installed agent.
     await page.route(`**/api/issues/${childId}/rerun`, (route) => route.fulfill({ json: { id: "fake-run", issue_id: childId, status: "queued" } }));
-    const slug = await loginAsDefault(page);
     await page.goto(`/${slug}/issues/${parent.id}`);
     await expect(page.getByTestId("task-workspace")).toBeVisible();
     await expect(page.getByRole("button", { name: "Review", exact: true })).toHaveCount(0);
@@ -74,6 +76,9 @@ test.describe("Task interaction P0", () => {
     const issue = await api.createIssue("Pause the task", { project_id: project.id,
       acceptance_criteria: { v: 1, version: 1, items: [{ id: "", text: "Verify the service", origin: "user", covers: [], checked: null, note: null }], bounds: [], gate: { spec: null, accept: null } },
     });
+    const ready = await api.prepareRequirementsReview(issue.id);
+    await api.updateIssue(issue.id, { expected_revision: ready.revision, confirm_requirements: true,
+      acceptance_criteria: { ...ready.acceptance_criteria, items: ready.acceptance_criteria.items.map((item: Record<string, unknown>) => ({ ...item, checked: { at: "", by: "" } })) } });
     const slug = await loginAsDefault(page);
     await page.goto(`/${slug}/issues/${issue.id}`);
     await page.getByTestId("comment-composer-shell").click();
@@ -115,7 +120,9 @@ test.describe("Task interaction P0", () => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/${slug}/issues/${issue.id}`);
-    const bar = page.getByTestId("workspace-action");
+    await api.prepareRequirementsReview(issue.id);
+    await page.reload();
+    const bar = page.getByTestId("requirements-summary");
     await expect(bar).toContainText("Confirm requirements");
 
 

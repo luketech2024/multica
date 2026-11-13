@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const OneSpecVersion = "1.0.0"
+const OneSpecVersion = "1.1.0"
 
 type OneSpecArtifactRef struct {
 	RepositoryID string `json:"repository_id"`
@@ -22,16 +22,19 @@ type OneSpecArtifactRef struct {
 }
 
 type OneSpecArtifact struct {
-	DeliveryDigest     string               `json:"delivery_digest,omitempty"`
-	ReleaseRevision    int64                `json:"release_revision,omitempty"`
-	Stage              string               `json:"stage"`
-	Version            int                  `json:"version"`
-	Summary            string               `json:"summary"`
-	Refs               []OneSpecArtifactRef `json:"refs"`
-	Tasks              []PlanTask           `json:"tasks,omitempty"`
-	RequirementVersion int                  `json:"requirement_version"`
-	SubmittedBy        string               `json:"submitted_by"`
-	CreatedAt          string               `json:"created_at"`
+	Document           *RequirementsDocument `json:"document,omitempty"`
+	SourceTaskID       string                `json:"source_task_id,omitempty"`
+	DraftRevision      int64                 `json:"draft_revision,omitempty"`
+	DeliveryDigest     string                `json:"delivery_digest,omitempty"`
+	ReleaseRevision    int64                 `json:"release_revision,omitempty"`
+	Stage              string                `json:"stage"`
+	Version            int                   `json:"version"`
+	Summary            string                `json:"summary"`
+	Refs               []OneSpecArtifactRef  `json:"refs"`
+	Tasks              []PlanTask            `json:"tasks,omitempty"`
+	RequirementVersion int                   `json:"requirement_version"`
+	SubmittedBy        string                `json:"submitted_by"`
+	CreatedAt          string                `json:"created_at"`
 }
 
 type OneSpecDecision struct {
@@ -141,6 +144,33 @@ func (f *OneSpecFlow) Submit(a OneSpecArtifact, actor string, now time.Time) err
 	if len(a.Refs) == 0 || len(a.Refs) > 100 {
 		return errors.New("provide 1 to 100 versioned artifact references")
 	}
+	if a.Stage == "requirements" && f.RuleVersion == OneSpecVersion && a.Document == nil {
+		return errors.New("submit the readable PRD document with requirements")
+	}
+	if a.Document != nil {
+		if a.Stage != "requirements" {
+			return errors.New("requirement documents belong to the requirements stage")
+		}
+		if err := a.Document.Validate(false); err != nil {
+			return err
+		}
+		for _, document := range []*RequirementsDocument{a.Document, a.Document.Prototype} {
+			if document == nil {
+				continue
+			}
+			found := false
+			for _, ref := range a.Refs {
+				if ref == document.Ref {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return errors.New("include each document in the artifact references")
+			}
+			document.Verified, document.Error = false, ""
+		}
+	}
 	for _, ref := range a.Refs {
 		if ref.RepositoryID == "" || ref.Path == "" || strings.HasPrefix(ref.Path, "/") || strings.Contains(ref.Path, "\\") || strings.Contains(ref.Path, ":") || path.Clean(ref.Path) != ref.Path || ref.Path == ".." || strings.HasPrefix(ref.Path, "../") || !oneSpecHash.MatchString(ref.Commit) || !oneSpecHash.MatchString(ref.Digest) {
 			return errors.New("artifact requires a repository, relative path, commit and content digest")
@@ -163,6 +193,9 @@ func (f *OneSpecFlow) Decide(stage string, version int, approved bool, reason, a
 	a := f.Latest(stage)
 	if stage != f.Phase || a == nil || a.Version != version {
 		return errors.New("artifact version changed; reload before confirming")
+	}
+	if approved && !a.DocumentReady() {
+		return errors.New("wait for the runtime to verify the committed requirement documents")
 	}
 	if f.Status != "awaiting_confirmation" {
 		return errors.New("this stage is not waiting for confirmation")

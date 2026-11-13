@@ -4412,6 +4412,11 @@ export class ApiClient {
     return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST" }), ProjectRolesSchema, endpoint);
   }
 
+  async provisionOneSpecWorkspace(wsId: string) {
+    const endpoint = `/api/workspaces/${wsId}/onespec/team`;
+    return parseWorkbenchResponse(await this.fetch(endpoint, { method: "POST" }), OneSpecConfigurationSchema, endpoint);
+  }
+
   async getOneSpecFlow(issueId: string) {
     const endpoint = `/api/issues/${issueId}/onespec`;
     return parseWorkbenchResponse(await this.fetch(endpoint), OneSpecResponseSchema, endpoint);

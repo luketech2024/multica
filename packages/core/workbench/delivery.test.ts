@@ -17,6 +17,7 @@ describe("delivery response boundary", () => {
     expect(result.delivery?.[id]).toEqual(evidence);
   });
   it.each([
+    { ...evidence, task_hash: "invalid" },
     { ...evidence, passed: "true" },
     { ...evidence, issue_revision: -1 },
     { ...evidence, preview_url: "javascript:alert(1)" },
@@ -29,6 +30,10 @@ describe("delivery response boundary", () => {
   });
   it("allows older responses without delivery evidence", () => {
     expect(AcceptanceCriteriaSchema.parse({ v: 1, items: [] }).delivery).toBeUndefined();
+  });
+  it("preserves server-owned task content fingerprints when present", () => {
+    const report = { ...evidence, task_hash: "b".repeat(64) };
+    expect(DeliveryEvidenceSchema.parse(report)).toEqual(report);
   });
   it("rejects malformed readiness and keeps future blockers blocking", () => {
     expect(ReleaseReadinessSchema.safeParse({ revision: 1, merges: [], blockers: null }).success).toBe(false);

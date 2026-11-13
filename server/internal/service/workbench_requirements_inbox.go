@@ -55,9 +55,36 @@ func (s *TaskService) reconcileWorkbenchRequirementNotice(ctx context.Context, c
 	if err != nil {
 		return err
 	}
-	needsConfirmation := workbench.RequirementsNeedConfirmation(criteria, issue.Status, issue.ParentIssueID.Valid) && issue.AssigneeType.String == "member"
+	recipient := issue.AssigneeID
+	flowReady := true
+	if criteria.Phase != "" {
+		recipient = pgtype.UUID{}
+		if issue.CreatorType == "member" {
+			recipient = issue.CreatorID
+		}
+		if row, e := q.GetOneSpecFlow(ctx, db.GetOneSpecFlowParams{WorkspaceID: issue.WorkspaceID, IssueID: issue.ID}); e == nil {
+			var flow workbench.OneSpecFlow
+			if json.Unmarshal(row.State, &flow) == nil {
+				recipient, _ = util.ParseUUID(flow.ApproverID)
+				artifact := flow.Latest("requirements")
+				flowReady = flow.Phase == "requirements" && flow.Status == "awaiting_confirmation" && artifact != nil && artifact.DraftRevision == criteria.DraftRevision && artifact.DocumentReady()
+			}
+		} else if !errors.Is(e, pgx.ErrNoRows) {
+			return e
+		}
+		if !recipient.Valid {
+			project, e := q.GetProjectInWorkspace(ctx, db.GetProjectInWorkspaceParams{ID: issue.ProjectID, WorkspaceID: issue.WorkspaceID})
+			if e != nil {
+				return e
+			}
+			if project.LeadType.String == "member" {
+				recipient = project.LeadID
+			}
+		}
+	}
+	needsConfirmation := flowReady && workbench.RequirementsNeedConfirmation(criteria, issue.Status, issue.ParentIssueID.Valid) && recipient.Valid && (criteria.Phase != "" || issue.AssigneeType.String == "member")
 	if needsConfirmation {
-		member, err := q.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{UserID: issue.AssigneeID, WorkspaceID: issue.WorkspaceID})
+		member, err := q.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{UserID: recipient, WorkspaceID: issue.WorkspaceID})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
@@ -68,6 +95,9 @@ func (s *TaskService) reconcileWorkbenchRequirementNotice(ctx context.Context, c
 		return err
 	}
 	version := fmt.Sprint(criteria.Version)
+	if criteria.Phase != "" {
+		version = fmt.Sprintf("%d.%d", criteria.Version, criteria.DraftRevision)
+	}
 	alreadyNotified := false
 	var handled []db.InboxItem
 	for _, notice := range notices {
@@ -75,7 +105,7 @@ func (s *TaskService) reconcileWorkbenchRequirementNotice(ctx context.Context, c
 		if err := json.Unmarshal(notice.Details, &details); err != nil {
 			return err
 		}
-		current := needsConfirmation && notice.RecipientID == issue.AssigneeID && details["requirement_version"] == version
+		current := needsConfirmation && notice.RecipientID == recipient && details["requirement_version"] == version
 		alreadyNotified = alreadyNotified || current
 		if !current && !notice.Read {
 			read, err := q.MarkInboxRead(ctx, notice.ID)
@@ -90,7 +120,7 @@ func (s *TaskService) reconcileWorkbenchRequirementNotice(ctx context.Context, c
 	if needsConfirmation && !alreadyNotified {
 		details, _ := json.Marshal(map[string]string{"source": "workbench_requirements", "reason": "requirements_ready", "requirement_version": version})
 		created, inserted, err = inboxwriter.CreateIfEligible(ctx, q, db.CreateInboxItemParams{
-			ID: dbid.NewV7(), WorkspaceID: issue.WorkspaceID, IssueID: issue.ID, RecipientType: "member", RecipientID: issue.AssigneeID,
+			ID: dbid.NewV7(), WorkspaceID: issue.WorkspaceID, IssueID: issue.ID, RecipientType: "member", RecipientID: recipient,
 			Type: "review_requested", Severity: "action_required", Title: issue.Title, ActorType: util.StrToText("system"), Details: details,
 		})
 		if err != nil {

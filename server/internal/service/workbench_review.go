@@ -73,7 +73,7 @@ func (s *TaskService) reconcileWorkbenchReview(ctx context.Context, candidate db
 	for _, child := range children {
 		var handoff workbench.Handoff
 		if json.Unmarshal(workbench.HandoffJSON(child.Properties), &handoff) == nil {
-			tasks = append(tasks, workbench.DeliveryTask{ID: util.UUIDToString(child.ID), Revision: child.Revision, Status: child.Status, Handoff: handoff})
+			tasks = append(tasks, workbench.DeliveryTask{ID: util.UUIDToString(child.ID), Title: child.Title, Description: child.Description.String, Revision: child.Revision, Status: child.Status, Handoff: handoff})
 		}
 	}
 	active, err := q.WorkbenchPlanHasActiveRuns(ctx, db.WorkbenchPlanHasActiveRunsParams{ParentID: issue.ID, WorkspaceID: issue.WorkspaceID})

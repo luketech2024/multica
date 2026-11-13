@@ -4,10 +4,23 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
+
+func TestOneSpecRunTimestampKeepsConfirmationOrdering(t *testing.T) {
+	created := time.Date(2026, 11, 12, 8, 0, 0, 750000000, time.UTC)
+	response := taskToResponse(db.AgentTaskQueue{CreatedAt: pgtype.Timestamptz{Time: created, Valid: true}}, "")
+	parsed, err := time.Parse(time.RFC3339Nano, response.CreatedAt)
+	if err != nil || !parsed.Equal(created) {
+		t.Fatalf("run creation lost precision relative to confirmation: %s", response.CreatedAt)
+	}
+}
 
 func TestOneSpecWorkflowHTTP(t *testing.T) {
 	if testHandler == nil {
@@ -18,7 +31,7 @@ func TestOneSpecWorkflowHTTP(t *testing.T) {
 	testutil.Call(t, testHandler.SaveOneSpecProject, config).Want(http.StatusOK)
 	var repoID string
 	dbfx.QueryRow(t, `INSERT INTO project_resource (project_id,workspace_id,resource_type,resource_ref,created_by) VALUES ($1,$2,'git_repo','{"url":"https://example.test/repo.git"}',$3) RETURNING id`, project, testWorkspaceID, testUserID).Scan(&repoID)
-	issue := createIssueWithPropertyBody(t, map[string]any{"title": "Document upstream changes", "project_id": project})
+	issue := createIssueWithPropertyBody(t, map[string]any{"title": "Document upstream changes", "project_id": project, "acceptance_criteria": map[string]any{"v": 1, "items": []map[string]any{{"text": "Document the imported behavior"}}}})
 	var state oneSpecResponse
 	get := func() {
 		t.Helper()
@@ -43,6 +56,7 @@ func TestOneSpecWorkflowHTTP(t *testing.T) {
 		t.Fatal("unstarted workflow did not refresh its configuration")
 	}
 	call("kind", map[string]any{"kind": "documentation"}, 200)
+	prepareOneSpecRequirements(t, issue.ID)
 	call("advance", map[string]any{}, 409)
 	for _, stage := range []string{"requirements", "branch", "documentation", "testing", "merge", "merging"} {
 		artifact := workbench.OneSpecArtifact{Stage: stage, Summary: "Verified " + stage, Refs: []workbench.OneSpecArtifactRef{{RepositoryID: repoID, Path: "onespec/changes/documentation.md", Commit: strings.Repeat("a", 40), Digest: strings.Repeat("b", 64)}}}
@@ -67,6 +81,21 @@ func TestOneSpecWorkflowHTTP(t *testing.T) {
 	testutil.Call(t, testHandler.SaveOneSpecProject, testutil.WithURLParams(newRequest("PUT", "/", map[string]any{"enabled": false, "expected_revision": 0}), "id", project)).Want(409)
 }
 
+func TestOneSpecRunPreservesExecutionPause(t *testing.T) {
+	project := dbfx.Project(t, "Paused OneSpec task")
+	testutil.Call(t, testHandler.SaveOneSpecProject, testutil.WithURLParams(newRequest("PUT", "/", map[string]any{"enabled": true, "expected_revision": 0}), "id", project)).Want(200)
+	issue := createIssueWithPropertyBody(t, map[string]any{"title": "Keep task paused", "project_id": project})
+	var state oneSpecResponse
+	testutil.Call(t, testHandler.GetOneSpecFlow, testutil.WithURLParams(newRequest("GET", "/", nil), "id", issue.ID)).Want(200).JSON(&state)
+	dbfx.Exec(t, `UPDATE issue SET properties=jsonb_set(properties,'{workbench_pause}','{"v":1,"phase":"paused","previous_status":"todo"}'::jsonb) WHERE id=$1`, issue.ID)
+	testutil.Call(t, testHandler.UpdateOneSpecFlow, testutil.WithURLParams(newRequest("POST", "/", map[string]any{"expected_revision": state.Revision}), "id", issue.ID, "action", "run")).Want(409)
+	var count int
+	dbfx.QueryRow(t, `SELECT count(*) FROM agent_task_queue WHERE issue_id=$1`, issue.ID).Scan(&count)
+	if count != 0 {
+		t.Fatal("paused task started an execution")
+	}
+}
+
 func TestOneSpecConfirmedPlanAndRevision(t *testing.T) {
 	project := dbfx.Project(t, "OneSpec plan")
 	testutil.Call(t, testHandler.SaveOneSpecProject, testutil.WithURLParams(newRequest("PUT", "/", map[string]any{"enabled": true, "expected_revision": 0}), "id", project)).Want(200)
@@ -88,6 +117,7 @@ func TestOneSpecConfirmedPlanAndRevision(t *testing.T) {
 	artifact := func(stage string, tasks []workbench.PlanTask) workbench.OneSpecArtifact {
 		return workbench.OneSpecArtifact{Stage: stage, Summary: "Verified " + stage, Tasks: tasks, Refs: []workbench.OneSpecArtifactRef{{RepositoryID: repoID, Path: "onespec/changes/test/" + stage + ".md", Commit: strings.Repeat("a", 40), Digest: strings.Repeat("b", 64)}}}
 	}
+	prepareOneSpecRequirements(t, issue.ID)
 	for _, stage := range []string{"requirements", "design"} {
 		call("artifact", map[string]any{"artifact": artifact(stage, nil)}, 200)
 		call("decision", map[string]any{"stage": stage, "version": 1, "approved": true}, 200)
@@ -169,4 +199,17 @@ func TestOneSpecConfirmationAuthority(t *testing.T) {
 	request = testutil.WithURLParams(newRequest("POST", "/", map[string]any{"expected_revision": state.Revision, "kind": "documentation"}), "id", issue.ID, "action", "kind")
 	request.Header.Set("X-User-ID", other)
 	testutil.Call(t, testHandler.UpdateOneSpecFlow, request).Want(200)
+}
+
+func prepareOneSpecRequirements(t *testing.T, id string) {
+	t.Helper()
+	// These stage-transition fixtures exercise persisted pre-document workflows.
+	dbfx.Exec(t, `UPDATE onespec_flow SET state=jsonb_set(state,'{rule_version}','"1.0.0"') WHERE issue_id=$1`, id)
+	// A submitted draft and explicit item checks precede the OneSpec decision.
+	dbfx.Exec(t, `UPDATE issue SET acceptance_criteria=acceptance_criteria || '{"phase":"ready","draft_revision":1,"ready_revision":1}'::jsonb WHERE id=$1`, id)
+	var current IssueResponse
+	testutil.Call(t, testHandler.GetIssue, testutil.WithURLParams(newRequest("GET", "/", nil), "id", id)).Want(200).JSON(&current)
+	criteria, _ := workbench.ParseRequirements(current.AcceptanceCriteria)
+	criteria.Items[0].Checked = &workbench.Check{}
+	testutil.Call(t, testHandler.UpdateIssue, testutil.WithURLParams(newRequest("PUT", "/", map[string]any{"expected_revision": current.Revision, "acceptance_criteria": criteria}), "id", id)).Want(200)
 }

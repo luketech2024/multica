@@ -19,6 +19,9 @@ test("answers agent questions in the shared composer across reloads", async ({ p
     const parent = await api.createIssue("Configure a static website", {project_id:project.id,
       acceptance_criteria: { v:1,version:1,items:[{id:"",text:"Verify website",origin:"user",covers:[],checked:null,note:null}],bounds:[],gate:{spec:null,accept:null} },
     });
+    const ready = await api.prepareRequirementsReview(parent.id);
+    await api.updateIssue(parent.id, { expected_revision: ready.revision, confirm_requirements: true,
+      acceptance_criteria: { ...ready.acceptance_criteria, items: ready.acceptance_criteria.items.map((item: Record<string, unknown>) => ({ ...item, checked: { at: "", by: "" } })) } });
     const child = await api.createIssue("Confirm website settings", {project_id:project.id,parent_issue_id:parent.id,status:"in_progress"});
     await db.query(`UPDATE issue SET assignee_type='agent', assignee_id=$1 WHERE id=$2`,[agentId,child.id]);
     const taskId = (await db.query(`INSERT INTO agent_task_queue(agent_id,runtime_id,issue_id,status,dispatched_at,started_at) VALUES($1,$2,$3,'running',now(),now()) RETURNING id`,[agentId,runtimeId,child.id])).rows[0].id;
@@ -40,19 +43,17 @@ test("answers agent questions in the shared composer across reloads", async ({ p
     const composer = page.getByTestId("user-input-composer");
     await expect(composer).toBeVisible({timeout:45_000});
     await expect(page.getByTestId("workspace-status")).toHaveText("Waiting for your answer");
-    await composer.getByRole("button",{name:"8080",exact:true}).click();
-    await expect(composer.getByRole("textbox",{name:"Answer",exact:true})).toHaveText("8080");
-    await composer.getByRole("button",{name:"Answer",exact:true}).click();
+    await composer.getByRole("button",{name:/8080/}).click();
     await expect(composer.getByText(/Answer · Domain/)).toBeVisible();
     await page.reload({waitUntil:"domcontentloaded"});
     await expect(composer.getByText(/Answer · Domain/)).toBeVisible({timeout:30_000});
     await composer.getByTestId("comment-composer-shell").click();
     await composer.getByRole("textbox",{name:"Answer",exact:true}).fill("example.test");
     const answered = page.waitForResponse((response) => response.url().endsWith(`/input-requests/${request.id}/answer`) && response.request().method()==="POST");
-    await composer.getByRole("button",{name:"Answer",exact:true}).click();
+    await composer.getByRole("button",{name:"Submit answers",exact:true}).click();
     expect((await answered).status()).toBe(200);
     await expect(composer).toHaveCount(0);
-    await expect(page.getByText("example.test",{exact:true})).toBeVisible();
+    await expect(page.getByText(/example\.test/).first()).toBeVisible();
     const received = await fetch(`${apiBase}/api/daemon/tasks/${taskId}/input-requests/${request.id}`,{headers});
     expect((await received.json()).response.answers).toEqual({port:{answers:["8080"]},domain:{answers:["example.test"]}});
     expect((await db.query(`SELECT count(*)::int AS n FROM agent_task_queue WHERE issue_id=$1`,[child.id])).rows[0].n).toBe(1);
@@ -62,9 +63,22 @@ test("answers agent questions in the shared composer across reloads", async ({ p
     expect(next.status).toBe(200);
     const nextRequest = await next.json();
     await expect(composer).toBeVisible({timeout:10_000});
+    const answerUrl = `**/input-requests/${nextRequest.id}/answer`;
+    await page.route(answerUrl, (route) => route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({error:"Temporary test failure"})}), {times:1});
+    await composer.getByRole("button",{name:/8081/}).click();
+    await expect(composer.getByRole("alert")).toBeVisible();
+    await expect(composer.getByRole("button",{name:/8081/})).toHaveAttribute("aria-pressed", "true");
+    const retryAnswer = page.waitForResponse((response) => response.url().endsWith(`/input-requests/${nextRequest.id}/answer`) && response.request().method()==="POST");
+    await composer.getByRole("button",{name:/8081/}).click();
+    expect((await retryAnswer).status()).toBe(200);
+    await expect(composer).toHaveCount(0);
+    const pauseRequest = await fetch(`${apiBase}/api/daemon/tasks/${taskId}/input-requests`,{method:"POST",headers,body:JSON.stringify({...question,key:"thread/turn/third",questions:[question.questions[0]]})});
+    expect(pauseRequest.status).toBe(200);
+    const pauseRequestBody = await pauseRequest.json();
+    await expect(composer).toBeVisible({timeout:10_000});
     await composer.getByRole("button",{name:"Pause task",exact:true}).click();
     await expect(composer).toHaveCount(0,{timeout:15_000});
-    const late = await fetch(`${apiBase}/api/issues/${child.id}/input-requests/${nextRequest.id}/answer`,{method:"POST",headers,body:JSON.stringify({answers:{port:{answers:["8080"]}}})});
+    const late = await fetch(`${apiBase}/api/issues/${child.id}/input-requests/${pauseRequestBody.id}/answer`,{method:"POST",headers,body:JSON.stringify({answers:{port:{answers:["8080"]}}})});
     expect(late.status).toBe(409);
   } finally {
     await api.cleanup();

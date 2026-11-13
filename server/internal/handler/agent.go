@@ -871,6 +871,10 @@ func visibleTaskHistory(tasks []db.AgentTaskQueue) []db.AgentTaskQueue {
 // derivation; pass "" only on daemon-facing paths that genuinely don't have
 // it, in which case RelativeWorkDir falls back to the existing WorkDir.
 func taskToResponse(t db.AgentTaskQueue, workspaceID string) AgentTaskResponse {
+	createdAt := timestampToString(t.CreatedAt)
+	if t.CreatedAt.Valid {
+		createdAt = t.CreatedAt.Time.Format(time.RFC3339Nano)
+	}
 	var cancellation struct {
 		TaskID string `json:"comment_change_cancelled_task_id"`
 	}
@@ -927,7 +931,7 @@ func taskToResponse(t db.AgentTaskQueue, workspaceID string) AgentTaskResponse {
 		MaxAttempts:            t.MaxAttempts,
 		ParentTaskID:           uuidToPtr(t.ParentTaskID),
 		IsLeaderTask:           t.IsLeaderTask,
-		CreatedAt:              timestampToString(t.CreatedAt),
+		CreatedAt:              createdAt,
 		TriggerCommentID:       uuidToPtr(t.TriggerCommentID),
 		CoalescedCommentIDs:    uuidsToStrings(t.CoalescedCommentIds),
 		DeliveredCommentIDs:    uuidStringsOrEmpty(t.DeliveredCommentIds),

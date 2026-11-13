@@ -2,11 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/multica-ai/multica/server/internal/service"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -23,6 +26,19 @@ func (h *Handler) GetProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return
+	}
+	settings, err := h.Queries.GetOneSpecProject(r.Context(), db.GetOneSpecProjectParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID})
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, 500, "failed to read OneSpec settings")
+		return
+	}
+	if settings.Enabled {
+		setup, err := service.ResolveOneSpecTeam(r.Context(), h.Queries, project.WorkspaceID, parseUUID(r.Header.Get("X-User-ID")), &project, false)
+		if err != nil {
+			writeError(w, 500, "failed to read OneSpec team")
+			return
+		}
+		response = setup.Team
 	}
 	writeJSON(w, http.StatusOK, response)
 }
@@ -64,6 +80,10 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 	}
 	defer tx.Rollback(r.Context())
 	q := h.Queries.WithTx(tx)
+	if err = q.LockOneSpecTeam(r.Context(), project.WorkspaceID); err != nil {
+		writeError(w, 500, "failed to lock team")
+		return
+	}
 	if _, err = q.LockProjectWorkbenchRoles(r.Context(), db.LockProjectWorkbenchRolesParams{WorkspaceID: project.WorkspaceID, ID: project.ID}); err != nil {
 		writeError(w, http.StatusNotFound, "project not found")
 		return
@@ -76,6 +96,30 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 	if before.Revision != input.ExpectedRevision {
 		writeError(w, http.StatusConflict, "project roles changed; reload before saving")
 		return
+	}
+	settings, err := q.GetOneSpecProject(r.Context(), db.GetOneSpecProjectParams{WorkspaceID: project.WorkspaceID, ProjectID: project.ID})
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, 500, "failed to read OneSpec settings")
+		return
+	}
+	previousConfig := before.Config
+	if settings.Enabled {
+		setup, err := service.ResolveOneSpecTeam(r.Context(), q, project.WorkspaceID, member.UserID, &project, false)
+		if err != nil {
+			writeError(w, 500, "failed to read OneSpec team")
+			return
+		}
+		previousConfig = setup.Team.Config
+	}
+	for role, entry := range config.Roles {
+		previous := previousConfig.Roles[role]
+		if entry.BindingSource == "explicit" || previous.BindingSource != "onespec_default" ||
+			entry.Enabled != previous.Enabled || !sameRoleID(entry.AgentID, previous.AgentID) || !sameRoleID(entry.RuntimeID, previous.RuntimeID) {
+			entry.BindingSource = "explicit"
+		} else {
+			entry.BindingSource = "onespec_default"
+		}
+		config.Roles[role] = entry
 	}
 	response := ProjectRolesResponse{Config: config, Revision: before.Revision + 1}
 	raw, _ := json.Marshal(response)
@@ -104,6 +148,13 @@ func (h *Handler) SaveProjectWorkbenchRoles(w http.ResponseWriter, r *http.Reque
 		h.publish(protocol.EventProjectUpdated, uuidToString(project.WorkspaceID), "member", uuidToString(member.UserID), map[string]any{"project": response})
 	}
 	writeJSON(w, http.StatusOK, response)
+}
+
+func sameRoleID(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
 }
 
 func (h *Handler) validateProjectRoleBindings(w http.ResponseWriter, r *http.Request, workspaceID pgtype.UUID, config workbench.ProjectRoles) bool {

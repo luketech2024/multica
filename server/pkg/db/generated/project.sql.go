@@ -134,6 +134,7 @@ SELECT project_id,
 FROM issue
 WHERE workspace_id = $2::uuid
   AND project_id = ANY($3::uuid[])
+  AND parent_issue_id IS NULL
 GROUP BY project_id
 `
 

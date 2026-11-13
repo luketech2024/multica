@@ -1,9 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { createTestApi, loginAsDefault } from "./helpers";
 import type { TestApiClient } from "./fixtures";
 
 test.describe("OneSpec versioned workflow", () => {
   test.use({ locale: "en-US" });
+  test.beforeEach(({ page }) => { page.setDefaultTimeout(15_000); });
   let api: TestApiClient;
   test.afterEach(async () => {
     await api?.cleanup();
@@ -41,16 +42,10 @@ test.describe("OneSpec versioned workflow", () => {
       name: "OneSpec workflow",
       exact: true,
     });
-    await expect(panel).toBeVisible();
-    await panel
-      .getByRole("button", {
-        name: "Refresh configuration before starting",
-        exact: true,
-      })
-      .click();
-    await expect
-      .poll(async () => (await api.oneSpec(issue.id)).flow.generation)
-      .toBe(1);
+    await expect(page.getByTestId("workspace-status")).toHaveText("Discussing requirements");
+    state = await api.oneSpec(issue.id);
+    await api.oneSpec(issue.id, "refresh-configuration", { expected_revision: state.revision });
+    await api.prepareRequirementsReview(issue.id, true);
     for (const stage of [
       "requirements",
       "branch",
@@ -76,7 +71,11 @@ test.describe("OneSpec versioned workflow", () => {
         },
       });
       await page.reload();
-      if (["requirements", "merge"].includes(stage)) {
+      if (stage === "requirements") {
+        await confirmRequirements(page);
+        await expect.poll(async () => (await api.oneSpec(issue.id)).flow.phase).not.toBe(stage);
+        continue;
+      } else if (stage === "merge") {
         await panel
           .getByRole("button", { name: "Confirm this version", exact: true })
           .click();
@@ -97,6 +96,8 @@ test.describe("OneSpec versioned workflow", () => {
     await expect
       .poll(async () => (await api.getIssue(issue.id)).status)
       .toBe("done");
+    await page.getByTestId("task-workspace").locator("header").getByRole("button", { name: "Task details", exact: true }).click();
+    await page.getByRole("dialog", { name: "Task details" }).getByText("Requirements and records", { exact: true }).click();
     await expect(
       panel.getByText("Complete · Completed", { exact: true }),
     ).toBeVisible();
@@ -141,6 +142,7 @@ test.describe("OneSpec versioned workflow", () => {
       expected_revision: state.revision,
       kind: "release",
     });
+    await api.prepareRequirementsReview(issue.id, true);
     await api.oneSpec(issue.id, "artifact", {
       expected_revision: state.revision,
       artifact: {
@@ -162,12 +164,10 @@ test.describe("OneSpec versioned workflow", () => {
       name: "OneSpec workflow",
       exact: true,
     });
-    await panel
-      .getByRole("button", { name: "Confirm this version", exact: true })
-      .click();
-    await panel
-      .getByRole("button", { name: "Continue to next stage", exact: true })
-      .click();
+    await confirmRequirements(page);
+    await expect.poll(async () => (await api.oneSpec(issue.id)).flow.phase).toBe("release_preparation");
+    await page.getByTestId("task-workspace").locator("header").getByRole("button", { name: "Task details", exact: true }).click();
+    await page.getByRole("dialog", { name: "Task details" }).getByText("Requirements and records", { exact: true }).click();
     await expect(
       panel.getByText("Release preparation · Awaiting artifacts", { exact: true }),
     ).toBeVisible();
@@ -224,6 +224,7 @@ test.describe("OneSpec versioned workflow", () => {
       name: "OneSpec workflow",
       exact: true,
     });
+    await api.prepareRequirementsReview(issue.id, true);
     const tasks = [
       {
         key: "dev",
@@ -293,7 +294,11 @@ test.describe("OneSpec versioned workflow", () => {
         },
       });
       await page.reload();
-      if (["requirements", "design", "plan", "archive"].includes(stage)) {
+      if (stage === "requirements") {
+        await confirmRequirements(page);
+        await expect.poll(async () => (await api.oneSpec(issue.id)).flow.phase).not.toBe(stage);
+        continue;
+      } else if (["design", "plan", "archive"].includes(stage)) {
         if (stage === "plan")
           await expect(
             panel.getByRole("button", {
@@ -335,3 +340,13 @@ test.describe("OneSpec versioned workflow", () => {
       .toBe("done");
   });
 });
+
+async function confirmRequirements(page: Page) {
+  const card = page.getByTestId("requirements-summary");
+  await expect(card.getByRole("checkbox").first()).toBeVisible();
+  for (const checkbox of await card.getByRole("checkbox").all()) {
+    await checkbox.click();
+    await expect(checkbox).toBeChecked();
+  }
+  await card.getByRole("button", { name: /^Confirm requirements and start/ }).click();
+}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/multica-ai/multica/server/internal/workbench"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
 func TestConfirmedRequirementsDispatchSchedulerAndAcceptItsPlan(t *testing.T) {
@@ -81,5 +82,65 @@ func TestConfirmedRequirementsDispatchSchedulerAndAcceptItsPlan(t *testing.T) {
 	testutil.Call(t, testHandler.ReviewIssueDelivery, testutil.WithURLParams(newRequest("GET", "/api/issues/"+parent+"/delivery-review", nil), "id", parent)).Want(http.StatusOK).JSON(&review)
 	if len(review.Blockers) != 1 || review.Blockers[0].Code != "running" {
 		t.Fatalf("acceptance must wait for the reporting run to settle: %+v", review)
+	}
+}
+
+func TestWorkbenchRuntimeDiscussionInstructions(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		phase     string
+		child     bool
+		confirmed bool
+		team      bool
+		want      bool
+	}{
+		{name: "new request", phase: "clarifying", team: true, want: true},
+		{name: "incomplete draft", phase: "draft", team: true, want: true},
+		{name: "ready for review", phase: "ready", team: true},
+		{name: "confirmed", phase: "draft", team: true, confirmed: true},
+		{name: "planned child", phase: "clarifying", team: true, child: true},
+		{name: "ordinary issue", phase: "clarifying"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			criteria := workbench.Requirements{V: 1, Phase: tc.phase}
+			if tc.team {
+				criteria.Team = &workbench.ProjectTeamSnapshot{}
+			}
+			if tc.confirmed {
+				criteria.Gate.Spec = &workbench.GateCheck{PassedAt: "2026-11-12T00:00:00Z"}
+			}
+			raw, err := json.Marshal(criteria)
+			if err != nil {
+				t.Fatal(err)
+			}
+			issue := db.Issue{AcceptanceCriteria: raw}
+			if tc.child {
+				issue.ParentIssueID = parseUUID("11111111-1111-4111-8111-111111111111")
+			}
+			instructions := workbenchRuntimeInstructions(issue)
+			if got := strings.Contains(instructions, "## Current turn: clarify the request in conversation"); got != tc.want {
+				t.Fatalf("discussion priority = %v, want %v", got, tc.want)
+			}
+			if tc.want {
+				for _, contract := range []string{"--full --output json", "submit 1-3 focused choices", "and end the turn", "defer repository exploration", "without forcing another question round"} {
+					if !strings.Contains(instructions, contract) {
+						t.Fatalf("missing discussion contract %q", contract)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestWorkbenchChildRequiresStructuredDecisions(t *testing.T) {
+	issue := db.Issue{
+		ParentIssueID: parseUUID("11111111-1111-4111-8111-111111111111"),
+		Properties:    []byte(`{"workbench_handoff":{"v":2,"role":"ops","requirement_version":1,"covers":["A-01"],"expected":["deployment report"]}}`),
+	}
+	instructions := workbenchRuntimeInstructions(issue)
+	for _, required := range []string{"At EVERY stage", "multica issue questions <current-issue-id>", "use the child's issue ID", "question survives the end of the turn", "Do not mark the issue blocked or delivered", "Do not execute the dependent action"} {
+		if !strings.Contains(instructions, required) {
+			t.Fatalf("child instructions missing %q", required)
+		}
 	}
 }

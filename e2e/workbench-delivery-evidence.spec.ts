@@ -103,12 +103,12 @@ test.describe("Workbench delivery evidence", () => {
     expect((await undone.json()).status).toBe("in_review");
     await api.updateIssue(childId, { title: "Export verification updated" });
     await page.reload();
-    await expect(evidence.getByText("Evidence is out of date", { exact: true })).toBeVisible();
+    await expect(evidence.getByText("Delivery result needs to be rechecked", { exact: true })).toBeVisible();
     await expect(acceptance.getByRole("button", { name: "Accept delivery", exact: true })).toBeDisabled();
-    await acceptance.getByRole("button", { name: "Request changes", exact: true }).click();
-    await acceptance.getByRole("textbox", { name: "Reason for changes" }).fill("Recheck the updated export requirements.");
+    await acceptance.getByRole("button", { name: "Send back for changes", exact: true }).click();
+    await acceptance.getByRole("textbox", { name: "What needs to change" }).fill("Recheck the updated export requirements.");
     const rejectedResponse = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith("/delivery-review"));
-    await acceptance.getByRole("button", { name: "Send back for changes" }).click();
+    await acceptance.getByRole("button", { name: "Confirm return" }).click();
     const rejected = await rejectedResponse;
     expect(rejected.status()).toBe(200);
     const changed = await rejected.json();

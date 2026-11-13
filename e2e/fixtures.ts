@@ -549,6 +549,27 @@ export class TestApiClient {
     if(!response.ok) throw new Error(`OneSpec action failed: ${response.status} ${await response.text()}`);
     return response.json();
   }
+  async prepareRequirementsReview(id: string, legacyOneSpec = false) {
+    if (!this.createdIssueIds.includes(id)) throw new Error("Requirements fixtures require a test-owned issue");
+    let issue = await this.getIssue(id);
+    if (!issue.acceptance_criteria?.items.length) {
+      issue = await this.updateIssue(id, { expected_revision: issue.revision,
+        acceptance_criteria: { ...issue.acceptance_criteria, v: 1, items: [{ text: "Verify the requested deliverable" }], bounds: [] } });
+    }
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      if (legacyOneSpec) await client.query(`UPDATE onespec_flow SET state=jsonb_set(state,'{rule_version}','"1.0.0"') WHERE issue_id=$1 AND workspace_id=$2`, [id, this.workspaceId]);
+      // Simulate the submitted output of a controlled agent without launching a real runtime.
+      await client.query(`UPDATE issue SET acceptance_criteria=acceptance_criteria || jsonb_build_object(
+        'phase','ready','draft_revision',GREATEST(COALESCE((acceptance_criteria->>'draft_revision')::int,0),1),
+        'ready_revision',GREATEST(COALESCE((acceptance_criteria->>'draft_revision')::int,0),1),
+        'covered_discussion_revision',COALESCE((acceptance_criteria->>'discussion_revision')::int,0)),revision=revision+1
+        WHERE id=$1 AND workspace_id=$2`, [id, this.workspaceId]);
+    } finally { await client.end(); }
+    return this.getIssue(id);
+  }
+
   async getIssue(id: string) {
     const response=await this.authedFetch(`/api/issues/${id}`);
     if(!response.ok) throw new Error(`get issue failed: ${response.status}`);

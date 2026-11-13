@@ -94,3 +94,34 @@ func TestWorkbenchRequirementNoticesFollowVersionAssignmentAndConfirmation(t *te
 	reconcile()
 	assertCounts(3, 0)
 }
+
+func TestWorkbenchRequirementDiscussionNoticeKeepsAgentAssigned(t *testing.T) {
+	f, owner := newPrincipalFixture(t)
+	project := f.Project(t, "Discussion notifications")
+	parent := f.Issue(t, "Confirm discussion draft", testutil.Cols{"project_id": project, "assignee_type": "agent", "assignee_id": owner})
+	f.Cleanup(t, "DELETE FROM inbox_item WHERE issue_id=$1", parent)
+	criteria := workbench.Requirements{V: 1, Version: 1, Phase: "ready", DraftRevision: 2, ReadyRevision: 2, DiscussionRevision: 1, CoveredDiscussionRevision: 1,
+		Items: []workbench.Item{{ID: "A-01", Text: "Open homepage"}}, Team: &workbench.ProjectTeamSnapshot{ProjectID: project}}
+	raw, _ := json.Marshal(criteria)
+	f.Exec(t, "UPDATE issue SET acceptance_criteria=$1 WHERE id=$2", raw, parent)
+	if err := f.svc.TaskSvc.ReconcileWorkbenchRequirements(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var recipient, assigneeType string
+	f.QueryRow(t, "SELECT recipient_id::text FROM inbox_item WHERE issue_id=$1 AND details->>'source'='workbench_requirements' AND NOT read", parent).Scan(&recipient)
+	f.QueryRow(t, "SELECT assignee_type FROM issue WHERE id=$1", parent).Scan(&assigneeType)
+	if recipient != owner || assigneeType != "agent" {
+		t.Fatal("confirmation routing changed the discussion assignment")
+	}
+	criteria.DiscussionRevision++
+	raw, _ = json.Marshal(criteria)
+	f.Exec(t, "UPDATE issue SET acceptance_criteria=$1 WHERE id=$2", raw, parent)
+	if err := f.svc.TaskSvc.ReconcileWorkbenchRequirements(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var unread int
+	f.QueryRow(t, "SELECT count(*) FROM inbox_item WHERE issue_id=$1 AND NOT read", parent).Scan(&unread)
+	if unread != 0 {
+		t.Fatal("stale requirement notice remained actionable")
+	}
+}

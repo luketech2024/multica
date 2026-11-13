@@ -8,6 +8,10 @@ import { renderWithI18n } from "../../test/i18n";
 import { NavigationProvider, type NavigationAdapter } from "../../navigation";
 import { AgentsPage } from "./agents-page";
 
+vi.mock("../../projects/components/onespec-configuration-section", () => ({
+  OneSpecConfigurationSection: () => <section aria-label="OneSpec setup" />,
+}));
+
 // These tests pin the `listReady` render gate (MUL-4511): the Agents list must
 // not paint real rows until the auxiliary queries the active sort field /
 // filter depends on have landed, or it sorts on placeholder values

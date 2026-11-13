@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/issuestatus"
 	"github.com/multica-ai/multica/server/internal/logger"
+	"github.com/multica-ai/multica/server/internal/service"
 	"github.com/multica-ai/multica/server/internal/util"
 	"github.com/multica-ai/multica/server/internal/workbench"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
@@ -105,6 +106,8 @@ func (h *Handler) loadProjectResourceCount(ctx context.Context, projectID pgtype
 }
 
 type CreateProjectRequest struct {
+	OneSpecEnabled   *bool   `json:"onespec_enabled,omitempty"`
+	OneSpecRuntimeID *string `json:"onespec_runtime_id,omitempty"`
 	BusinessTemplate *struct {
 		ID       string `json:"id"`
 		Revision int64  `json:"revision"`
@@ -483,6 +486,35 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		team = &workbench.ProjectRoleConfiguration{Config: config, Revision: 1}
 	}
 
+	oneSpecEnabled := req.OneSpecEnabled != nil && *req.OneSpecEnabled
+	if oneSpecEnabled {
+		if _, ok := h.requireWorkspaceRole(w, r, workspaceID, "workspace not found", "owner", "admin", "member"); !ok {
+			return
+		}
+		actorType, _ := h.resolveActor(r, userID, workspaceID)
+		if actorType != "member" {
+			writeError(w, 403, "only a member can configure OneSpec")
+			return
+		}
+	}
+	var oneSpecRuntime pgtype.UUID
+	if req.OneSpecRuntimeID != nil {
+		var valid bool
+		oneSpecRuntime, valid = parseUUIDOrBadRequest(w, *req.OneSpecRuntimeID, "onespec_runtime_id")
+		if !valid {
+			return
+		}
+		member, valid := h.workspaceMember(w, r, workspaceID)
+		if !valid {
+			return
+		}
+		runtime, e := h.Queries.GetAgentRuntimeForWorkspace(r.Context(), db.GetAgentRuntimeForWorkspaceParams{ID: oneSpecRuntime, WorkspaceID: wsUUID})
+		if e != nil || !canUseRuntimeForAgent(member, runtime) {
+			writeError(w, 403, "runtime is unavailable or inaccessible")
+			return
+		}
+	}
+
 	// Transactional path: project + all resources are atomic.
 	tx, err := h.TxStarter.Begin(r.Context())
 	if err != nil {
@@ -491,6 +523,12 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(r.Context())
 	qtx := h.Queries.WithTx(tx)
+	if oneSpecEnabled {
+		if err = qtx.LockOneSpecTeam(r.Context(), wsUUID); err != nil {
+			writeError(w, 500, "failed to lock team")
+			return
+		}
+	}
 	if !reserveProjectTitle(w, r, qtx, wsUUID, req.Title, pgtype.UUID{}) {
 		return
 	}
@@ -565,6 +603,16 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if oneSpecEnabled {
+		if _, err = qtx.SaveOneSpecProject(r.Context(), db.SaveOneSpecProjectParams{WorkspaceID: wsUUID, ProjectID: project.ID, Enabled: true, RuntimeID: oneSpecRuntime}); err != nil {
+			writeError(w, 500, "failed to initialize OneSpec project")
+			return
+		}
+		if _, err = service.ResolveOneSpecTeam(r.Context(), qtx, wsUUID, creator, &project, true); err != nil {
+			writeError(w, 500, "failed to prepare OneSpec team")
+			return
+		}
+	}
 	if err := tx.Commit(r.Context()); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to commit project create")
 		return
@@ -575,7 +623,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		resourceResp[i] = projectResourceToResponse(row)
 	}
 	resp := projectToResponse(project)
-	resp.ResourceCount = int64(len(resourceResp))
+	resp.ResourceCount = h.loadProjectResourceCount(r.Context(), project.ID)
 	h.publish(protocol.EventProjectCreated, workspaceID, "member", userID, map[string]any{"project": resp})
 	for _, rr := range resourceResp {
 		h.publish(protocol.EventProjectResourceCreated, workspaceID, "member", userID, map[string]any{

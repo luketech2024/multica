@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { ProjectRolesSchema, projectRoleOrder, type RepositoryProfileInput } from "@multica/core/workbench/configuration";
 import { RepositoryProfileFields } from "../projects/components/repository-profile-fields";
 import { ProjectRolesFields } from "../projects/components/project-roles-fields";
+import { ConfigurationSelect } from "../projects/components/configuration-select";
+import { Switch } from "@multica/ui/components/ui/switch";
 import { BusinessTemplatePicker } from "../projects/components/business-template-picker";
 import { CalendarClock, CalendarDays, ChevronRight, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, UserMinus } from "@multica/ui/icons";
 
@@ -36,6 +38,7 @@ import {
 } from "@multica/core/projects/config";
 import { splitGithubUrlRef } from "@multica/core/github";
 import { useWorkspaceId } from "@multica/core/hooks";
+import { useAuthStore } from "@multica/core/auth";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { useActorName } from "@multica/core/workspace/hooks";
@@ -81,6 +84,8 @@ import {
 import { useLocalDaemonStatus } from "../platform/use-local-daemon-status";
 import {
   runtimeAdvertisesLocalWorktree,
+  isRuntimeUsableForUser,
+  runtimeDisplayLabel,
   runtimeListOptions,
 } from "@multica/core/runtimes";
 import { useConfigStore } from "@multica/core/config";
@@ -156,6 +161,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const workspaceName = workspace?.name;
   const wsPaths = useWorkspacePaths();
   const wsId = useWorkspaceId();
+  const userId = useAuthStore((state) => state.user?.id ?? null);
   const { data: members = [] } = useQuery(memberListOptions(wsId));
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
   const { data: projects = [] } = useQuery(projectListOptions(wsId));
@@ -168,6 +174,9 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const clearDraft = useProjectDraftStore((s) => s.clearDraft);
 
   const [step, setStep] = useState(0);
+  const [oneSpecEnabled, setOneSpecEnabled] = useState(draft.oneSpecEnabled ?? false);
+  const [oneSpecRuntimeId, setOneSpecRuntimeId] = useState(draft.oneSpecRuntimeId ?? "");
+  const oneSpecRuntimes = useQuery(runtimeListOptions(wsId));
   const [repositoryProfiles, setRepositoryProfiles] = useState<Record<string, RepositoryProfileInput>>(draft.repositoryProfiles ?? {});
   const [businessTemplate, setBusinessTemplate] = useState(draft.businessTemplate);
   const [team, setTeam] = useState(() => draft.workbenchRoles ?? ProjectRolesSchema.parse({
@@ -420,6 +429,8 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
     setSubmitting(true);
     try {
       const project = await createProject.mutateAsync({
+        onespec_enabled: oneSpecEnabled,
+        onespec_runtime_id: oneSpecEnabled ? oneSpecRuntimeId || null : undefined,
         title: title.trim(),
         workbench_roles: team,
         business_template: businessTemplate,
@@ -1029,7 +1040,27 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
               count: sourceMode === "repos" ? selectedRepos.length : Number(!!selectedLocalPath),
             })}
           </p>
-          <ProjectRolesFields config={team} disabled={submitting} onBusyChange={setInitializingTeam} onChange={(config) => {
+          <label className="flex items-center gap-2">
+            <Switch checked={oneSpecEnabled} disabled={submitting} onCheckedChange={(enabled) => {
+              setOneSpecEnabled(enabled);
+              setDraft({ oneSpecEnabled: enabled });
+            }} />
+            {tProjects(($) => $.onespec.enabled)}
+          </label>
+          {oneSpecEnabled && <>
+            <p className="text-caption text-muted-foreground">{tProjects(($) => $.onespec.auto_team)}</p>
+            <ConfigurationSelect
+              label={tProjects(($) => $.onespec.runtime)}
+              value={oneSpecRuntimeId}
+              disabled={submitting || oneSpecRuntimes.isPending || oneSpecRuntimes.isError}
+              items={[{ value: "", label: tProjects(($) => $.onespec.inherit) }, ...(oneSpecRuntimes.data ?? []).filter((runtime) => isRuntimeUsableForUser(runtime, userId)).map((runtime) => ({ value: runtime.id, label: runtimeDisplayLabel(runtime) }))]}
+              onChange={(value) => {
+                setOneSpecRuntimeId(value);
+                setDraft({ oneSpecRuntimeId: value });
+              }}
+            />
+          </>}
+          <ProjectRolesFields config={team} allowInitialize={!oneSpecEnabled} disabled={submitting} onBusyChange={setInitializingTeam} onChange={(config) => {
             setTeam(config);
             setDraft({ workbenchRoles: config });
           }} />

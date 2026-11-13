@@ -20,6 +20,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/issuestatus"
 	"github.com/multica-ai/multica/server/internal/logger"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
+	"github.com/multica-ai/multica/server/internal/service"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
@@ -313,6 +314,11 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if err := issuestatus.Ensure(r.Context(), qtx, ws.ID); err != nil {
 		slog.Warn("seed issue statuses failed", append(logger.RequestAttrs(r), "error", err)...)
 		writeError(w, http.StatusInternalServerError, "failed to seed issue statuses")
+		return
+	}
+
+	if err := service.EnsureOneSpecWorkspaceRoles(r.Context(), qtx, ws.ID, parseUUID(userID)); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to initialize OneSpec roles")
 		return
 	}
 

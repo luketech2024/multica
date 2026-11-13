@@ -7,17 +7,19 @@ import { DeliveryEvidence } from "./delivery-evidence";
 
 const save = vi.fn();
 const children = vi.fn();
+const read = vi.fn();
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "workspace" }));
 vi.mock("@multica/core/permissions", () => ({ useCurrentMember: () => ({ role: "member" }) }));
 vi.mock("@multica/core/workspace/hooks", () => ({ useActorName: () => ({ getActorName: () => "Reviewer" }) }));
 vi.mock("@multica/core/api", () => ({ api: {
   listChildIssues: (...args: unknown[]) => children(...args),
   saveDeliveryEvidence: (...args: unknown[]) => save(...args),
-  getDeliveryReview: async () => ({ revision: 7, blockers: [], checks: [] }),
+  getDeliveryReview: (...args: unknown[]) => read(...args),
 } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 const child = { id: "child", revision: 5, identifier: "WB-2", title: "Verify export", status: "done", workbench_handoff: { role: "test", expected: ["test report"], requirement_version: 1, superseded: false, repo_id: "" } };
-function mount(delivery = {}) {
+function mount(delivery = {}, blockers: { code: string; issue_id: string }[] = []) {
+  read.mockResolvedValue({ revision: 7, blockers, checks: [] });
   children.mockResolvedValue({ issues: [child] });
   const issue = { id: "parent", revision: 7, status: "in_review", acceptance_criteria: { version: 1, plan: { version: 1, issues: ["child"] }, delivery } } as unknown as Issue;
   renderWithI18n(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><DeliveryEvidence issue={issue} /></QueryClientProvider>);
@@ -39,7 +41,14 @@ it("retains entered evidence on conflict and sends both revisions", async () => 
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });
 it("marks reports from an earlier child revision as out of date", async () => {
-  mount({ child: { issue_revision: 4, version: 1, passed: true, summary: "Old result", recorded_by: "member", recorded_at: "yesterday", reports: [] } });
-  expect(await screen.findByText("Evidence is out of date")).toBeVisible();
+  mount({ child: { issue_revision: 4, version: 1, passed: true, summary: "Old result", recorded_by: "member", recorded_at: "yesterday", reports: [] } }, [{ code: "evidence_stale", issue_id: "child" }]);
+  const result = await screen.findByText("Delivery result needs to be rechecked");
+  expect(result).toBeVisible();
+  expect(result).not.toHaveClass("text-destructive");
   expect(screen.queryByText("Reported as passed")).not.toBeInTheDocument();
+});
+it("uses server verification when only the conversation revision changed", async () => {
+  mount({ child: { issue_revision: 4, version: 1, passed: true, summary: "Verified result", recorded_by: "member", recorded_at: "yesterday", reports: [] } });
+  expect(await screen.findByText("Reported as passed")).toBeVisible();
+  expect(screen.queryByText("Delivery result needs to be rechecked")).not.toBeInTheDocument();
 });

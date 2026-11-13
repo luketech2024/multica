@@ -63,7 +63,7 @@ function DeliveryEvidenceContent({ issue, taskIds }: { issue: Issue; taskIds?: s
     {visibleTasks.map((child) => {
       const evidence = criteria.delivery?.[child.id];
       const handoff = child.workbench_handoff;
-      const current = !!evidence && evidence.issue_revision === child.revision && evidence.version === criteria.version
+      const current = !!evidence && evidence.version === criteria.version
         && handoff?.requirement_version === criteria.version && !handoff.superseded && child.status === "done"
         && !verification.data?.blockers.some((blocker) => blocker.code === "plan" || (blocker.issue_id === child.id && blocker.code === "evidence_stale"));
       const verified = verification.isSuccess && verification.data.revision === issue.revision;
@@ -72,7 +72,7 @@ function DeliveryEvidenceContent({ issue, taskIds }: { issue: Issue; taskIds?: s
         <p className="font-medium break-words">{child.identifier} · {child.title}</p>
         {handoff && <p className="text-muted-foreground">{projectT(($) => $.roles[handoff.role])}</p>}
         {evidence ? <>
-          <p className={result === "passed" ? "text-success" : result === "unverified" ? "text-muted-foreground" : "text-destructive"}>
+          <p className={result === "passed" ? "text-success" : result === "failed" ? "text-destructive" : "text-muted-foreground"}>
             {t(($) => $.delivery[result])}
           </p>
           <p className="whitespace-pre-wrap break-words">{evidence.summary}</p>

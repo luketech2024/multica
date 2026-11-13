@@ -297,6 +297,8 @@ WITH locked_task AS MATERIALIZED (
     FOR UPDATE OF t
 ), touched_issue AS (
     UPDATE issue i SET
+        acceptance_criteria = CASE WHEN i.parent_issue_id IS NULL AND i.project_id IS NOT NULL
+          THEN workbench_discussion_changed(i.acceptance_criteria) ELSE i.acceptance_criteria END,
         updated_at = now(),
         revision = revision + 1,
         last_activity_at = GREATEST(COALESCE(last_activity_at, updated_at), now())

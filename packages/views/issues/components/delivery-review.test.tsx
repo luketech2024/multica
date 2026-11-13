@@ -69,13 +69,19 @@ it("shows named missing evidence and retains a required rejection reason on conf
   mount();
   expect(await screen.findByRole("button", { name: "Accept delivery" })).toBeDisabled();
   expect(screen.getByText("Export tests")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Request changes" }));
-  const send = screen.getByRole("button", { name: "Send back for changes" });
+  fireEvent.click(screen.getByRole("button", { name: "Send back for changes" }));
+  expect(review).not.toHaveBeenCalled();
+  expect(screen.getByText("Submitting returns the task to In progress. After making changes, submit fresh delivery evidence for another review.")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Accept delivery" })).not.toBeInTheDocument();
+  const send = screen.getByRole("button", { name: "Confirm return" });
   expect(send).toBeDisabled();
-  fireEvent.change(screen.getByRole("textbox", { name: "Reason for changes" }), { target: { value: "Verify empty exports" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "What needs to change" }), { target: { value: "Verify empty exports" } });
   fireEvent.click(send);
   expect(await screen.findByRole("alert")).toHaveTextContent("Task was updated");
-  expect(screen.getByRole("textbox", { name: "Reason for changes" })).toHaveValue("Verify empty exports");
+  expect(screen.getByRole("textbox", { name: "What needs to change" })).toHaveValue("Verify empty exports");
+  expect(review).toHaveBeenCalledWith("parent", expect.objectContaining({ action: "reject", reason: "Verify empty exports" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.getByRole("button", { name: "Accept delivery" })).toBeVisible();
 });
 
 it("keeps review actions with the assigned member", async () => {
@@ -83,4 +89,22 @@ it("keeps review actions with the assigned member", async () => {
   mount("other");
   expect(await screen.findByText("Waiting for the assigned member to review.")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Accept delivery" })).not.toBeInTheDocument();
+});
+
+it("explains stale evidence without displaying it as a failed delivery", async () => {
+  read.mockResolvedValue({ revision: 7, blockers: [{ code: "evidence_stale", title: "Deployment" }], checks: [] });
+  mount();
+  expect(await screen.findByRole("button", { name: "Accept delivery" })).toBeDisabled();
+  const explanation = screen.getByText("The task changed after delivery. Verify the latest result and submit an updated delivery report.");
+  expect(explanation.closest("ul")).not.toHaveClass("text-destructive");
+  expect(screen.getByRole("button", { name: "Send back for changes" })).toBeEnabled();
+});
+
+it("refreshes review information and translates a concurrent acceptance rejection", async () => {
+  read.mockResolvedValue({ revision: 7, blockers: [], checks: [] });
+  review.mockRejectedValue(new Error("delivery is not ready for acceptance"));
+  mount();
+  fireEvent.click(await screen.findByRole("button", { name: "Accept delivery" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("The delivery status changed. Review the updated information before accepting.");
+  expect(read.mock.calls.length).toBeGreaterThan(1);
 });

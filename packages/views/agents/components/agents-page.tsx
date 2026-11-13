@@ -46,6 +46,7 @@ import {
 } from "@multica/ui/components/ui/tooltip";
 import { TruncatedTooltip } from "@multica/ui/components/common/truncated-tooltip";
 import { useNavigation } from "../../navigation";
+import { OneSpecConfigurationSection } from "../../projects/components/onespec-configuration-section";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { ProviderLogo } from "../../runtimes/components/provider-logo";
 import {
@@ -736,6 +737,9 @@ export function AgentsPage(_props: AgentsPageProps = {}) {
         }
       />
 
+      <div className="max-h-80 shrink-0 overflow-y-auto px-4 py-3">
+        <OneSpecConfigurationSection />
+      </div>
       {listError ? (
         <ListError listError={listError} onRetry={() => refetchList()} />
       ) : showEmpty ? (

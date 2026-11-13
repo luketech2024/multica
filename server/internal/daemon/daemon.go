@@ -9143,6 +9143,11 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			result, tools = d.repairWorktreeDelivery(ctx, backend, execOpts, result, tools, problem, env, taskLog, task.ID, &msgSeq)
 		}
 	}
+	if result.Status == "completed" && task.IssueID != "" {
+		if err := d.verifyRequirementDocuments(ctx, task, env.WorkDir); err != nil {
+			taskLog.Warn("requirement document verification failed", "error", err)
+		}
+	}
 	phaseRecorder.Mark(taskPhaseTurnCompleted)
 
 	// MUL-8188: a resumed run that was cancelled after minutes of total

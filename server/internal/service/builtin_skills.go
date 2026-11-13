@@ -46,7 +46,7 @@ var builtinSkillSystemKey = map[string]string{
 	"multica-onboarding":            MikaSystemKey,
 	"multica-onespec-coordinate":    "onespec:sched",
 	"multica-onespec-generate-prd":  "onespec:product",
-	"multica-onespec-change":        "onespec:product",
+	"multica-onespec-change":        "onespec:dev",
 	"multica-onespec-design":        "onespec:dev",
 	"multica-onespec-task":          "onespec:dev",
 	"multica-onespec-implement":     "onespec:dev",

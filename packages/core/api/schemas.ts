@@ -1459,12 +1459,19 @@ export const CommentSubIssueTaskResponseSchema = z.object({
 }).loose();
 
 const AcceptanceCriteriaBaseSchema = z.object({
+  phase: z.enum(["clarifying", "draft", "ready"]).optional().catch("clarifying"),
+  draft_revision: z.number().int().nonnegative().optional(),
+  ready_revision: z.number().int().nonnegative().optional(),
+  discussion_revision: z.number().int().nonnegative().optional(),
+  covered_discussion_revision: z.number().int().nonnegative().optional(),
   team: ProjectRolesSchema.extend({ project_id: z.string().uuid() }).optional(),
   template: ProjectTemplateSchema.optional(),
   v: z.literal(1),
   version: z.number().int().positive().default(1),
   next_item_no: z.number().int().positive().default(1),
   items: z.array(z.object({
+    category: z.string().optional(),
+    section: z.string().optional(),
     id: z.string().regex(/^A-[0-9]+$/),
     text: z.string(),
     origin: z.string(),

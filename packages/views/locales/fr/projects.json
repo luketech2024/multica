@@ -706,6 +706,16 @@
     "manual_fingerprint": "Saisir l’empreinte manuellement"
   },
   "onespec": {
+    "auto_team": "Activer OneSpec associe automatiquement les agents intégrés de cet espace de travail.",
+    "builtin_team": "Équipe OneSpec intégrée",
+    "setup_ready": "Prêt",
+    "setup_pending_runtime": "Configurer un environnement",
+    "setup_needs_setup": "Initialiser l’équipe",
+    "setup_disabled": "Désactivé",
+    "setup_access_denied": "Accès requis",
+    "setup_archived": "Agent archivé",
+    "setup_runtime_offline": "Environnement hors ligne",
+    "setup_binding_invalid": "Vérifier l’association de l’agent",
     "title": "Flux OneSpec",
     "enabled": "Activer OneSpec pour les nouvelles tâches",
     "runtime": "Environnement d’exécution",

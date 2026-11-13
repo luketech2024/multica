@@ -476,6 +476,44 @@ describe("useRealtimeSync — comment folded into a queued run", () => {
   });
 });
 
+describe("useRealtimeSync — delivery readiness", () => {
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it.each(["task:completed", "task:failed", "task:cancelled"])("refreshes acceptance after %s without an issue revision change", async (event) => {
+    vi.useFakeTimers();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const ws = createMockWs();
+    renderHook(() => useRealtimeSync(ws, createStores()), { wrapper: createWrapper(qc) });
+    const onAny = vi.mocked(ws.onAny).mock.calls[0]![0];
+    const key = [...issueKeys.all("ws-1"), "delivery-review", "parent", 19];
+    const otherWorkspaceKey = [...issueKeys.all("ws-2"), "delivery-review", "parent", 19];
+    let active = true;
+    const read = vi.fn(async () => ({ revision: 19, blockers: active ? [{ code: "active" }] : [], checks: [] }));
+    const observer = new QueryObserver(qc, { queryKey: key, queryFn: read });
+    const unsubscribe = observer.subscribe(() => {});
+    try {
+      await vi.advanceTimersByTimeAsync(1);
+      expect(observer.getCurrentResult().data?.blockers).toEqual([{ code: "active" }]);
+      qc.setQueryData(otherWorkspaceKey, { revision: 19, blockers: [], checks: [] });
+      active = false;
+      onAny({ type: event, payload: { task_id: "child-run", issue_id: "child" } } as never);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(observer.getCurrentResult().data).toEqual({ revision: 19, blockers: [], checks: [] });
+      expect(qc.getQueryState(otherWorkspaceKey)?.isInvalidated).toBe(false);
+      active = true;
+      onAny({ type: "task:queued", payload: { task_id: "next-run", issue_id: "child" } } as never);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(observer.getCurrentResult().data?.blockers).toEqual([{ code: "active" }]);
+    } finally {
+      unsubscribe();
+      qc.clear();
+    }
+  });
+});
+
 describe("useRealtimeSync — live usage", () => {
   afterEach(() => {
     cleanup();

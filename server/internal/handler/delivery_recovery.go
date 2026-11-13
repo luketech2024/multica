@@ -93,6 +93,11 @@ func (h *Handler) recoverDelivery(w http.ResponseWriter, r *http.Request, tx pgx
 		for i := range criteria.Items {
 			criteria.Items[i].Checked = &workbench.Check{At: stamp, By: actorID}
 		}
+		// Recovery explicitly confirms the member-supplied scope of completed work.
+		criteria.Phase = "ready"
+		criteria.DraftRevision = max(criteria.DraftRevision, 1)
+		criteria.ReadyRevision = criteria.DraftRevision
+		criteria.CoveredDiscussionRevision = criteria.DiscussionRevision
 		checked, _ := json.Marshal(criteria)
 		confirmed, err := workbench.EditRequirements(checked, nil, true, actorID, "member", time.Now())
 		if err != nil {

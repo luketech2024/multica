@@ -9,10 +9,12 @@ import (
 )
 
 type DeliveryTask struct {
-	ID       string
-	Revision int64
-	Status   string
-	Handoff  Handoff
+	Title       string
+	Description string
+	ID          string
+	Revision    int64
+	Status      string
+	Handoff     Handoff
 }
 
 type DeliveryBlocker struct {
@@ -72,14 +74,12 @@ func DeliveryBlockers(criteria Requirements, children []DeliveryTask, active boo
 	for _, child := range children {
 		tasks[child.ID] = child
 	}
-	roles := map[string]bool{}
 	for _, id := range criteria.Plan.Issues {
 		child, exists := tasks[id]
 		if !exists || child.Handoff.Superseded || child.Handoff.RequirementVersion != criteria.Version {
 			blockers = append(blockers, DeliveryBlocker{Code: "task_missing", IssueID: id})
 			continue
 		}
-		roles[child.Handoff.Role] = true
 		if child.Status != "done" {
 			blockers = append(blockers, DeliveryBlocker{Code: "task_incomplete", IssueID: id})
 			continue
@@ -89,17 +89,16 @@ func DeliveryBlockers(criteria Requirements, children []DeliveryTask, active boo
 			blockers = append(blockers, DeliveryBlocker{Code: "evidence_missing", IssueID: id})
 			continue
 		}
-		if evidence.DescriptionHash != DeliveryDescriptionHash(description) || evidence.IssueID != id || evidence.IssueRevision != child.Revision || evidence.Version != criteria.Version || evidence.Role != child.Handoff.Role || evidence.RepoID != child.Handoff.RepoID || evidence.RecordedAt == "" || evidence.RecordedBy == "" || ValidateDeliveryEvidence(criteria, child.Handoff, evidence) != nil {
+		current := evidence.IssueRevision == child.Revision
+		if evidence.TaskHash != "" {
+			current = evidence.TaskHash == DeliveryTaskHash(child)
+		}
+		if evidence.DescriptionHash != DeliveryDescriptionHash(description) || evidence.IssueID != id || !current || evidence.Version != criteria.Version || evidence.Role != child.Handoff.Role || evidence.RepoID != child.Handoff.RepoID || evidence.RecordedAt == "" || evidence.RecordedBy == "" || ValidateDeliveryEvidence(criteria, child.Handoff, evidence) != nil {
 			blockers = append(blockers, DeliveryBlocker{Code: "evidence_stale", IssueID: id})
 			continue
 		}
 		if !evidence.Passed {
 			blockers = append(blockers, DeliveryBlocker{Code: "evidence_failed", IssueID: id})
-		}
-	}
-	for _, role := range []string{"dev", "test", "sec", "ops"} {
-		if criteria.Team.Config.Roles[role].Enabled && !roles[role] {
-			blockers = append(blockers, DeliveryBlocker{Code: "role_missing", Role: role})
 		}
 	}
 	return blockers

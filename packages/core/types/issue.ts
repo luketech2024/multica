@@ -188,6 +188,11 @@ export interface IssueDuplicateOf {
 }
 
 export interface AcceptanceCriteria {
+  phase?: "clarifying" | "draft" | "ready";
+  draft_revision?: number;
+  ready_revision?: number;
+  discussion_revision?: number;
+  covered_discussion_revision?: number;
   review?: import("../workbench/delivery").DeliveryDecision;
   delivery?: Record<string, import("../workbench/delivery").DeliveryEvidence>;
   resume_runs?: string[];
@@ -209,6 +214,8 @@ export interface AcceptanceCriteria {
   version: number;
   next_item_no: number;
   items: Array<{
+    category?: string;
+    section?: string;
     id: string;
     text: string;
     origin: string;

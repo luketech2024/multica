@@ -34,6 +34,9 @@ test("workspace steering and pause acknowledgement", async ({ page }, testInfo) 
     const parent = await api.createIssue("Coordinate login fix", { project_id: project.id,
       acceptance_criteria: { v: 1, version: 1, items: [{ id: "", text: "Verify login", origin: "user", covers: [], checked: null, note: null }], bounds: [], gate: { spec: null, accept: null } },
     });
+    const ready = await api.prepareRequirementsReview(parent.id);
+    await api.updateIssue(parent.id, { expected_revision: ready.revision, confirm_requirements: true,
+      acceptance_criteria: { ...ready.acceptance_criteria, items: ready.acceptance_criteria.items.map((item: Record<string, unknown>) => ({ ...item, checked: { at: "", by: "" } })) } });
     const issue = await api.createIssue("Fix the Safari 17 login page", { project_id: project.id, parent_issue_id: parent.id, status: "in_progress" });
     await db.query(`UPDATE issue SET assignee_type = 'agent', assignee_id = $1 WHERE id = $2`, [agentId, issue.id]);
     const root = await db.query<{ id: string }>(

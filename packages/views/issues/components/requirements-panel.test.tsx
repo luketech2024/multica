@@ -35,6 +35,12 @@ function mount(issue = initial, detailsTarget?: HTMLElement) {
   return client;
 }
 describe("requirements panel", () => {
+  it("does not open an empty requirements editor for a newly created task", () => {
+    mount({ ...initial, acceptance_criteria: { ...initial.acceptance_criteria!, items: [], bounds: [] } });
+    expect(screen.queryByRole("region", { name: "Requirements confirmation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add criterion" })).not.toBeInTheDocument();
+  });
   it("keeps empty blocked requirements in the sidebar without a duplicate confirmation card", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

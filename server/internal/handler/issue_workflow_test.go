@@ -838,7 +838,7 @@ func TestCreateIssueHandsOffItsStartingColumn(t *testing.T) {
 		"handler": map[string]any{"type": "agent", "id": agentID}, "instructions": "Triage it.",
 	}).Want(http.StatusOK)
 
-	created := createIssueForTest(t, map[string]any{"title": "starts in todo", "project_id": projectID})
+	created := createIssueForTest(t, map[string]any{"title": "starts in todo", "description": "Review this request and identify its scope", "project_id": projectID})
 	if created.Status != "todo" {
 		t.Fatalf("status = %q, want todo", created.Status)
 	}

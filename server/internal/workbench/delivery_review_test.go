@@ -41,11 +41,8 @@ func TestDeliveryReviewChecksRulesAndFiveSecondUndo(t *testing.T) {
 	}
 }
 
-func TestDeliveryReadinessRequiresEnabledRolesAndFreshReports(t *testing.T) {
+func TestDeliveryReadinessRequiresPlannedTasksAndFreshReports(t *testing.T) {
 	config := DefaultProjectRoles()
-	for _, role := range []string{"dev", "sec", "ops"} {
-		config.Roles[role] = ProjectRole{Enabled: false}
-	}
 	criteria := Requirements{Version: 1, Gate: Gates{Spec: &GateCheck{}},
 		Items: []Item{{ID: "A-01", Checked: &Check{}, Covers: []string{"child"}}},
 		Team:  &ProjectTeamSnapshot{ProjectRoleConfiguration: ProjectRoleConfiguration{Config: config}},
@@ -58,7 +55,7 @@ func TestDeliveryReadinessRequiresEnabledRolesAndFreshReports(t *testing.T) {
 	}
 	child := DeliveryTask{ID: "child", Revision: 3, Status: "done", Handoff: Handoff{V: 2, Role: "test", RequirementVersion: 1, Expected: []string{"report"}}}
 	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, ""); len(blockers) != 0 {
-		t.Fatalf("disabled roles blocked delivery: %+v", blockers)
+		t.Fatalf("unplanned roles blocked delivery: %+v", blockers)
 	}
 	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, "Changed task context"); len(blockers) != 1 || blockers[0].Code != "evidence_stale" {
 		t.Fatal("changed parent description retained old conclusions")
@@ -67,8 +64,55 @@ func TestDeliveryReadinessRequiresEnabledRolesAndFreshReports(t *testing.T) {
 	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, ""); len(blockers) != 1 || blockers[0].Code != "evidence_stale" {
 		t.Fatalf("changed subtask retained old evidence: %+v", blockers)
 	}
-	config.Roles["sec"] = ProjectRole{Enabled: true}
-	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, ""); len(blockers) != 2 || blockers[1].Role != "sec" {
-		t.Fatalf("enabled security role was skipped: %+v", blockers)
+	child.Revision--
+	child.Handoff.Role = "ops"
+	evidence := criteria.Delivery["child"]
+	evidence.Role = "ops"
+	criteria.Delivery["child"] = evidence
+	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, ""); len(blockers) != 0 {
+		t.Fatalf("operations-only delivery was blocked: %+v", blockers)
+	}
+	criteria.Plan.Issues = append(criteria.Plan.Issues, "security")
+	if blockers := DeliveryBlockers(criteria, []DeliveryTask{child}, false, ""); len(blockers) != 1 || blockers[0].Code != "task_missing" || blockers[0].IssueID != "security" {
+		t.Fatalf("missing planned security task was ignored: %+v", blockers)
+	}
+}
+
+func TestDeliveryFingerprintDistinguishesConversationFromTaskChanges(t *testing.T) {
+	child := DeliveryTask{ID: "child", Title: "Deploy service", Description: "Use the selected branch", Revision: 3, Status: "done",
+		Handoff: Handoff{V: 2, Role: "ops", RequirementVersion: 1, Expected: []string{"report"}}}
+	criteria := Requirements{Version: 1, Gate: Gates{Spec: &GateCheck{}},
+		Items: []Item{{ID: "A-01", Checked: &Check{}, Covers: []string{"child"}}},
+		Team:  &ProjectTeamSnapshot{ProjectRoleConfiguration: ProjectRoleConfiguration{Config: DefaultProjectRoles()}},
+		Plan:  &ExecutionPlan{Version: 1, Issues: []string{"child"}},
+		Delivery: map[string]DeliveryEvidence{"child": {
+			TaskHash: DeliveryTaskHash(child), DescriptionHash: DeliveryDescriptionHash(""),
+			IssueID: "child", IssueRevision: 3, Version: 1, Role: "ops", Summary: "Verified", Passed: true,
+			RecordedAt: "now", RecordedBy: "member", Reports: []DeliveryReport{{Name: "report", URL: "https://example.test/report"}},
+		}},
+	}
+	for _, test := range []struct {
+		name    string
+		change  func(*DeliveryTask)
+		blocker string
+	}{
+		{"conversation revision", func(task *DeliveryTask) { task.Revision++ }, ""},
+		{"title", func(task *DeliveryTask) { task.Title = "Deploy another service" }, "evidence_stale"},
+		{"description", func(task *DeliveryTask) { task.Description = "Use another branch" }, "evidence_stale"},
+		{"handoff", func(task *DeliveryTask) { task.Handoff.Covers = []string{"A-02"} }, "evidence_stale"},
+		{"reopened task", func(task *DeliveryTask) { task.Status = "in_progress" }, "task_incomplete"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			updated := child
+			test.change(&updated)
+			blockers := DeliveryBlockers(criteria, []DeliveryTask{updated}, false, "")
+			if test.blocker == "" {
+				if len(blockers) != 0 {
+					t.Fatalf("conversation invalidated verified evidence: %+v", blockers)
+				}
+			} else if len(blockers) != 1 || blockers[0].Code != test.blocker {
+				t.Fatalf("blockers = %+v, want %s", blockers, test.blocker)
+			}
+		})
 	}
 }

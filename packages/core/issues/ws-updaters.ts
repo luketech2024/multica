@@ -548,6 +548,9 @@ export function onIssueUpdated(
     qc.invalidateQueries({ queryKey: issueKeys.children(wsId, newParentId) });
   }
   if (oldParentId || newParentId) {
+    for (const parentId of new Set([oldParentId, newParentId].filter(Boolean))) {
+      qc.invalidateQueries({ queryKey: [...issueKeys.all(wsId), "delivery-review", parentId] });
+    }
     if (issue.status !== undefined || issue.parent_issue_id !== undefined) {
       qc.invalidateQueries({ queryKey: issueKeys.childProgress(wsId) });
     }

@@ -1319,6 +1319,16 @@ type OnespecWorkspaceConfig struct {
 	Revision         int64       `json:"revision"`
 }
 
+type OnespecWorkspaceRole struct {
+	WorkspaceID  pgtype.UUID        `json:"workspace_id"`
+	RoleKey      string             `json:"role_key"`
+	Enabled      bool               `json:"enabled"`
+	ConfiguredBy pgtype.UUID        `json:"configured_by"`
+	Revision     int64              `json:"revision"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PersonalAccessToken struct {
 	ID          pgtype.UUID        `json:"id"`
 	UserID      pgtype.UUID        `json:"user_id"`

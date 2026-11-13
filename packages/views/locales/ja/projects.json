@@ -706,6 +706,16 @@
     "manual_fingerprint": "フィンガープリントを手動入力"
   },
   "onespec": {
+    "auto_team": "OneSpec を選択すると、このワークスペースの組み込みエージェントが自動的に割り当てられます。",
+    "builtin_team": "OneSpec 組み込みチーム",
+    "setup_ready": "準備完了",
+    "setup_pending_runtime": "ランタイムの設定が必要",
+    "setup_needs_setup": "初期化が必要",
+    "setup_disabled": "無効",
+    "setup_access_denied": "利用権限が必要",
+    "setup_archived": "エージェントはアーカイブ済み",
+    "setup_runtime_offline": "ランタイムがオフライン",
+    "setup_binding_invalid": "エージェントの割り当てを確認",
     "title": "OneSpec ワークフロー",
     "enabled": "新規タスクで OneSpec を有効にする",
     "runtime": "ランタイム",

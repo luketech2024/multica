@@ -132,6 +132,7 @@ export function useIssueTimelineEvents(issueId: string) {
       (payload: unknown) => {
         const { comment } = payload as CommentCreatedPayload;
         if (comment.issue_id !== issueId) return;
+        void qc.invalidateQueries({ predicate: (query) => query.queryKey[0] === "issues" && query.queryKey.includes(issueId) && !query.queryKey.includes("timeline") });
         qc.setQueryData<TLCache>(issueKeys.timeline(issueId), (old) => {
           const entry = commentToTimelineEntry(comment);
           if (!old) return [entry];
@@ -149,6 +150,7 @@ export function useIssueTimelineEvents(issueId: string) {
       (payload: unknown) => {
         const { comment } = payload as CommentUpdatedPayload;
         if (comment.issue_id !== issueId) return;
+        void qc.invalidateQueries({ predicate: (query) => query.queryKey[0] === "issues" && query.queryKey.includes(issueId) && !query.queryKey.includes("timeline") });
         applyCommentSnapshot(qc, issueId, comment);
       },
       [qc, issueId],
@@ -191,6 +193,7 @@ export function useIssueTimelineEvents(issueId: string) {
       (payload: unknown) => {
         const { comment_id, issue_id } = payload as CommentDeletedPayload;
         if (issue_id !== issueId) return;
+        void qc.invalidateQueries({ predicate: (query) => query.queryKey[0] === "issues" && query.queryKey.includes(issueId) && !query.queryKey.includes("timeline") });
         // A comment with replies is tombstoned (comment:updated), never
         // removed, so any cached reply of a removed comment is stale: older
         // servers cascaded the delete to every descendant.

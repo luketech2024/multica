@@ -64,6 +64,9 @@ func TestLegacyDeliveryRecoveryRequiresEvidenceAndKeepsReleaseBlockersVisible(t 
 	if recovered.Status != "in_review" || criteria.Gate.Accept != nil || len(criteria.Plan.Issues) != 1 || len(criteria.Delivery) != 0 {
 		t.Fatalf("recovery fabricated acceptance or evidence: %+v", criteria)
 	}
+	if !workbench.RequirementsReady(criteria) || criteria.Gate.Spec == nil || criteria.Gate.Spec.PassedBy != testUserID {
+		t.Fatal("recovery did not record the member's scope confirmation")
+	}
 	testutil.Call(t, testHandler.ReviewIssueDelivery, request()).Want(http.StatusConflict)
 	testutil.Call(t, testHandler.ReviewIssueDelivery, testutil.WithURLParams(newRequest("POST", "/api/issues/"+parent+"/delivery-review", map[string]any{"action": "accept", "expected_revision": recovered.Revision}), "id", parent)).Want(http.StatusConflict)
 	childIssue, _ = testHandler.Queries.GetIssue(ctx, parseUUID(child))

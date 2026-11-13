@@ -13,6 +13,7 @@ export const projectRoleOrder = [
 ] as const;
 export type ProjectRoleKey = (typeof projectRoleOrder)[number];
 const ProjectRoleSchema = z.object({
+  binding_source: z.enum(["explicit", "onespec_default"]).optional().catch(undefined),
   enabled: z.boolean(),
   agent_id: z.string().nullable().default(null),
   runtime_id: z.string().nullable().default(null),

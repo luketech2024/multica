@@ -103,6 +103,7 @@ func (h *Handler) SaveDeliveryEvidence(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	evidence.IssueRevision = child.Revision
+	evidence.TaskHash = workbench.DeliveryTaskHash(workbench.DeliveryTask{Title: child.Title, Description: child.Description.String, Handoff: handoff})
 	if criteria.Delivery == nil {
 		criteria.Delivery = map[string]workbench.DeliveryEvidence{}
 	}

@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { issueKeys } from "./queries";
 import type { UserInputResponse } from "./user-input-schema";
 
 export function userInputOptions(wsId: string, issueId: string) {
@@ -14,6 +15,10 @@ export function useAnswerUserInput(wsId: string, issueId: string, requestId: str
   const client = useQueryClient();
   return useMutation({
     mutationFn: (response: UserInputResponse) => api.answerUserInput(issueId, requestId, response),
-    onSettled: () => client.invalidateQueries({ queryKey: userInputOptions(wsId, issueId).queryKey }),
+    onSettled: () => Promise.all([
+      client.invalidateQueries({ queryKey: userInputOptions(wsId, issueId).queryKey }),
+      client.invalidateQueries({ queryKey: issueKeys.all(wsId) }),
+      client.invalidateQueries({ queryKey: ["onespec", wsId, "flow", issueId] }),
+    ]),
   });
 }

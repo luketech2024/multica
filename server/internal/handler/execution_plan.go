@@ -30,14 +30,14 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	actorType, actorID := h.resolveActor(r, uuidToString(member.UserID), uuidToString(issue.WorkspaceID))
-	var input struct {
-		ExpectedRevision int64                `json:"expected_revision"`
-		Version          int                  `json:"version"`
-		Key              string               `json:"idempotency_key"`
-		Tasks            []workbench.PlanTask `json:"tasks"`
+	var rawInput json.RawMessage
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20)).Decode(&rawInput); err != nil {
+		writeError(w, http.StatusBadRequest, "execution plan must be valid JSON within 2 MB")
+		return
 	}
-	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20)).Decode(&input) != nil || input.ExpectedRevision < 1 || strings.TrimSpace(input.Key) == "" || len(input.Key) > 100 {
-		writeError(w, http.StatusBadRequest, "revision, version, idempotency_key and tasks are required")
+	input, err := workbench.ParseExecutionPlanRequest(rawInput)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	payload, _ := json.Marshal(input.Tasks)
@@ -60,6 +60,12 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	if err != nil || !current.ProjectID.Valid || current.ParentIssueID.Valid {
 		writeError(w, http.StatusConflict, "execution plans require a parent task in a project")
 		return
+	}
+	if actorType == "agent" && current.AssigneeType.String == "agent" && uuidToString(current.AssigneeID) == actorID && criteria.Gate.Spec != nil {
+		if err := bindSelectedTaskScheduler(r.Context(), q, current, &criteria); err != nil {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 	}
 	if actorType != "member" && (actorType != "agent" || criteria.Team == nil || criteria.Team.Config.Roles["sched"].AgentID == nil || *criteria.Team.Config.Roles["sched"].AgentID != actorID || current.AssigneeType.String != "agent" || uuidToString(current.AssigneeID) != actorID || criteria.NeedsResplit) {
 		writeError(w, http.StatusForbidden, "only a member or the assigned project scheduler can save the confirmed plan")
@@ -128,6 +134,10 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 	for _, task := range input.Tasks {
 		role := criteria.Team.Config.Roles[task.Role]
 		if role.AgentID == nil {
+			if actorType == "agent" {
+				writeError(w, http.StatusConflict, "execution role "+task.Role+" has no agent for subtask "+task.Key+"; select a bound role for this task, or bind the required role in project team settings before creating a task with the updated team")
+				return
+			}
 			continue
 		}
 		id, ok := parseUUIDOrBadRequest(w, *role.AgentID, "role agent_id")
@@ -135,12 +145,16 @@ func (h *Handler) SaveExecutionPlan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		agent, err := q.GetAgentInWorkspace(r.Context(), db.GetAgentInWorkspaceParams{ID: id, WorkspaceID: current.WorkspaceID})
-		if err == nil && role.RuntimeID != nil && *role.RuntimeID != uuidToString(agent.RuntimeID) {
-			writeError(w, http.StatusConflict, "a configured role runtime no longer matches its agent")
+		if err == nil && !agent.RuntimeID.Valid {
+			writeError(w, http.StatusConflict, "execution role "+task.Role+" has no runtime; configure its agent runtime before submitting the plan")
 			return
 		}
-		if err != nil || !h.canInvokeAgent(r.Context(), agent, actorType, actorID, uuidToString(member.UserID), uuidToString(current.WorkspaceID)) {
-			writeError(w, http.StatusConflict, "a configured executor is unavailable or inaccessible")
+		if err == nil && role.RuntimeID != nil && *role.RuntimeID != uuidToString(agent.RuntimeID) {
+			writeError(w, http.StatusConflict, "execution role "+task.Role+" has a runtime that no longer matches its agent")
+			return
+		}
+		if err != nil || agent.ArchivedAt.Valid || !h.canInvokeAgent(r.Context(), agent, actorType, actorID, uuidToString(member.UserID), uuidToString(current.WorkspaceID)) {
+			writeError(w, http.StatusConflict, "execution role "+task.Role+" has an unavailable or inaccessible agent")
 			return
 		}
 		assignees[task.Role] = id

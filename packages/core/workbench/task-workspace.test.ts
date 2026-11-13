@@ -3,9 +3,9 @@ import { expect, it } from "vitest";
 import type { AgentTask, Issue } from "../types";
 import { currentExecutionIssues, taskWorkspaceProgress, conversationCommand, conversationDestination } from "./task-workspace";
 const parent = { id: "parent", project_id: "project", status: "todo", acceptance_criteria: {
-        v: 1, version: 2, items: [], bounds: [], gate: { spec: { passed_at: "now", passed_by: "human" }, accept: null },
+        v: 1, version: 2, next_item_no: 1, items: [], bounds: [], gate: { spec: { passed_at: "now", passed_by: "human" }, accept: null },
         plan: { version: 2, issues: ["child"], key: "plan", digest: "digest" },
-    } } as Issue;
+    } } as unknown as Issue;
 const child = { id: "child", parent_issue_id: parent.id, status: "todo", assignee_type: "agent", assignee_id: "ops",
     workbench_handoff: { requirement_version: 2, superseded: false } } as Issue;
 const run = (status: AgentTask["status"], extra: Partial<AgentTask> = {}) => ({
